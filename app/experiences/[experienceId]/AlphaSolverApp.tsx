@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import StrategyPanel from "./components/StrategyPanel";
 import ResultsPanel from "./components/ResultsPanel";
 import AccountConfigPanel from "./components/AccountConfig";
 import { useSimulationEngine } from "./hooks/useSimulationEngine";
+import { parseTradeCsv } from "./lib/csvUtils";
 import type {
 	ParametricParams,
 	BootstrappedParams,
@@ -37,6 +38,12 @@ export default function AlphaSolverApp({
 		propFirm: "Topstep",
 		challenge: "50k",
 	});
+	const [csvFile, setCsvFile] = useState<File | null>(null);
+	const [csvFormat, setCsvFormat] = useState<"NinjaTrader" | "Generic" | "Custom">("NinjaTrader");
+	const [parsedTrades, setParsedTrades] = useState<ParsedTrade[] | null>(null);
+	const [isParsingCsv, setIsParsingCsv] = useState(false);
+	const [csvError, setCsvError] = useState<string | null>(null);
+	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	const handleRunSimulation = async (
 		mode: SimulationMode,
@@ -44,6 +51,60 @@ export default function AlphaSolverApp({
 		trades?: ParsedTrade[],
 	) => {
 		await run(mode, params, trades);
+	};
+
+	const handleFileSelect = () => {
+		fileInputRef.current?.click();
+	};
+
+	const parseCsvFile = async (file: File, format: "NinjaTrader" | "Generic" | "Custom") => {
+		// Validate file type
+		if (file.type !== "text/csv" && !file.name.endsWith(".csv")) {
+			setCsvError("Please select a valid CSV file");
+			setCsvFile(null);
+			setParsedTrades(null);
+			return;
+		}
+
+		setCsvFile(file);
+		setCsvError(null);
+		setIsParsingCsv(true);
+
+		try {
+			const trades = await parseTradeCsv(file, {
+				template: format,
+			});
+			setParsedTrades(trades);
+		} catch (error) {
+			setCsvError(
+				error instanceof Error
+					? error.message
+					: "Failed to parse CSV file. Please check the file format.",
+			);
+			setParsedTrades(null);
+		} finally {
+			setIsParsingCsv(false);
+		}
+	};
+
+	const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		await parseCsvFile(file, csvFormat);
+	};
+
+	const handleDragOver = (e: React.DragEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+	};
+
+	const handleDrop = async (e: React.DragEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+
+		const file = e.dataTransfer.files?.[0];
+		if (!file) return;
+		await parseCsvFile(file, csvFormat);
 	};
 
 	return (
@@ -85,27 +146,92 @@ export default function AlphaSolverApp({
 								<label className="block text-xs text-purple-300 mb-1">
 									CSV Format
 								</label>
-								<select className="w-full px-3 py-2 bg-slate-700/50 border border-purple-800/30 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-									<option>NinjaTrader</option>
-									<option>Generic</option>
-									<option>Custom</option>
+								<select
+									value={csvFormat}
+									onChange={async (e) => {
+										const newFormat = e.target.value as "NinjaTrader" | "Generic" | "Custom";
+										setCsvFormat(newFormat);
+										// Re-parse if file is already loaded
+										if (csvFile) {
+											await parseCsvFile(csvFile, newFormat);
+										}
+									}}
+									className="w-full px-3 py-2 bg-slate-700/50 border border-purple-800/30 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+								>
+									<option value="NinjaTrader">NinjaTrader</option>
+									<option value="Generic">Generic</option>
+									<option value="Custom">Custom</option>
 								</select>
 							</div>
 							<div>
 								<label className="block text-xs text-purple-300 mb-1">
 									Upload Trade Log
 								</label>
-								<div className="border-2 border-dashed border-purple-800/50 rounded-lg p-6 text-center">
-									<p className="text-xs text-purple-300 mb-2">
-										Drag and drop file here
-									</p>
-									<p className="text-xs text-purple-400 mb-3">
-										Limit 200MB per file...
-									</p>
-									<button className="text-xs px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-md text-white transition-colors">
-										Browse files
-									</button>
+								<input
+									ref={fileInputRef}
+									type="file"
+									accept=".csv,text/csv"
+									onChange={handleFileChange}
+									className="hidden"
+								/>
+								<div
+									onDragOver={handleDragOver}
+									onDrop={handleDrop}
+									className="border-2 border-dashed border-purple-800/50 rounded-lg p-6 text-center cursor-pointer hover:border-purple-600 transition-colors"
+									onClick={handleFileSelect}
+								>
+									{isParsingCsv ? (
+										<div className="flex flex-col items-center">
+											<div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-400 mb-2"></div>
+											<p className="text-xs text-purple-300">Parsing CSV...</p>
+										</div>
+									) : csvFile ? (
+										<div className="space-y-2">
+											<p className="text-xs text-green-400 font-medium">
+												✓ Loaded {parsedTrades?.length || 0} trades
+											</p>
+											<p className="text-xs text-purple-300">
+												{csvFile.name}
+											</p>
+											<p className="text-xs text-purple-400">
+												{(csvFile.size / 1024).toFixed(2)} KB
+											</p>
+											<button
+												type="button"
+												onClick={(e) => {
+													e.stopPropagation();
+													setCsvFile(null);
+													setParsedTrades(null);
+													setCsvError(null);
+													if (fileInputRef.current) {
+														fileInputRef.current.value = "";
+													}
+												}}
+												className="text-xs px-3 py-1 bg-red-600/50 hover:bg-red-600 rounded-md text-white transition-colors mt-2"
+											>
+												Remove
+											</button>
+										</div>
+									) : (
+										<>
+											<p className="text-xs text-purple-300 mb-2">
+												Drag and drop file here
+											</p>
+											<p className="text-xs text-purple-400 mb-3">
+												Limit 200MB per file...
+											</p>
+											<button
+												type="button"
+												className="text-xs px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-md text-white transition-colors"
+											>
+												Browse files
+											</button>
+										</>
+									)}
 								</div>
+								{csvError && (
+									<p className="mt-2 text-xs text-red-400">{csvError}</p>
+								)}
 							</div>
 						</div>
 					</section>
@@ -118,6 +244,8 @@ export default function AlphaSolverApp({
 						<StrategyPanel
 							onRunSimulation={handleRunSimulation}
 							planConfig={planConfig}
+							parsedTrades={parsedTrades}
+							csvFormat={csvFormat}
 						/>
 					</section>
 				</aside>

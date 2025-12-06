@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ParametricForm from "./ParametricForm";
 import BootstrappedForm from "./BootstrappedForm";
 import PyodideDebugPanel from "./PyodideDebugPanel";
@@ -19,6 +19,8 @@ interface StrategyPanelProps {
 		trades?: ParsedTrade[],
 	) => void;
 	planConfig: PlanConfig;
+	parsedTrades?: ParsedTrade[] | null;
+	csvFormat?: "NinjaTrader" | "Generic" | "Custom";
 }
 
 type TabMode = "parametric" | "bootstrapped";
@@ -26,8 +28,19 @@ type TabMode = "parametric" | "bootstrapped";
 export default function StrategyPanel({
 	onRunSimulation,
 	planConfig,
+	parsedTrades,
+	csvFormat = "NinjaTrader",
 }: StrategyPanelProps) {
-	const [activeTab, setActiveTab] = useState<TabMode>("parametric");
+	const [activeTab, setActiveTab] = useState<TabMode>(
+		parsedTrades ? "bootstrapped" : "parametric",
+	);
+
+	// Switch to bootstrapped mode when trades are loaded
+	useEffect(() => {
+		if (parsedTrades && parsedTrades.length > 0) {
+			setActiveTab("bootstrapped");
+		}
+	}, [parsedTrades]);
 
 	const handleParametricSubmit = (params: ParametricParams) => {
 		onRunSimulation("parametric", params);
@@ -118,12 +131,27 @@ export default function StrategyPanel({
 							numPaths,
 							numDays: Math.min(100, planConfig.maxDays),
 						});
+					} else if (activeTab === "bootstrapped" && parsedTrades) {
+						handleBootstrappedSubmit(
+							{
+								template: csvFormat,
+								numPaths,
+								numDays: Math.min(100, planConfig.maxDays),
+							},
+							parsedTrades,
+						);
 					}
 				}}
-				className="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 rounded-md text-white font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+				disabled={activeTab === "bootstrapped" && !parsedTrades}
+				className="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md text-white font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
 			>
 				Run Simulation
 			</button>
+			{activeTab === "bootstrapped" && !parsedTrades && (
+				<p className="text-xs text-purple-400 mt-2">
+					Please upload a CSV file first
+				</p>
+			)}
 		</div>
 	);
 }
