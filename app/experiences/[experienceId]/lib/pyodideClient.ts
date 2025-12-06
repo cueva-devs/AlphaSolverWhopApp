@@ -120,7 +120,8 @@ export async function loadPyodide(): Promise<PyodideInterface> {
 			});
 
 			// Load required packages
-			await pyodide.loadPackage(["numpy", "pandas", "json"]);
+			// json is part of the Python stdlib, so only load external packages
+			await pyodide.loadPackage(["numpy", "pandas"]);
 
 			// Load Python files from /public/py/
 			for (const filename of PYTHON_FILES) {
@@ -260,4 +261,3 @@ except Exception as e:
 }
 
 export { SimulationError };
-
