@@ -335,7 +335,12 @@ export default function ResultsPanel({
 							<h3 className="text-sm font-semibold text-purple-200 mb-3">
 								{accountConfig.propFirm} {accountConfig.challenge} - Simulation Paths
 							</h3>
-							<EquityChart equityCurves={result.equityCurves} finalValues={result.finalValues} />
+							<EquityChart 
+								equityCurves={result.equityCurves} 
+								finalValues={result.finalValues}
+								winningPathIndices={result.winningPathIndices}
+								losingPathIndices={result.losingPathIndices}
+							/>
 						</div>
 
 						{/* Trade Distributions */}

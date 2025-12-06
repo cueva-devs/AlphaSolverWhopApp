@@ -44,6 +44,9 @@ export interface SimulationResult {
 	maxDrawdown: number;
 	equityCurves: number[][];
 	finalValues: number[];
+	// Path outcomes for accurate chart coloring
+	winningPathIndices?: number[];
+	losingPathIndices?: number[];
 	// Additional metrics
 	averageFinalValue?: number;
 	medianFinalValue?: number;

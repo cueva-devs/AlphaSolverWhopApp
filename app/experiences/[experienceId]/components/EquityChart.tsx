@@ -28,48 +28,89 @@ ChartJS.register(
 interface EquityChartProps {
 	equityCurves: number[][];
 	finalValues?: number[];
+	winningPathIndices?: number[];
+	losingPathIndices?: number[];
 	maxSamples?: number;
 }
 
 export default function EquityChart({
 	equityCurves,
 	finalValues,
-	maxSamples = 10,
+	winningPathIndices,
+	losingPathIndices,
+	maxSamples = 50, // Increased default to match reference repo
 }: EquityChartProps) {
 	const chartData = useMemo(() => {
 		if (!equityCurves || equityCurves.length === 0) {
 			return null;
 		}
 
+		// Create sets for fast lookup
+		const winningSet = new Set(winningPathIndices || []);
+		const losingSet = new Set(losingPathIndices || []);
+		
 		// Separate winning and losing paths
 		const winningCurves: number[][] = [];
 		const losingCurves: number[][] = [];
 		
-		// Sample curves for visualization
+		// Sample curves for visualization - show mix of winners and losers
 		const sampleSize = Math.min(equityCurves.length, maxSamples);
-		const step = Math.max(1, Math.floor(equityCurves.length / sampleSize));
 		
-		// Determine which paths are winners/losers
-		// Use finalValues if available (positive = winner), otherwise use equity curve final value
-		const initialBalance = 50000; // Default Topstep balance
-		
-		for (let i = 0; i < equityCurves.length; i += step) {
-			const curve = equityCurves[i];
-			if (curve.length > 0) {
-				let isWinner = false;
-				if (finalValues && finalValues[i] !== undefined) {
-					// Use finalValues to determine winner (positive PnL = winner)
-					isWinner = finalValues[i] > 0;
-				} else {
-					// Fallback: use equity curve final value
-					const finalValue = curve[curve.length - 1];
-					isWinner = finalValue >= initialBalance;
+		// If we have path indices, use them to accurately categorize
+		// Otherwise fall back to sampling evenly
+		if (winningSet.size > 0 || losingSet.size > 0) {
+			// Sample winners and losers separately to show good mix
+			const numWinnersToShow = Math.min(
+				Math.floor(sampleSize / 2),
+				winningSet.size,
+			);
+			const numLosersToShow = Math.min(
+				Math.floor(sampleSize / 2),
+				losingSet.size,
+			);
+			
+			// Sample winning paths
+			const winningIndices = Array.from(winningSet);
+			const winningStep = Math.max(1, Math.floor(winningIndices.length / numWinnersToShow));
+			for (let i = 0; i < winningIndices.length; i += winningStep) {
+				const idx = winningIndices[i];
+				if (equityCurves[idx] && equityCurves[idx].length > 0) {
+					winningCurves.push(equityCurves[idx]);
 				}
-				
-				if (isWinner) {
-					winningCurves.push(curve);
-				} else {
-					losingCurves.push(curve);
+			}
+			
+			// Sample losing paths
+			const losingIndices = Array.from(losingSet);
+			const losingStep = Math.max(1, Math.floor(losingIndices.length / numLosersToShow));
+			for (let i = 0; i < losingIndices.length; i += losingStep) {
+				const idx = losingIndices[i];
+				if (equityCurves[idx] && equityCurves[idx].length > 0) {
+					losingCurves.push(equityCurves[idx]);
+				}
+			}
+		} else {
+			// Fallback: sample evenly and guess from finalValues
+			const step = Math.max(1, Math.floor(equityCurves.length / sampleSize));
+			const initialBalance = 50000; // Default Topstep balance
+			
+			for (let i = 0; i < equityCurves.length; i += step) {
+				const curve = equityCurves[i];
+				if (curve.length > 0) {
+					let isWinner = false;
+					if (finalValues && finalValues[i] !== undefined) {
+						// Use finalValues to determine winner (positive PnL = winner)
+						isWinner = finalValues[i] > 0;
+					} else {
+						// Fallback: use equity curve final value
+						const finalValue = curve[curve.length - 1];
+						isWinner = finalValue >= initialBalance;
+					}
+					
+					if (isWinner) {
+						winningCurves.push(curve);
+					} else {
+						losingCurves.push(curve);
+					}
 				}
 			}
 		}
@@ -110,7 +151,7 @@ export default function EquityChart({
 			labels,
 			datasets,
 		};
-	}, [equityCurves, finalValues, maxSamples]);
+	}, [equityCurves, finalValues, winningPathIndices, losingPathIndices, maxSamples]);
 
 	if (!chartData) {
 		return (

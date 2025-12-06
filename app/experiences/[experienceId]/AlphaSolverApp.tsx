@@ -109,19 +109,6 @@ export default function AlphaSolverApp({
 
 	return (
 		<div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white flex flex-col">
-			{/* Header */}
-			<header className="border-b border-purple-800/50 bg-slate-900/80 backdrop-blur-sm px-6 py-4">
-				<div className="flex justify-between items-center">
-					<div>
-						<h1 className="text-2xl font-bold text-white mb-1">PropSim</h1>
-						<p className="text-sm text-purple-200">
-							Monte Carlo simulation for prop firm trading challenges
-						</p>
-					</div>
-					<div className="text-xs text-purple-300">Deploy</div>
-				</div>
-			</header>
-
 			<main className="flex-1 flex gap-6 p-6 min-h-0 overflow-hidden">
 				{/* Left Sidebar */}
 				<aside className="w-80 flex-shrink-0 flex flex-col gap-4 overflow-y-auto">

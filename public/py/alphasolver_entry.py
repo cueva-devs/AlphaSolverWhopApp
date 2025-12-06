@@ -396,6 +396,9 @@ def _extract_results(sim: Simulation, num_paths: int) -> Dict[str, Any]:
         'maxDrawdown': avg_max_drawdown,
         'equityCurves': equity_curves,
         'finalValues': final_values,
+        # Add path outcomes for accurate chart coloring (convert to lists)
+        'winningPathIndices': [int(x) for x in winning_paths],
+        'losingPathIndices': [int(x) for x in losing_paths],
         'averageFinalValue': avg_final_value,
         'medianFinalValue': median_final_value,
         'winRate': win_rate,
