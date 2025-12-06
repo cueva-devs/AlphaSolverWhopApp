@@ -278,169 +278,191 @@ class Simulation:
 
     def get_monte_carlo_trading_plan(self) -> dict:
         """
-        Generate trading plan by analyzing WINNING paths vs LOSING paths.
-        Extracts actionable rules from successful simulations.
+        Generate trading plan using CLUSTER-BASED analysis.
+        
+        Instead of averaging all winners (which mixes fast passes with slow grinds),
+        this uses DBSCAN clustering to identify distinct outcome scenarios and
+        provides MULTIPLE OPTIMAL STRATEGIES based on different criteria:
+        
+        1. Risk-Adjusted: Best probability/risk ratio
+        2. Fastest Pass: Minimize days (aggressive)
+        3. Safest Path: Minimize drawdown (conservative)  
+        4. Highest Probability: Most likely to succeed
         
         Returns:
-            Dictionary with prescriptive trading rules based on winning paths
+            Dictionary with multiple optimal strategies from different clusters
         """
-        # Separate winners and losers for analysis
-        winner_data = {"days": [], "max_dd": [], "daily_pnls": [], "final_pnl": [], "worst_day": [], "best_day": []}
-        loser_data = {"days": [], "max_dd": [], "daily_pnls": [], "final_pnl": [], "worst_day": [], "best_day": []}
-        all_daily_pnls = []
+        # First, get clustered scenarios
+        scenarios = self.get_outcome_scenarios()
         
-        for trader_num, trader in self.traders.items():
-            running_balance = np.array(trader.running_balance)
+        # Find all winning clusters
+        winning_clusters = [
+            s for s in scenarios["scenarios"] 
+            if s["label"] != -1 and s["outcome_type"] == "pass"
+        ]
+        
+        # ============ RANK CLUSTERS BY DIFFERENT CRITERIA ============
+        optimal_strategies = {}
+        
+        if winning_clusters:
+            # 1. RISK-ADJUSTED: probability / (days * drawdown)
+            for cluster in winning_clusters:
+                days_factor = max(1, cluster["days_median"] / 21)
+                dd_factor = max(0.1, cluster["max_drawdown_median"] / 1000)
+                cluster["_risk_adj_score"] = cluster["probability"] / (days_factor * dd_factor)
             
-            if len(running_balance) > 1:
-                # Calculate metrics for this path
-                running_max = np.maximum.accumulate(running_balance)
-                drawdowns = running_max - running_balance
-                max_dd = np.max(drawdowns)
-                daily_pnls = np.diff(running_balance)
-                worst_day = np.min(daily_pnls) if len(daily_pnls) > 0 else 0
-                best_day = np.max(daily_pnls) if len(daily_pnls) > 0 else 0
-                
-                all_daily_pnls.extend(daily_pnls)
-                
-                data = winner_data if trader.account.won else loser_data
-                data["days"].append(trader.account.total_days)
-                data["max_dd"].append(max_dd)
-                data["daily_pnls"].extend(daily_pnls)
-                data["final_pnl"].append(trader.PnL)
-                data["worst_day"].append(worst_day)
-                data["best_day"].append(best_day)
+            risk_adj_sorted = sorted(winning_clusters, key=lambda x: x["_risk_adj_score"], reverse=True)
+            optimal_strategies["risk_adjusted"] = {
+                "cluster": risk_adj_sorted[0],
+                "label": "Risk-Adjusted",
+                "description": "Best balance of probability, speed, and safety",
+                "optimization": "Maximize: probability / (days × drawdown)"
+            }
+            
+            # 2. FASTEST PASS: minimize days
+            fastest_sorted = sorted(winning_clusters, key=lambda x: x["days_median"])
+            optimal_strategies["fastest"] = {
+                "cluster": fastest_sorted[0],
+                "label": "Fastest Pass",
+                "description": "Aggressive strategy - minimize time to pass",
+                "optimization": "Minimize: days to pass"
+            }
+            
+            # 3. SAFEST PATH: minimize drawdown
+            safest_sorted = sorted(winning_clusters, key=lambda x: x["max_drawdown_median"])
+            optimal_strategies["safest"] = {
+                "cluster": safest_sorted[0],
+                "label": "Safest Path",
+                "description": "Conservative strategy - minimize risk exposure",
+                "optimization": "Minimize: max drawdown"
+            }
+            
+            # 4. HIGHEST PROBABILITY: maximize pass rate
+            prob_sorted = sorted(winning_clusters, key=lambda x: x["probability"], reverse=True)
+            optimal_strategies["highest_probability"] = {
+                "cluster": prob_sorted[0],
+                "label": "Highest Probability",
+                "description": "Most likely outcome among winning scenarios",
+                "optimization": "Maximize: cluster probability"
+            }
+            
+            # 5. HIGHEST PAYOUT: maximize net P&L
+            payout_sorted = sorted(winning_clusters, key=lambda x: x["final_pnl_median"], reverse=True)
+            optimal_strategies["highest_payout"] = {
+                "cluster": payout_sorted[0],
+                "label": "Highest Payout",
+                "description": "Maximize expected profit per pass",
+                "optimization": "Maximize: median net P&L"
+            }
         
-        # Convert to numpy
-        all_daily_pnls = np.array(all_daily_pnls) if all_daily_pnls else np.array([0])
+        # ============ FALLBACK: PERCENTILE-BASED STRATEGIES ============
+        # If DBSCAN only found 1 cluster, create synthetic strategies from percentiles
+        unique_cluster_names = set(s.get("cluster", {}).get("name") for s in optimal_strategies.values())
+        if len(unique_cluster_names) <= 1 and self.winning_trader_numbers:
+            percentile_strategies = self._create_percentile_strategies()
+            if percentile_strategies:
+                optimal_strategies = percentile_strategies
+        
+        # Use risk-adjusted as the primary/default
+        best_cluster = optimal_strategies.get("risk_adjusted", {}).get("cluster") if optimal_strategies else None
         
         # Prop firm limits
         max_loss_limit = self.acct_rules.get('Max Loss (Eval)', float('inf'))
         daily_loss_limit = self.acct_rules.get('Maximum Daily Loss', float('inf'))
         profit_target = self.acct_rules.get('Funding Target Balance', 0) - self.acct_rules.get('Initial Balance (Eval)', 0)
         
-        # ============ ANALYZE WINNERS ============
-        if winner_data["days"]:
-            w_days = np.array(winner_data["days"])
-            w_dd = np.array(winner_data["max_dd"])
-            w_daily = np.array(winner_data["daily_pnls"])
-            w_worst = np.array(winner_data["worst_day"])
+        # ============ COLLECT DATA FROM BEST CLUSTER ============
+        if best_cluster:
+            # Get trader numbers in this cluster
+            cluster_trader_nums = self._get_cluster_trader_numbers(best_cluster, scenarios)
+            
+            # Collect detailed stats from cluster members
+            cluster_data = self._analyze_cluster_paths(cluster_trader_nums)
             
             winners = {
-                "count": len(w_days),
-                # Days distribution (full percentiles for clarity)
-                "days_min": int(np.min(w_days)),
-                "days_p5": int(np.percentile(w_days, 5)),
-                "days_p10": int(np.percentile(w_days, 10)),
-                "days_p25": int(np.percentile(w_days, 25)),
-                "days_median": int(np.median(w_days)),
-                "days_p75": int(np.percentile(w_days, 75)),
-                "days_p90": int(np.percentile(w_days, 90)),
-                "days_max": int(np.max(w_days)),
-                # Drawdown
-                "max_dd_median": np.median(w_dd),
-                "max_dd_p90": np.percentile(w_dd, 90),
-                # Daily P&L
-                "daily_pnl_mean": np.mean(w_daily),
-                "daily_pnl_median": np.median(w_daily),
-                "worst_day_median": np.median(w_worst),
-                "worst_day_p10": np.percentile(w_worst, 10),
-                "daily_win_rate": np.mean(w_daily > 0) * 100,
+                "count": best_cluster["count"],
+                "cluster_name": best_cluster["name"],
+                "cluster_probability": best_cluster["probability"],
+                "cluster_description": best_cluster["description"],
+                # Days from cluster
+                "days_median": int(best_cluster["days_median"]),
+                "days_range": best_cluster["days_range"],
+                # Drawdown from cluster
+                "max_dd_median": best_cluster["max_drawdown_median"],
+                "max_dd_p90": best_cluster["max_drawdown_p90"],
+                # Daily stats from cluster paths
+                "daily_pnl_mean": cluster_data.get("daily_pnl_mean", 0),
+                "daily_pnl_median": cluster_data.get("daily_pnl_median", 0),
+                "worst_day_median": cluster_data.get("worst_day_median", 0),
+                "worst_day_p10": cluster_data.get("worst_day_p10", 0),
+                "daily_win_rate": best_cluster["daily_win_rate_median"],
+                # Final P&L
+                "final_pnl_median": best_cluster["final_pnl_median"],
+                "final_pnl_range": best_cluster["final_pnl_range"],
             }
         else:
-            winners = None
+            # Fallback to all winners if no clusters found
+            winners = self._analyze_all_winners_fallback()
         
-        # ============ BEST CASE PATH (fastest winner) ============
-        best_path = None
-        if self.winning_trader_numbers:
-            # Find the fastest winning path
-            fastest_days = float('inf')
-            fastest_trader_num = None
-            
-            for trader_num in self.winning_trader_numbers:
-                trader = self.traders[trader_num]
-                if trader.account.total_days < fastest_days:
-                    fastest_days = trader.account.total_days
-                    fastest_trader_num = trader_num
-            
-            if fastest_trader_num is not None:
-                trader = self.traders[fastest_trader_num]
-                running_balance = np.array(trader.running_balance)
-                daily_pnls = np.diff(running_balance) if len(running_balance) > 1 else []
-                
-                # Calculate stats for best path
-                running_max = np.maximum.accumulate(running_balance) if len(running_balance) > 1 else [0]
-                drawdowns = running_max - running_balance if len(running_balance) > 1 else [0]
-                
-                # Daily stats for best path (no Kelly - that's misleading post-hoc)
-                winning_pnls = daily_pnls[daily_pnls > 0] if len(daily_pnls) > 0 else []
-                losing_pnls = daily_pnls[daily_pnls < 0] if len(daily_pnls) > 0 else []
-                path_avg_win = np.mean(winning_pnls) if len(winning_pnls) > 0 else 0
-                path_avg_loss = np.mean(losing_pnls) if len(losing_pnls) > 0 else 0
-                
-                best_path = {
-                    "days": trader.account.total_days,
-                    "final_pnl": trader.PnL,
-                    "max_drawdown": np.max(drawdowns) if len(drawdowns) > 0 else 0,
-                    "avg_daily_pnl": np.mean(daily_pnls) if len(daily_pnls) > 0 else 0,
-                    "best_day": np.max(daily_pnls) if len(daily_pnls) > 0 else 0,
-                    "worst_day": np.min(daily_pnls) if len(daily_pnls) > 0 else 0,
-                    "winning_days": int(np.sum(np.array(daily_pnls) > 0)) if len(daily_pnls) > 0 else 0,
-                    "losing_days": int(np.sum(np.array(daily_pnls) < 0)) if len(daily_pnls) > 0 else 0,
-                    "daily_win_rate": (np.sum(np.array(daily_pnls) > 0) / len(daily_pnls) * 100) if len(daily_pnls) > 0 else 0,
-                    "avg_winning_day": path_avg_win,
-                    "avg_losing_day": path_avg_loss,
-                }
+        # ============ ANALYZE ALL LOSING CLUSTERS ============
+        losing_clusters = [
+            s for s in scenarios["scenarios"] 
+            if s["label"] != -1 and s["outcome_type"] == "fail"
+        ]
         
-        # ============ ANALYZE LOSERS ============
-        if loser_data["days"]:
-            l_days = np.array(loser_data["days"])
-            l_dd = np.array(loser_data["max_dd"])
-            l_daily = np.array(loser_data["daily_pnls"])
-            l_worst = np.array(loser_data["worst_day"])
+        if losing_clusters:
+            # Combine stats from all losing clusters
+            total_losers = sum(c["count"] for c in losing_clusters)
+            weighted_days = sum(c["days_median"] * c["count"] for c in losing_clusters) / total_losers
+            weighted_dd = sum(c["max_drawdown_median"] * c["count"] for c in losing_clusters) / total_losers
             
             losers = {
-                "count": len(l_days),
-                "days_median": np.median(l_days),
-                "max_dd_median": np.median(l_dd),
-                "daily_pnl_mean": np.mean(l_daily),
-                "worst_day_median": np.median(l_worst),
-                "common_failure": "max_drawdown" if np.median(l_dd) >= max_loss_limit * 0.9 else "daily_limit",
+                "count": total_losers,
+                "num_clusters": len(losing_clusters),
+                "days_median": weighted_days,
+                "max_dd_median": weighted_dd,
+                "common_failure": "max_drawdown" if weighted_dd >= max_loss_limit * 0.9 else "daily_limit",
+                "clusters": [{"name": c["name"], "probability": c["probability"], 
+                             "description": c["description"]} for c in losing_clusters]
             }
         else:
             losers = None
         
-        # ============ PRESCRIPTIVE RULES (from winners) ============
+        # ============ PRESCRIPTIVE RULES (from best cluster) ============
         if winners:
-            # Daily target to match winning pace
-            daily_target = profit_target / winners["days_median"] if winners["days_median"] > 0 else 0
+            days_median = winners.get("days_median", 30)
+            
+            # Daily target to match best cluster pace
+            daily_target = profit_target / days_median if days_median > 0 else 0
             
             # For 30-day rebill target (~21 trading days per month)
             trading_days_per_month = 21
             daily_target_30d = profit_target / trading_days_per_month
             
-            # Safe daily loss limit (what winners stayed within)
-            safe_daily_loss = abs(winners["worst_day_p10"]) if winners["worst_day_p10"] else daily_loss_limit
-            safe_daily_loss = min(safe_daily_loss, daily_loss_limit)  # Can't exceed prop firm limit
+            # Safe daily loss limit (what best cluster stayed within)
+            worst_day_p10 = winners.get("worst_day_p10", 0)
+            safe_daily_loss = abs(worst_day_p10) if worst_day_p10 else daily_loss_limit
+            safe_daily_loss = min(safe_daily_loss, daily_loss_limit)
             
-            # Max drawdown winners experienced - cap at prop firm limit
-            safe_max_dd = min(winners["max_dd_p90"], max_loss_limit)
+            # Max drawdown from best cluster - cap at prop firm limit
+            safe_max_dd = min(winners.get("max_dd_p90", max_loss_limit), max_loss_limit)
             
-            # Check if strategy is viable for 30-day rebill (~21 trading days)
-            viable_for_30d = winners["days_median"] <= trading_days_per_month
+            # Check if strategy is viable for 30-day rebill
+            viable_for_30d = days_median <= trading_days_per_month
             
-            # Calculate how many calendar months winners take
-            months_to_pass = winners["days_median"] / trading_days_per_month
+            # Calculate how many calendar months
+            months_to_pass = days_median / trading_days_per_month
             
             rules = {
+                "source": "best_cluster" if best_cluster else "all_winners",
                 "daily_pnl_target": daily_target,
-                "daily_pnl_target_30d": daily_target_30d,  # What you'd need for ~21 trading days
+                "daily_pnl_target_30d": daily_target_30d,
                 "daily_loss_stop": safe_daily_loss,
                 "max_drawdown_safe": safe_max_dd,
                 "prop_firm_max_loss": max_loss_limit,
-                "target_days": int(winners["days_median"]),  # Trading days
-                "target_days_range": (int(winners["days_p25"]), int(winners["days_p75"])),
-                "daily_win_rate_needed": winners["daily_win_rate"],
+                "target_days": int(days_median),
+                "target_days_range": winners.get("days_range", (int(days_median * 0.75), int(days_median * 1.25))),
+                "daily_win_rate_needed": winners.get("daily_win_rate", 50),
                 "viable_for_30d": viable_for_30d,
                 "trading_days_per_month": trading_days_per_month,
                 "months_to_pass": months_to_pass,
@@ -448,23 +470,58 @@ class Simulation:
         else:
             rules = None
         
+        # ============ BEST CASE PATH (from best cluster) ============
+        best_path = self._get_best_path_from_cluster(best_cluster, scenarios) if best_cluster else None
+        
+        # Collect all daily P&Ls for Kelly calculation
+        all_daily_pnls = self._collect_all_daily_pnls()
+        
+        # ============ GENERATE RULES FOR EACH OPTIMAL STRATEGY ============
+        strategy_rules = {}
+        for strategy_key, strategy_data in optimal_strategies.items():
+            cluster = strategy_data["cluster"]
+            strategy_rules[strategy_key] = self._generate_rules_for_cluster(
+                cluster, scenarios, profit_target, max_loss_limit, daily_loss_limit
+            )
+            strategy_rules[strategy_key]["label"] = strategy_data["label"]
+            strategy_rules[strategy_key]["description"] = strategy_data["description"]
+            strategy_rules[strategy_key]["optimization"] = strategy_data["optimization"]
+            strategy_rules[strategy_key]["cluster_info"] = {
+                "name": cluster["name"],
+                "probability": cluster["probability"],
+                "days_median": cluster["days_median"],
+                "max_drawdown_median": cluster["max_drawdown_median"],
+                "final_pnl_median": cluster["final_pnl_median"],
+                "daily_win_rate": cluster["daily_win_rate_median"],
+            }
+        
         return {
             "pass_rate": self.pct_wins,
             "pass_rate_ci": (self.pass_rate_ci_lower, self.pass_rate_ci_upper),
             "fail_rate": self.pct_fails,
             "num_simulations": self.num_traders,
             
-            # Winner analysis
+            # ============ MULTIPLE OPTIMAL STRATEGIES (for tabs) ============
+            "optimal_strategies": strategy_rules,
+            
+            # Default/primary strategy (risk-adjusted)
             "winners": winners,
+            "best_cluster": best_cluster,
+            "rules": rules,  # Default rules (risk-adjusted)
+            
+            # All winning clusters for reference
+            "all_winning_clusters": [
+                {"name": c["name"], "probability": c["probability"], 
+                 "days_median": c["days_median"], "max_drawdown_median": c["max_drawdown_median"],
+                 "final_pnl_median": c["final_pnl_median"], "description": c["description"]}
+                for c in winning_clusters
+            ] if winning_clusters else [],
             
             # Loser analysis  
             "losers": losers,
             
-            # Best case scenario
+            # Best case scenario (from best cluster)
             "best_path": best_path,
-            
-            # Prescriptive rules from winners
-            "rules": rules,
             
             # Prop firm context
             "prop_firm": {
@@ -533,6 +590,381 @@ class Simulation:
             "avg_win": avg_win,
             "avg_loss": avg_loss,
             "basis": basis,  # "per-trade" or "daily"
+        }
+
+    def _get_cluster_trader_numbers(self, cluster: dict, scenarios: dict) -> list:
+        """Get trader numbers belonging to a specific cluster."""
+        # Re-run clustering to get labels (cached in scenarios)
+        # For now, identify by matching cluster characteristics
+        cluster_traders = []
+        
+        for trader_num, trader in self.traders.items():
+            # Match based on outcome and approximate characteristics
+            if cluster["outcome_type"] == "pass" and not trader.account.won:
+                continue
+            if cluster["outcome_type"] == "fail" and trader.account.won:
+                continue
+            
+            # Check if this trader's stats fall within cluster range
+            days = trader.account.total_days
+            days_range = cluster["days_range"]
+            
+            if days_range[0] <= days <= days_range[1]:
+                cluster_traders.append(trader_num)
+        
+        return cluster_traders
+
+    def _analyze_cluster_paths(self, trader_nums: list) -> dict:
+        """Analyze paths from a specific cluster to get detailed daily stats."""
+        daily_pnls = []
+        worst_days = []
+        best_days = []
+        
+        for trader_num in trader_nums:
+            trader = self.traders[trader_num]
+            running_balance = np.array(trader.running_balance)
+            
+            if len(running_balance) > 1:
+                path_daily_pnls = np.diff(running_balance)
+                daily_pnls.extend(path_daily_pnls)
+                worst_days.append(np.min(path_daily_pnls))
+                best_days.append(np.max(path_daily_pnls))
+        
+        if not daily_pnls:
+            return {}
+        
+        daily_pnls = np.array(daily_pnls)
+        worst_days = np.array(worst_days)
+        
+        return {
+            "daily_pnl_mean": np.mean(daily_pnls),
+            "daily_pnl_median": np.median(daily_pnls),
+            "worst_day_median": np.median(worst_days),
+            "worst_day_p10": np.percentile(worst_days, 10),
+            "best_day_median": np.median(best_days) if best_days else 0,
+            "daily_win_rate": np.mean(daily_pnls > 0) * 100,
+        }
+
+    def _analyze_all_winners_fallback(self) -> dict:
+        """Fallback: analyze all winners when clustering doesn't produce results."""
+        if not self.winning_trader_numbers:
+            return None
+        
+        days = []
+        max_dds = []
+        daily_pnls = []
+        worst_days = []
+        final_pnls = []
+        
+        for trader_num in self.winning_trader_numbers:
+            trader = self.traders[trader_num]
+            running_balance = np.array(trader.running_balance)
+            
+            days.append(trader.account.total_days)
+            final_pnls.append(trader.PnL)
+            
+            if len(running_balance) > 1:
+                running_max = np.maximum.accumulate(running_balance)
+                drawdowns = running_max - running_balance
+                max_dds.append(np.max(drawdowns))
+                
+                path_daily = np.diff(running_balance)
+                daily_pnls.extend(path_daily)
+                worst_days.append(np.min(path_daily))
+        
+        days = np.array(days)
+        daily_pnls = np.array(daily_pnls) if daily_pnls else np.array([0])
+        worst_days = np.array(worst_days) if worst_days else np.array([0])
+        max_dds = np.array(max_dds) if max_dds else np.array([0])
+        
+        return {
+            "count": len(self.winning_trader_numbers),
+            "cluster_name": "All Winners (no clustering)",
+            "cluster_probability": self.pct_wins,
+            "cluster_description": "Fallback: all winning paths averaged",
+            "days_median": int(np.median(days)),
+            "days_range": (int(np.min(days)), int(np.max(days))),
+            "max_dd_median": np.median(max_dds),
+            "max_dd_p90": np.percentile(max_dds, 90),
+            "daily_pnl_mean": np.mean(daily_pnls),
+            "daily_pnl_median": np.median(daily_pnls),
+            "worst_day_median": np.median(worst_days),
+            "worst_day_p10": np.percentile(worst_days, 10),
+            "daily_win_rate": np.mean(daily_pnls > 0) * 100,
+            "final_pnl_median": np.median(final_pnls),
+            "final_pnl_range": (np.min(final_pnls), np.max(final_pnls)),
+        }
+
+    def _get_best_path_from_cluster(self, cluster: dict, scenarios: dict) -> dict:
+        """Get the best (fastest) path from a cluster."""
+        if not cluster:
+            return None
+        
+        cluster_traders = self._get_cluster_trader_numbers(cluster, scenarios)
+        
+        if not cluster_traders:
+            return None
+        
+        # Find fastest path in cluster
+        fastest_days = float('inf')
+        fastest_trader_num = None
+        
+        for trader_num in cluster_traders:
+            trader = self.traders[trader_num]
+            if trader.account.won and trader.account.total_days < fastest_days:
+                fastest_days = trader.account.total_days
+                fastest_trader_num = trader_num
+        
+        if fastest_trader_num is None:
+            return None
+        
+        trader = self.traders[fastest_trader_num]
+        running_balance = np.array(trader.running_balance)
+        daily_pnls = np.diff(running_balance) if len(running_balance) > 1 else np.array([])
+        
+        if len(running_balance) > 1:
+            running_max = np.maximum.accumulate(running_balance)
+            drawdowns = running_max - running_balance
+            max_dd = np.max(drawdowns)
+        else:
+            max_dd = 0
+        
+        winning_pnls = daily_pnls[daily_pnls > 0] if len(daily_pnls) > 0 else []
+        losing_pnls = daily_pnls[daily_pnls < 0] if len(daily_pnls) > 0 else []
+        
+        return {
+            "days": trader.account.total_days,
+            "final_pnl": trader.PnL,
+            "max_drawdown": max_dd,
+            "avg_daily_pnl": np.mean(daily_pnls) if len(daily_pnls) > 0 else 0,
+            "best_day": np.max(daily_pnls) if len(daily_pnls) > 0 else 0,
+            "worst_day": np.min(daily_pnls) if len(daily_pnls) > 0 else 0,
+            "winning_days": int(np.sum(daily_pnls > 0)) if len(daily_pnls) > 0 else 0,
+            "losing_days": int(np.sum(daily_pnls < 0)) if len(daily_pnls) > 0 else 0,
+            "daily_win_rate": (np.sum(daily_pnls > 0) / len(daily_pnls) * 100) if len(daily_pnls) > 0 else 0,
+            "avg_winning_day": np.mean(winning_pnls) if len(winning_pnls) > 0 else 0,
+            "avg_losing_day": np.mean(losing_pnls) if len(losing_pnls) > 0 else 0,
+            "from_cluster": cluster["name"],
+        }
+
+    def _collect_all_daily_pnls(self) -> np.ndarray:
+        """Collect all daily P&Ls from all traders for Kelly calculation."""
+        all_daily_pnls = []
+        
+        for trader_num, trader in self.traders.items():
+            running_balance = np.array(trader.running_balance)
+            if len(running_balance) > 1:
+                daily_pnls = np.diff(running_balance)
+                all_daily_pnls.extend(daily_pnls)
+        
+        return np.array(all_daily_pnls) if all_daily_pnls else np.array([0])
+
+    def _create_percentile_strategies(self) -> dict:
+        """
+        Create strategies based on percentile filtering of winners.
+        Used as fallback when DBSCAN produces only 1 cluster.
+        
+        Creates 5 distinct groups:
+        - Fastest 25%: Lowest days to pass
+        - Safest 25%: Lowest max drawdown
+        - Highest Payout 25%: Highest final P&L
+        - Balanced/Median: Middle 50% on all metrics
+        - Risk-Adjusted: Best composite score
+        """
+        if not self.winning_trader_numbers:
+            return {}
+        
+        # Collect data from all winners
+        winner_data = []
+        for trader_num in self.winning_trader_numbers:
+            trader = self.traders[trader_num]
+            running_balance = np.array(trader.running_balance)
+            
+            if len(running_balance) > 1:
+                running_max = np.maximum.accumulate(running_balance)
+                drawdowns = running_max - running_balance
+                max_dd = np.max(drawdowns)
+                daily_pnls = np.diff(running_balance)
+                daily_win_rate = np.mean(daily_pnls > 0) * 100
+            else:
+                max_dd = 0
+                daily_win_rate = 50
+            
+            winner_data.append({
+                "trader_num": trader_num,
+                "days": trader.account.total_days,
+                "max_drawdown": max_dd,
+                "final_pnl": trader.PnL,
+                "daily_win_rate": daily_win_rate,
+            })
+        
+        if len(winner_data) < 4:
+            return {}  # Not enough data for percentile splits
+        
+        # Convert to arrays for percentile calculations
+        days_arr = np.array([w["days"] for w in winner_data])
+        dd_arr = np.array([w["max_drawdown"] for w in winner_data])
+        pnl_arr = np.array([w["final_pnl"] for w in winner_data])
+        
+        # Calculate percentile thresholds
+        days_p25 = np.percentile(days_arr, 25)
+        dd_p25 = np.percentile(dd_arr, 25)
+        pnl_p75 = np.percentile(pnl_arr, 75)
+        
+        # Create synthetic clusters based on percentiles
+        def create_cluster_from_filter(filter_func, name, description):
+            filtered = [w for w in winner_data if filter_func(w)]
+            if not filtered:
+                return None
+            
+            days = [w["days"] for w in filtered]
+            dds = [w["max_drawdown"] for w in filtered]
+            pnls = [w["final_pnl"] for w in filtered]
+            win_rates = [w["daily_win_rate"] for w in filtered]
+            
+            return {
+                "name": name,
+                "label": -99,  # Synthetic cluster marker
+                "count": len(filtered),
+                "probability": len(filtered) / len(self.traders) * 100,
+                "outcome_type": "pass",
+                "pass_rate": 100.0,
+                "days_median": np.median(days),
+                "days_range": (int(np.min(days)), int(np.max(days))),
+                "max_drawdown_median": np.median(dds),
+                "max_drawdown_p90": np.percentile(dds, 90),
+                "final_pnl_median": np.median(pnls),
+                "final_pnl_range": (np.min(pnls), np.max(pnls)),
+                "daily_win_rate_median": np.median(win_rates),
+                "description": description,
+                "_trader_nums": [w["trader_num"] for w in filtered],
+            }
+        
+        strategies = {}
+        
+        # 1. FASTEST 25%
+        fastest_cluster = create_cluster_from_filter(
+            lambda w: w["days"] <= days_p25,
+            "Fastest 25%",
+            f"Winners who passed in ≤{int(days_p25)} days (bottom quartile)"
+        )
+        if fastest_cluster:
+            strategies["fastest"] = {
+                "cluster": fastest_cluster,
+                "label": "Fastest Pass",
+                "description": "Top 25% fastest passes - aggressive timeline",
+                "optimization": "Filter: days ≤ 25th percentile"
+            }
+        
+        # 2. SAFEST 25% (lowest drawdown)
+        safest_cluster = create_cluster_from_filter(
+            lambda w: w["max_drawdown"] <= dd_p25,
+            "Safest 25%",
+            f"Winners with max DD ≤${int(dd_p25)} (bottom quartile)"
+        )
+        if safest_cluster:
+            strategies["safest"] = {
+                "cluster": safest_cluster,
+                "label": "Safest Path",
+                "description": "Top 25% lowest drawdown - conservative approach",
+                "optimization": "Filter: max_drawdown ≤ 25th percentile"
+            }
+        
+        # 3. HIGHEST PAYOUT 25%
+        payout_cluster = create_cluster_from_filter(
+            lambda w: w["final_pnl"] >= pnl_p75,
+            "Top Payout 25%",
+            f"Winners with P&L ≥${int(pnl_p75)} (top quartile)"
+        )
+        if payout_cluster:
+            strategies["highest_payout"] = {
+                "cluster": payout_cluster,
+                "label": "Highest Payout",
+                "description": "Top 25% highest payouts - maximize profit",
+                "optimization": "Filter: final_pnl ≥ 75th percentile"
+            }
+        
+        # 4. BALANCED (middle 50% on days)
+        days_p25_val = np.percentile(days_arr, 25)
+        days_p75_val = np.percentile(days_arr, 75)
+        balanced_cluster = create_cluster_from_filter(
+            lambda w: days_p25_val <= w["days"] <= days_p75_val,
+            "Balanced (IQR)",
+            f"Winners in {int(days_p25_val)}-{int(days_p75_val)} days (middle 50%)"
+        )
+        if balanced_cluster:
+            strategies["highest_probability"] = {
+                "cluster": balanced_cluster,
+                "label": "Most Typical",
+                "description": "Middle 50% of winners - most representative outcome",
+                "optimization": "Filter: days in interquartile range (25th-75th)"
+            }
+        
+        # 5. RISK-ADJUSTED (composite score)
+        # Score each winner: lower days + lower DD + higher PnL = better
+        for w in winner_data:
+            days_score = 1 - (w["days"] - np.min(days_arr)) / (np.max(days_arr) - np.min(days_arr) + 1)
+            dd_score = 1 - (w["max_drawdown"] - np.min(dd_arr)) / (np.max(dd_arr) - np.min(dd_arr) + 1)
+            pnl_score = (w["final_pnl"] - np.min(pnl_arr)) / (np.max(pnl_arr) - np.min(pnl_arr) + 1)
+            w["_composite_score"] = days_score + dd_score + pnl_score
+        
+        score_p75 = np.percentile([w["_composite_score"] for w in winner_data], 75)
+        risk_adj_cluster = create_cluster_from_filter(
+            lambda w: w["_composite_score"] >= score_p75,
+            "Risk-Adjusted Top 25%",
+            "Best composite score (fast + safe + profitable)"
+        )
+        if risk_adj_cluster:
+            strategies["risk_adjusted"] = {
+                "cluster": risk_adj_cluster,
+                "label": "Risk-Adjusted",
+                "description": "Top 25% by composite score (speed + safety + profit)",
+                "optimization": "Filter: composite_score ≥ 75th percentile"
+            }
+        
+        return strategies
+
+    def _generate_rules_for_cluster(self, cluster: dict, scenarios: dict, 
+                                     profit_target: float, max_loss_limit: float, 
+                                     daily_loss_limit: float) -> dict:
+        """Generate prescriptive trading rules for a specific cluster."""
+        # Get detailed stats from cluster paths
+        cluster_trader_nums = self._get_cluster_trader_numbers(cluster, scenarios)
+        cluster_data = self._analyze_cluster_paths(cluster_trader_nums)
+        
+        days_median = int(cluster["days_median"])
+        trading_days_per_month = 21
+        
+        # Daily target to match this cluster's pace
+        daily_target = profit_target / days_median if days_median > 0 else 0
+        daily_target_30d = profit_target / trading_days_per_month
+        
+        # Safe daily loss limit from this cluster
+        worst_day_p10 = cluster_data.get("worst_day_p10", 0)
+        safe_daily_loss = abs(worst_day_p10) if worst_day_p10 else daily_loss_limit
+        safe_daily_loss = min(safe_daily_loss, daily_loss_limit)
+        
+        # Max drawdown from this cluster
+        safe_max_dd = min(cluster["max_drawdown_p90"], max_loss_limit)
+        
+        # Viability checks
+        viable_for_30d = days_median <= trading_days_per_month
+        months_to_pass = days_median / trading_days_per_month
+        
+        return {
+            "daily_pnl_target": daily_target,
+            "daily_pnl_target_30d": daily_target_30d,
+            "daily_loss_stop": safe_daily_loss,
+            "max_drawdown_safe": safe_max_dd,
+            "prop_firm_max_loss": max_loss_limit,
+            "target_days": days_median,
+            "target_days_range": cluster["days_range"],
+            "daily_win_rate_needed": cluster["daily_win_rate_median"],
+            "viable_for_30d": viable_for_30d,
+            "trading_days_per_month": trading_days_per_month,
+            "months_to_pass": months_to_pass,
+            "expected_pnl": cluster["final_pnl_median"],
+            "cluster_probability": cluster["probability"],
         }
 
     def plot_outcomes(self, title):
@@ -896,7 +1328,7 @@ class Simulation:
             "pass_rate": self.pct_wins,
         }
 
-    def get_outcome_scenarios(self, eps: float = 0.5, min_samples: int = None) -> dict:
+    def get_outcome_scenarios(self, eps: float = 0.15, min_samples: int = None) -> dict:
         """
         Use DBSCAN to identify distinct outcome scenarios from Monte Carlo paths.
         Returns clusters ranked by density (most probable outcomes first).
@@ -909,14 +1341,16 @@ class Simulation:
         - outcome: Win (1) or Loss (0)
         
         Args:
-            eps: DBSCAN neighborhood radius (in standardized space)
-            min_samples: Minimum samples for core point (default: 1% of simulations, min 5)
+            eps: DBSCAN neighborhood radius (in standardized space). 
+                 Lower = more clusters (tighter grouping), higher = fewer clusters.
+                 Default 0.15 for fine-grained clustering.
+            min_samples: Minimum samples for core point (default: 2)
         
         Returns:
             Dictionary with scenario clusters ranked by probability
         """
         if min_samples is None:
-            min_samples = max(5, int(self.num_traders * 0.01))
+            min_samples = 2  # Allow small clusters
         
         # Extract features from all paths
         features = []
