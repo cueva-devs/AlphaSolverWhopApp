@@ -27,9 +27,10 @@ export default async function ExperiencePage({
 
 	// If user doesn't have access, show upgrade message
 	if (!hasAccess) {
-		// Construct checkout URL using product ID or fallback to experience page
-		const checkoutUrl = experience.product?.id
-			? `https://whop.com/products/${experience.product.id}`
+		// Construct checkout URL using first product ID or fallback to experience page
+		const firstProduct = experience.products?.[0];
+		const checkoutUrl = firstProduct?.id
+			? `https://whop.com/products/${firstProduct.id}`
 			: `https://whop.com/experiences/${experienceId}`;
 
 		return (
@@ -53,9 +54,10 @@ export default async function ExperiencePage({
 	}
 
 	// Determine user's plan based on product/experience
+	const firstProduct = experience.products?.[0];
 	const planId: PlanId = determinePlanId(
-		experience.product?.id,
-		experience.product?.name,
+		firstProduct?.id,
+		firstProduct?.name,
 	);
 	const planConfig = getPlanConfig(planId);
 
