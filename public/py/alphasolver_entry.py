@@ -208,11 +208,13 @@ def _convert_to_json_serializable(obj):
     """Convert numpy types and other non-JSON-serializable types to native Python types."""
     import numpy as np
     
-    if isinstance(obj, np.integer):
+    if isinstance(obj, np.bool_):
+        return bool(obj)
+    elif isinstance(obj, np.integer):
         return int(obj)
     elif isinstance(obj, np.floating):
-        if np.isinf(obj):
-            return None  # Convert infinity to None
+        if np.isinf(obj) or np.isnan(obj):
+            return None  # Convert infinity/NaN to None
         return float(obj)
     elif isinstance(obj, np.ndarray):
         return [_convert_to_json_serializable(item) for item in obj.tolist()]
@@ -220,8 +222,10 @@ def _convert_to_json_serializable(obj):
         return [_convert_to_json_serializable(item) for item in obj]
     elif isinstance(obj, dict):
         return {key: _convert_to_json_serializable(value) for key, value in obj.items()}
-    elif isinstance(obj, float) and (obj == float('inf') or obj == float('-inf')):
-        return None  # Convert infinity to None
+    elif isinstance(obj, float) and (obj == float('inf') or obj == float('-inf') or obj != obj):  # NaN check: x != x
+        return None  # Convert infinity/NaN to None
+    elif isinstance(obj, bool):
+        return obj  # Native bool, return as-is
     else:
         return obj
 
