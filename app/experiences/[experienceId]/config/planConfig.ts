@@ -10,19 +10,19 @@ export interface PlanConfig {
 export const PLAN_CONFIGS: Record<PlanId, PlanConfig> = {
 	starter: {
 		label: "Starter",
-		maxPaths: 100,
-		maxDays: 7,
-		allowCsv: false,
+		maxPaths: 10000, // Increased for better testing
+		maxDays: 100, // Increased for better testing
+		allowCsv: true, // Enabled for testing
 	},
 	pro: {
 		label: "Pro",
-		maxPaths: 1000,
-		maxDays: 30,
+		maxPaths: 10000,
+		maxDays: 365,
 		allowCsv: true,
 	},
 	elite: {
 		label: "Elite",
-		maxPaths: 10000,
+		maxPaths: 100000,
 		maxDays: 365,
 		allowCsv: true,
 	},
@@ -39,7 +39,7 @@ export function getEffectivePlanConfig(planId: PlanId | string): PlanConfig {
 	if (DEV_MODE) {
 		return {
 			...config,
-			maxPaths: 100000,
+			maxPaths: 1000000, // 1 million paths for extensive testing
 			maxDays: 1000,
 			allowCsv: true,
 		};

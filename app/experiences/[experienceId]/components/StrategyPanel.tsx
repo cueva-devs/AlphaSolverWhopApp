@@ -54,7 +54,8 @@ export default function StrategyPanel({
 	};
 
 	const [showAdvanced, setShowAdvanced] = useState(false);
-	const [numPaths, setNumPaths] = useState(Math.min(20000, planConfig.maxPaths));
+	// Default to 10000 runs, but cap at plan limit
+	const [numPaths, setNumPaths] = useState(Math.min(10000, planConfig.maxPaths));
 
 	return (
 		<div className="space-y-4">
