@@ -27,10 +27,8 @@ export default async function ExperiencePage({
 
 	// If user doesn't have access, show upgrade message
 	if (!hasAccess) {
-		// Construct checkout URL - use company URL or experience URL
-		const checkoutUrl =
-			experience.company?.url ||
-			`https://whop.com/${experience.company?.username || ""}`;
+		// Construct checkout URL using company username
+		const checkoutUrl = `https://whop.com/${experience.company?.username || ""}`;
 
 		return (
 			<div className="min-h-screen bg-gray-1 flex items-center justify-center p-6">
