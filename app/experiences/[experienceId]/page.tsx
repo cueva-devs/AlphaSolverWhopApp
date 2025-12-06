@@ -11,8 +11,9 @@ export default async function ExperiencePage({
 	params: Promise<{ experienceId: string }>;
 }) {
 	const { experienceId } = await params;
+	const reqHeaders = await headers();
 	// Ensure the user is logged in on whop.
-	const { userId } = await whopsdk.verifyUserToken(await headers());
+	const { userId } = await whopsdk.verifyUserToken(reqHeaders);
 
 	// Fetch the necessary data we want from whop.
 	const [experience, user, access] = await Promise.all([
@@ -23,11 +24,13 @@ export default async function ExperiencePage({
 
 	// Check if user has access
 	// checkAccess returns an object with hasAccess boolean property
-	const hasAccess =
+	const host = reqHeaders.get("host") || "";
+	const bypassAccess =
 		process.env.NEXT_PUBLIC_BYPASS_ACCESS === "true" &&
-		process.env.VERCEL_ENV !== "production"
-			? true // allow preview builds and local testing when explicitly enabled
-			: (access as { hasAccess?: boolean }).hasAccess ?? false;
+		(host.includes("localhost") || host.endsWith(".vercel.app"));
+	const hasAccess = bypassAccess
+		? true // allow preview/vercel/localhost when explicitly enabled via env var
+		: (access as { hasAccess?: boolean }).hasAccess ?? false;
 
 	// If user doesn't have access, show upgrade message
 	if (!hasAccess) {
