@@ -181,6 +181,17 @@ def _extract_results(sim: Simulation, num_paths: int) -> Dict[str, Any]:
     final_values = []
     max_drawdowns = []
     
+    # Track detailed metrics for enhanced results
+    winning_paths = []
+    losing_paths = []
+    days_to_pass = []
+    days_in_funded = []
+    days_before_fail = []
+    fail_in_eval = 0
+    fail_in_funded = 0
+    trades_per_day_list = []
+    trade_pnl_list = []
+    
     for trader_num in range(len(sim.traders)):
         trader = sim.traders[trader_num]
         
@@ -207,6 +218,27 @@ def _extract_results(sim: Simulation, num_paths: int) -> Dict[str, Any]:
             max_dd = max(0, initial_balance - current_balance)
         
         max_drawdowns.append(max_dd)
+        
+        # Track winning/losing paths for enhanced metrics
+        if trader.account.won:
+            winning_paths.append(trader_num)
+            days_to_pass.append(trader.account.total_days)
+            # Estimate days in funded (simplified - assume passed eval halfway through)
+            if trader.passed_eval:
+                days_in_funded.append(max(0, trader.account.total_days - trader.account.total_days // 2))
+            else:
+                days_in_funded.append(0)
+        elif trader.account.failed:
+            losing_paths.append(trader_num)
+            days_before_fail.append(trader.account.total_days)
+            if trader.account.in_eval:
+                fail_in_eval += 1
+            else:
+                fail_in_funded += 1
+        
+        # Track trade distributions (simplified - estimate from strategy)
+        if hasattr(sim.strategy, 'trades_per_day'):
+            trades_per_day_list.extend([sim.strategy.trades_per_day] * trader.account.total_days)
     
     # Calculate aggregate statistics
     final_values_array = np.array(final_values)
@@ -216,8 +248,9 @@ def _extract_results(sim: Simulation, num_paths: int) -> Dict[str, Any]:
     # Expected payout is the average final value
     expected_payout = avg_final_value
     
-    # Pass probability (percentage of paths that ended with positive PnL)
+    # Pass/fail probabilities
     pass_probability = float(np.mean(final_values_array > 0) * 100)
+    fail_probability = float(np.mean(final_values_array <= 0) * 100)
     
     # Average max drawdown
     avg_max_drawdown = float(np.mean(max_drawdowns))
@@ -236,9 +269,106 @@ def _extract_results(sim: Simulation, num_paths: int) -> Dict[str, Any]:
         avg_days = sim.avg_days
         total_trades = int(avg_trades_per_day * avg_days * num_paths)
     
+    # Enhanced metrics
+    net_pnl_per_attempt = avg_final_value
+    expected_attempts_to_pass = 1.0 / (pass_probability / 100.0) if pass_probability > 0 else float('inf')
+    
+    # Timeline metrics
+    avg_days_to_pass = float(np.mean(days_to_pass)) if days_to_pass else 0
+    avg_days_in_funded = float(np.mean(days_in_funded)) if days_in_funded else 0
+    total_days_to_payout = avg_days_to_pass + avg_days_in_funded
+    
+    # Cost analysis
+    initial_purchase = sim.acct_fees.get('Eval Acct Cost', 149.0)
+    monthly_rebill = sim.acct_fees.get('Monthly Eval Cost', 149.0)
+    funded_setup = sim.acct_fees.get('Funded Acct Setup Cost', 149.0)
+    
+    # Calculate costs for winners
+    if winning_paths:
+        avg_months_eval = avg_days_to_pass / 30.0
+        avg_total_costs_if_pass = initial_purchase + (avg_months_eval * monthly_rebill) + funded_setup
+        avg_gross_payout_if_pass = float(np.mean([final_values[i] for i in winning_paths]))
+        avg_net_profit_if_pass = avg_gross_payout_if_pass - avg_total_costs_if_pass
+    else:
+        avg_total_costs_if_pass = initial_purchase + monthly_rebill + funded_setup
+        avg_gross_payout_if_pass = 0
+        avg_net_profit_if_pass = 0
+    
+    # Calculate costs for losers
+    if losing_paths:
+        avg_days_before_fail = float(np.mean(days_before_fail))
+        avg_months_before_fail = avg_days_before_fail / 30.0
+        avg_cost_lost_if_fail = initial_purchase + (avg_months_before_fail * monthly_rebill)
+        fail_in_eval_pct = (fail_in_eval / len(losing_paths)) * 100 if losing_paths else 0
+        fail_in_funded_pct = (fail_in_funded / len(losing_paths)) * 100 if losing_paths else 0
+    else:
+        avg_days_before_fail = 0
+        avg_cost_lost_if_fail = initial_purchase
+        fail_in_eval_pct = 0
+        fail_in_funded_pct = 0
+    
+    # Investment summary
+    expected_cost_to_payout = initial_purchase + (expected_attempts_to_pass * monthly_rebill) + funded_setup
+    expected_gross_payout = expected_payout
+    expected_roi = ((expected_gross_payout - expected_cost_to_payout) / expected_cost_to_payout * 100) if expected_cost_to_payout > 0 else 0
+    
+    # Trade distributions (simplified)
+    avg_trades_per_day = float(np.mean(trades_per_day_list)) if trades_per_day_list else 0
+    # Create histogram data for trades per day
+    if trades_per_day_list:
+        trades_per_day_distribution = _create_histogram(trades_per_day_list, bins=10)
+    else:
+        trades_per_day_distribution = []
+    
+    # Trade P&L distribution (estimate from strategy if available)
+    trade_pnl_distribution = []
+    avg_trade_pnl = 0
+    if hasattr(sim.strategy, 'odds') and hasattr(sim.strategy, 'stop_width') and hasattr(sim.strategy, 'tp_width'):
+        win_pnl = sim.strategy.tp_width
+        loss_pnl = -sim.strategy.stop_width
+        # Create a simple distribution
+        num_samples = 1000
+        trade_pnl_samples = []
+        for _ in range(num_samples):
+            if np.random.random() < sim.strategy.odds:
+                trade_pnl_samples.append(win_pnl)
+            else:
+                trade_pnl_samples.append(loss_pnl)
+        trade_pnl_distribution = _create_histogram(trade_pnl_samples, bins=20)
+        avg_trade_pnl = float(np.mean(trade_pnl_samples))
+    
+    # Most probable outcomes (simplified - top 3 scenarios)
+    most_probable_outcomes = []
+    if len(winning_paths) > 0 and len(losing_paths) > 0:
+        # Create simple scenarios
+        winning_pnls = [final_values[i] for i in winning_paths]
+        losing_pnls = [final_values[i] for i in losing_paths]
+        
+        if winning_pnls:
+            avg_win_pnl = float(np.mean(winning_pnls))
+            avg_win_days = avg_days_to_pass
+            most_probable_outcomes.append({
+                'scenario': f'Long pass ({int(avg_win_days)} days), high drawdown, ${int(avg_win_pnl)} net',
+                'probability': pass_probability / 3,  # Simplified
+                'days': int(avg_win_days),
+                'maxDD': float(avg_max_drawdown),
+                'netPnl': avg_win_pnl
+            })
+        
+        if losing_pnls:
+            avg_lose_days = float(np.mean(days_before_fail))
+            most_probable_outcomes.append({
+                'scenario': f'Moderate failure ({int(avg_lose_days)} days), high drawdown',
+                'probability': fail_probability / 2,  # Simplified
+                'days': int(avg_lose_days),
+                'maxDD': float(avg_max_drawdown),
+                'netPnl': float(np.mean(losing_pnls))
+            })
+    
     return {
         'expectedPayout': expected_payout,
         'passProbability': pass_probability,
+        'failProbability': fail_probability,
         'maxDrawdown': avg_max_drawdown,
         'equityCurves': equity_curves,
         'finalValues': final_values,
@@ -246,5 +376,54 @@ def _extract_results(sim: Simulation, num_paths: int) -> Dict[str, Any]:
         'medianFinalValue': median_final_value,
         'winRate': win_rate,
         'totalTrades': total_trades,
+        # Enhanced metrics
+        'netPnlPerAttempt': net_pnl_per_attempt,
+        'expectedAttemptsToPass': expected_attempts_to_pass,
+        'avgDaysToPass': avg_days_to_pass,
+        'avgDaysInFunded': avg_days_in_funded,
+        'totalDaysToPayout': total_days_to_payout,
+        # Cost analysis
+        'initialPurchase': initial_purchase,
+        'monthlyRebill': monthly_rebill,
+        'fundedSetup': funded_setup,
+        'avgTotalCostsIfPass': avg_total_costs_if_pass,
+        'avgGrossPayoutIfPass': avg_gross_payout_if_pass,
+        'avgNetProfitIfPass': avg_net_profit_if_pass,
+        'avgDaysBeforeFail': avg_days_before_fail,
+        'avgCostLostIfFail': avg_cost_lost_if_fail,
+        'failInEvalPercent': fail_in_eval_pct,
+        'failInFundedPercent': fail_in_funded_pct,
+        'expectedCostToPayout': expected_cost_to_payout,
+        'expectedGrossPayout': expected_gross_payout,
+        'expectedROI': expected_roi,
+        # Trade distributions
+        'tradesPerDayDistribution': trades_per_day_distribution,
+        'tradePnlDistribution': trade_pnl_distribution,
+        'avgTradesPerDay': avg_trades_per_day,
+        'avgTradePnl': avg_trade_pnl,
+        # Most probable outcomes
+        'mostProbableOutcomes': most_probable_outcomes,
     }
+
+
+def _create_histogram(data: List[float], bins: int = 10) -> List[int]:
+    """Create a simple histogram from data."""
+    if not data:
+        return []
+    
+    data_array = np.array(data)
+    min_val = float(np.min(data_array))
+    max_val = float(np.max(data_array))
+    
+    if min_val == max_val:
+        return [len(data)]
+    
+    bin_width = (max_val - min_val) / bins
+    histogram = [0] * bins
+    
+    for value in data:
+        bin_idx = min(int((value - min_val) / bin_width), bins - 1)
+        histogram[bin_idx] += 1
+    
+    return histogram
 

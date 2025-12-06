@@ -40,100 +40,91 @@ export default function StrategyPanel({
 		onRunSimulation("bootstrapped", params, trades);
 	};
 
-	return (
-		<section className="h-full min-h-[400px] lg:min-h-0 bg-gray-a2 border border-gray-a4 rounded-lg p-4 sm:p-6 flex flex-col focus-within:outline-none focus-within:ring-2 focus-within:ring-gray-a6 focus-within:ring-offset-2 focus-within:ring-offset-gray-1">
-			<h2 className="text-lg sm:text-xl font-semibold mb-4 text-gray-12">
-				Strategy Setup
-			</h2>
+	const [showAdvanced, setShowAdvanced] = useState(false);
+	const [numPaths, setNumPaths] = useState(Math.min(20000, planConfig.maxPaths));
 
-			{/* Tab Switcher */}
-			<div className="flex border-b border-gray-a4 mb-4">
-				<button
-					type="button"
-					onClick={() => setActiveTab("parametric")}
-					className={`px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-a6 focus:ring-offset-2 focus:ring-offset-gray-a2 ${
-						activeTab === "parametric"
-							? "text-gray-12 border-b-2 border-gray-a6"
-							: "text-gray-10 hover:text-gray-11"
-					}`}
-				>
-					Parametric
-				</button>
-				<button
-					type="button"
-					onClick={() => planConfig.allowCsv && setActiveTab("bootstrapped")}
-					disabled={!planConfig.allowCsv}
-					className={`px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-a6 focus:ring-offset-2 focus:ring-offset-gray-a2 relative ${
-						!planConfig.allowCsv
-							? "text-gray-8 cursor-not-allowed opacity-50"
-							: activeTab === "bootstrapped"
-								? "text-gray-12 border-b-2 border-gray-a6"
-								: "text-gray-10 hover:text-gray-11"
-					}`}
-				>
-					Bootstrapped (CSV)
-					{!planConfig.allowCsv && (
-						<svg
-							className="inline-block w-3 h-3 ml-1 text-gray-9"
-							fill="currentColor"
-							viewBox="0 0 20 20"
-						>
-							<path
-								fillRule="evenodd"
-								d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-								clipRule="evenodd"
-							/>
-						</svg>
-					)}
-				</button>
+	return (
+		<div className="space-y-4">
+			{/* Monte Carlo Runs */}
+			<div>
+				<label className="block text-xs text-purple-300 mb-1">
+					Monte Carlo Runs
+				</label>
+				<div className="flex items-center gap-2">
+					<button
+						type="button"
+						onClick={() => setNumPaths(Math.max(1, numPaths - 1000))}
+						className="px-2 py-1 bg-slate-700/50 border border-purple-800/30 rounded text-purple-200 hover:bg-slate-700 text-sm"
+					>
+						-
+					</button>
+					<input
+						type="number"
+						value={numPaths}
+						onChange={(e) => {
+							const val = parseInt(e.target.value) || 0;
+							setNumPaths(Math.min(Math.max(1, val), planConfig.maxPaths));
+						}}
+						className="flex-1 px-3 py-2 bg-slate-700/50 border border-purple-800/30 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+					/>
+					<button
+						type="button"
+						onClick={() => setNumPaths(Math.min(numPaths + 1000, planConfig.maxPaths))}
+						className="px-2 py-1 bg-slate-700/50 border border-purple-800/30 rounded text-purple-200 hover:bg-slate-700 text-sm"
+					>
+						+
+					</button>
+				</div>
 			</div>
 
-			{/* CSV Upgrade Message */}
-			{!planConfig.allowCsv && activeTab === "bootstrapped" && (
-				<div className="mb-4 p-4 bg-gray-a3 border border-gray-a5 rounded-lg">
-					<div className="flex items-start gap-3">
-						<svg
-							className="w-5 h-5 text-gray-10 flex-shrink-0 mt-0.5"
-							fill="currentColor"
-							viewBox="0 0 20 20"
-						>
-							<path
-								fillRule="evenodd"
-								d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-								clipRule="evenodd"
+			{/* Advanced (Expandable) */}
+			<div>
+				<button
+					type="button"
+					onClick={() => setShowAdvanced(!showAdvanced)}
+					className="flex items-center gap-2 text-xs font-medium text-purple-300 hover:text-purple-200 transition-colors"
+				>
+					<span>{showAdvanced ? "▼" : "▶"}</span>
+					<span>Advanced</span>
+				</button>
+				{showAdvanced && (
+					<div className="mt-2 space-y-3">
+						{activeTab === "parametric" ? (
+							<ParametricForm
+								onSubmit={handleParametricSubmit}
+								planConfig={planConfig}
 							/>
-						</svg>
-						<div className="flex-1">
-							<p className="text-sm text-gray-11 font-medium mb-1">
-								Upgrade to access CSV mode
-							</p>
-							<p className="text-xs text-gray-9">
-								Your current plan ({planConfig.label}) doesn't include CSV
-								import functionality. Upgrade on Whop to unlock this feature.
-							</p>
-						</div>
+						) : (
+							<BootstrappedForm
+								onSubmit={handleBootstrappedSubmit}
+								planConfig={planConfig}
+							/>
+						)}
 					</div>
-				</div>
-			)}
-
-			{/* Form Content */}
-			<div className="flex-1 overflow-y-auto">
-				{activeTab === "parametric" ? (
-					<ParametricForm
-						onSubmit={handleParametricSubmit}
-						planConfig={planConfig}
-					/>
-				) : (
-					<BootstrappedForm
-						onSubmit={handleBootstrappedSubmit}
-						planConfig={planConfig}
-					/>
 				)}
 			</div>
 
-			{/* Developer Debug Panel */}
-			<PyodideDebugPanel />
-		</section>
+			{/* Run Simulation Button */}
+			<button
+				type="button"
+				onClick={() => {
+					if (activeTab === "parametric") {
+						handleParametricSubmit({
+							stopSize: 100,
+							takeProfitSize: 200,
+							winRate: 50,
+							averageMFE: 150,
+							tradesPerDay: 5,
+							numPaths,
+							numDays: Math.min(100, planConfig.maxDays),
+						});
+					}
+				}}
+				className="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 rounded-md text-white font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+			>
+				Run Simulation
+			</button>
+		</div>
 	);
 }
 
