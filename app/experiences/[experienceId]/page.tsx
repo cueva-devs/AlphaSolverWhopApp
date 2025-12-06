@@ -23,7 +23,11 @@ export default async function ExperiencePage({
 
 	// Check if user has access
 	// checkAccess returns an object with hasAccess boolean property
-	const hasAccess = (access as { hasAccess?: boolean }).hasAccess ?? false;
+	const hasAccess =
+		process.env.NEXT_PUBLIC_BYPASS_ACCESS === "true" &&
+		process.env.VERCEL_ENV !== "production"
+			? true // allow preview builds and local testing when explicitly enabled
+			: (access as { hasAccess?: boolean }).hasAccess ?? false;
 
 	// If user doesn't have access, show upgrade message
 	if (!hasAccess) {
