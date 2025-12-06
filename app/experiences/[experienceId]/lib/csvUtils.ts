@@ -18,80 +18,117 @@ export async function parseTradeCsv(
 		throw new Error("CSV file is empty");
 	}
 
-	// Parse header row
+	// Parse header row - keep original case for exact matching
 	const headerLine = lines[0];
-	const headers = parseCsvLine(headerLine).map((h) => h.trim().toLowerCase());
+	const headers = parseCsvLine(headerLine).map((h) => h.trim());
+	const headersLower = headers.map((h) => h.toLowerCase());
 
 	// Determine column indices based on template
 	let pnlIdx: number;
 	let dateIdx: number;
-	let mfeIdx: number;
+	let mfeIdx: number = -1; // MFE is optional
 
 	if (options.template === "NinjaTrader") {
-		pnlIdx = findColumnIndex(headers, ["pnl", "profit", "profit/loss"]);
-		dateIdx = findColumnIndex(headers, ["date", "time", "datetime"]);
-		mfeIdx = findColumnIndex(headers, ["mfe", "max favorable excursion"]);
+		// NinjaTrader uses exact column names: "Entry time", "Profit", "MFE"
+		pnlIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
+			"profit",
+		]);
+		dateIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
+			"entry time",
+		]);
+		mfeIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
+			"mfe",
+		]);
 	} else if (options.template === "Generic") {
-		pnlIdx = findColumnIndex(headers, ["pnl", "profit", "profit/loss", "net"]);
-		dateIdx = findColumnIndex(headers, ["date", "time", "datetime", "timestamp"]);
-		mfeIdx = findColumnIndex(headers, [
+		pnlIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
+			"pnl",
+			"profit",
+			"profit/loss",
+			"net",
+		]);
+		dateIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
+			"date",
+			"time",
+			"datetime",
+			"timestamp",
+		]);
+		mfeIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
 			"mfe",
 			"max favorable excursion",
 			"max profit",
 		]);
 	} else {
 		// Custom template - use provided column names
-		if (!options.pnlColumn || !options.dateColumn || !options.mfeColumn) {
+		if (!options.pnlColumn || !options.dateColumn) {
 			throw new Error(
-				"Custom template requires pnlColumn, dateColumn, and mfeColumn to be specified",
+				"Custom template requires pnlColumn and dateColumn to be specified",
 			);
 		}
-		pnlIdx = findColumnIndex(headers, [options.pnlColumn.toLowerCase()]);
-		dateIdx = findColumnIndex(headers, [options.dateColumn.toLowerCase()]);
-		mfeIdx = findColumnIndex(headers, [options.mfeColumn.toLowerCase()]);
+		pnlIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
+			options.pnlColumn,
+		]);
+		dateIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
+			options.dateColumn,
+		]);
+		if (options.mfeColumn) {
+			mfeIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
+				options.mfeColumn,
+			]);
+		}
 	}
 
 	// Validate required columns exist
 	if (pnlIdx === -1) {
 		throw new Error(
-			`PNL column not found. Expected: ${options.pnlColumn || "pnl/profit"}`,
+			`PNL column not found. Expected: ${options.pnlColumn || (options.template === "NinjaTrader" ? "Profit" : "pnl/profit")}`,
 		);
 	}
 	if (dateIdx === -1) {
 		throw new Error(
-			`Date column not found. Expected: ${options.dateColumn || "date/time"}`,
+			`Date column not found. Expected: ${options.dateColumn || (options.template === "NinjaTrader" ? "Entry time" : "date/time")}`,
 		);
 	}
-	if (mfeIdx === -1) {
-		throw new Error(
-			`MFE column not found. Expected: ${options.mfeColumn || "mfe"}`,
-		);
-	}
+	// MFE is optional - don't throw error if not found
 
 	// Parse data rows
 	const trades: ParsedTrade[] = [];
 	for (let i = 1; i < lines.length; i++) {
 		const values = parseCsvLine(lines[i]);
 
-		if (values.length <= Math.max(pnlIdx, dateIdx, mfeIdx)) {
+		// Check if we have enough columns
+		const maxRequiredIdx = Math.max(
+			pnlIdx,
+			dateIdx,
+			mfeIdx >= 0 ? mfeIdx : -1,
+		);
+		if (values.length <= maxRequiredIdx) {
 			continue; // Skip incomplete rows
 		}
 
 		const dateStr = values[dateIdx]?.trim() || "";
 		const pnlStr = values[pnlIdx]?.trim() || "";
-		const mfeStr = values[mfeIdx]?.trim() || "";
+		const mfeStr = mfeIdx >= 0 ? values[mfeIdx]?.trim() || "" : "";
 
-		if (!dateStr || !pnlStr || !mfeStr) {
-			continue; // Skip rows with missing values
+		// Date and PNL are required
+		if (!dateStr || !pnlStr) {
+			continue; // Skip rows with missing required values
 		}
 
-		const pnl = parseFloat(pnlStr);
-		const mfe = parseFloat(mfeStr);
-
-		if (isNaN(pnl) || isNaN(mfe)) {
+		// Parse PNL (handle currency formatting)
+		const pnl = parseCurrencyValue(pnlStr);
+		if (isNaN(pnl)) {
 			throw new Error(
-				`Invalid numeric value in row ${i + 1}: PNL="${pnlStr}", MFE="${mfeStr}"`,
+				`Invalid PNL value in row ${i + 1}: "${pnlStr}"`,
 			);
+		}
+
+		// Parse MFE (optional, default to 0 if not present)
+		let mfe = 0;
+		if (mfeStr) {
+			mfe = parseCurrencyValue(mfeStr);
+			if (isNaN(mfe)) {
+				mfe = 0; // Default to 0 if MFE can't be parsed
+			}
 		}
 
 		trades.push({
@@ -135,16 +172,53 @@ function parseCsvLine(line: string): string[] {
 	return values;
 }
 
-function findColumnIndex(
+function findColumnIndexCaseInsensitive(
 	headers: string[],
+	headersLower: string[],
 	possibleNames: string[],
 ): number {
 	for (const name of possibleNames) {
-		const idx = headers.indexOf(name.toLowerCase());
+		const nameLower = name.toLowerCase();
+		const idx = headersLower.indexOf(nameLower);
 		if (idx !== -1) {
 			return idx;
 		}
 	}
 	return -1;
+}
+
+/**
+ * Parse a currency string like '$252.60' or '($222.40)' into a float.
+ * Handles:
+ * - Dollar signs: $100.00 -> 100.00
+ * - Parentheses for negative: ($100.00) -> -100.00
+ * - Commas: $1,000.00 -> 1000.00
+ */
+function parseCurrencyValue(value: string): number {
+	if (!value || value.trim() === "") {
+		return 0.0;
+	}
+
+	const s = value.trim();
+
+	// Check if negative (parentheses)
+	const isNegative = s.startsWith("(") && s.endsWith(")");
+
+	// Remove currency symbols, parentheses, commas
+	const cleaned = s
+		.replace(/\$/g, "")
+		.replace(/\(/g, "")
+		.replace(/\)/g, "")
+		.replace(/,/g, "");
+
+	try {
+		const result = parseFloat(cleaned);
+		if (isNaN(result)) {
+			return 0.0;
+		}
+		return isNegative ? -result : result;
+	} catch {
+		return 0.0;
+	}
 }
 
