@@ -2,6 +2,8 @@ import { Button } from "@whop/react/components";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { whopsdk } from "@/lib/whop-sdk";
+import AlphaSolverApp from "./AlphaSolverApp";
+import { determinePlanId, getPlanConfig, type PlanId } from "./config/planConfig";
 
 export default async function ExperiencePage({
 	params,
@@ -12,49 +14,58 @@ export default async function ExperiencePage({
 	// Ensure the user is logged in on whop.
 	const { userId } = await whopsdk.verifyUserToken(await headers());
 
-	// Fetch the neccessary data we want from whop.
+	// Fetch the necessary data we want from whop.
 	const [experience, user, access] = await Promise.all([
 		whopsdk.experiences.retrieve(experienceId),
 		whopsdk.users.retrieve(userId),
 		whopsdk.users.checkAccess(experienceId, { id: userId }),
 	]);
 
-	const displayName = user.name || `@${user.username}`;
+	// Check if user has access
+	// checkAccess returns an object with hasAccess boolean property
+	const hasAccess = (access as { hasAccess?: boolean }).hasAccess ?? false;
 
-	return (
-		<div className="flex flex-col p-8 gap-4">
-			<div className="flex justify-between items-center gap-4">
-				<h1 className="text-9">
-					Hi <strong>{displayName}</strong>!
-				</h1>
-				<Link href="https://docs.whop.com/apps" target="_blank">
-					<Button variant="classic" className="w-full" size="3">
-						Developer Docs
-					</Button>
-				</Link>
+	// If user doesn't have access, show upgrade message
+	if (!hasAccess) {
+		// Construct checkout URL - use company URL or experience URL
+		const checkoutUrl =
+			experience.company?.url ||
+			`https://whop.com/${experience.company?.username || ""}`;
+
+		return (
+			<div className="min-h-screen bg-gray-1 flex items-center justify-center p-6">
+				<div className="max-w-md w-full bg-gray-a2 border border-gray-a4 rounded-lg p-8 text-center">
+					<h1 className="text-6 font-bold text-gray-12 mb-4">
+						Upgrade Required
+					</h1>
+					<p className="text-3 text-gray-10 mb-6">
+						You need access to this product to use AlphaSolver. Please upgrade
+						to continue.
+					</p>
+					<Link href={checkoutUrl} className="block">
+						<Button variant="classic" className="w-full" size="4">
+							Upgrade Now
+						</Button>
+					</Link>
+				</div>
 			</div>
+		);
+	}
 
-			<p className="text-3 text-gray-10">
-				Welcome to you whop app! Replace this template with your own app. To
-				get you started, here's some helpful data you can fetch from whop.
-			</p>
-
-			<h3 className="text-6 font-bold">Experience data</h3>
-			<JsonViewer data={experience} />
-
-			<h3 className="text-6 font-bold">User data</h3>
-			<JsonViewer data={user} />
-
-			<h3 className="text-6 font-bold">Access data</h3>
-			<JsonViewer data={access} />
-		</div>
+	// Determine user's plan based on product/experience
+	const planId: PlanId = determinePlanId(
+		experience.product?.id,
+		experience.product?.name,
 	);
-}
+	const planConfig = getPlanConfig(planId);
 
-function JsonViewer({ data }: { data: any }) {
+	// User has access - render AlphaSolverApp
 	return (
-		<pre className="text-2 border border-gray-a4 rounded-lg p-4 bg-gray-a2 max-h-72 overflow-y-auto">
-			<code className="text-gray-10">{JSON.stringify(data, null, 2)}</code>
-		</pre>
+		<AlphaSolverApp
+			experienceId={experienceId}
+			companyId={experience.company?.id}
+			planId={planId}
+			planConfig={planConfig}
+		/>
 	);
 }

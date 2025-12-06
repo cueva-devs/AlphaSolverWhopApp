@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-	title: "Whop App",
-	description: "My Whop App",
+	title: "AlphaSolver",
+	description: "AlphaSolver - Prop Evaluation Simulator",
 };
 
 export default function RootLayout({

@@ -1,6 +1,6 @@
 This is a template for a whop app built in NextJS. Fork it and keep the parts you need for your app.
 
-# Whop NextJS App Template
+# AlphaSolver
 
 To run this project:
 
