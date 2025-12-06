@@ -57,7 +57,7 @@ export default async function ExperiencePage({
 	const firstProduct = experience.products?.[0];
 	const planId: PlanId = determinePlanId(
 		firstProduct?.id,
-		firstProduct?.name,
+		firstProduct?.title,
 	);
 	const planConfig = getPlanConfig(planId);
 

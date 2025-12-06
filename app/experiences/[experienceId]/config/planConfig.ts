@@ -46,7 +46,7 @@ export function getPlanConfig(planId: PlanId | string): PlanConfig {
  */
 export function determinePlanId(
 	productId?: string,
-	productName?: string,
+	productTitle?: string,
 ): PlanId {
 	// Check for explicit plan ID in env var
 	const envPlanId = process.env.NEXT_PUBLIC_RECOMMENDED_PLAN_ID as
@@ -59,8 +59,8 @@ export function determinePlanId(
 	// Map product ID or name to plan (can be extended)
 	// For now, default to starter if no mapping found
 	// In production, you might want to map specific product IDs to plans
-	if (productId || productName) {
-		const lowerName = (productName || "").toLowerCase();
+	if (productId || productTitle) {
+		const lowerName = (productTitle || "").toLowerCase();
 		if (lowerName.includes("elite")) {
 			return "elite";
 		}
@@ -75,4 +75,3 @@ export function determinePlanId(
 	// Default to starter plan
 	return "starter";
 }
-
