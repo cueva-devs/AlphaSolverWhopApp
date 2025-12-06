@@ -123,7 +123,16 @@ export async function loadPyodide(): Promise<PyodideInterface> {
 			// json is part of the Python stdlib, so only load external packages
 			await pyodide.loadPackage(["numpy", "pandas"]);
 
-			// Load Python files from /public/py/
+			// Create a directory for our Python modules and add it to sys.path
+			pyodide.runPython(`
+import sys
+import os
+os.makedirs('/py_modules', exist_ok=True)
+if '/py_modules' not in sys.path:
+    sys.path.insert(0, '/py_modules')
+`);
+
+			// Load Python files from /public/py/ and write them to filesystem
 			for (const filename of PYTHON_FILES) {
 				try {
 					const response = await fetch(`/py/${filename}`);
@@ -133,13 +142,40 @@ export async function loadPyodide(): Promise<PyodideInterface> {
 						);
 					}
 					const pythonCode = await response.text();
-					await pyodide.runPythonAsync(pythonCode);
+					// Write file to Pyodide filesystem
+					pyodide.FS.writeFile(`/py_modules/${filename}`, pythonCode);
 				} catch (error) {
 					if (error instanceof SimulationError) {
 						throw error;
 					}
 					throw new SimulationError(
 						`Error loading Python file ${filename}: ${error instanceof Error ? error.message : String(error)}`,
+					);
+				}
+			}
+
+			// Import modules in the correct order using importlib
+			// This ensures dependencies are available when imported
+			const moduleNames = PYTHON_FILES.map((f) => f.replace(".py", ""));
+			for (const moduleName of moduleNames) {
+				try {
+					const importCode = `
+import importlib.util
+import sys
+
+module_name = ${JSON.stringify(moduleName)}
+file_path = "/py_modules/" + module_name + ".py"
+
+spec = importlib.util.spec_from_file_location(module_name, file_path)
+if spec and spec.loader:
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+`;
+					await pyodide.runPythonAsync(importCode);
+				} catch (error) {
+					throw new SimulationError(
+						`Error importing Python module ${moduleName}: ${error instanceof Error ? error.message : String(error)}`,
 					);
 				}
 			}
