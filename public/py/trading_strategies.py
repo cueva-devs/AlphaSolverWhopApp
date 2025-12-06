@@ -188,7 +188,11 @@ class BootstrappedTradingStrategy:
     
     def sample_trades_for_day(self) -> int:
         """Randomly sample the number of trades to take on a simulated day."""
-        return int(np.random.choice(self.trades_per_day_distribution))
+        result = np.random.choice(self.trades_per_day_distribution)
+        # Convert numpy scalar to native Python int
+        if hasattr(result, 'item'):
+            return int(result.item())
+        return int(result)
     
     def simulate_return(self, per_side_cost=0, entry_slippage=0, stop_slippage=0) -> float:
         """

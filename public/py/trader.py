@@ -29,6 +29,12 @@ class Trader:
             num_trades = self.strategy.sample_trades_for_day()
         else:
             num_trades = self.strategy.trades_per_day
+        
+        # Ensure num_trades is a native Python int (not numpy scalar)
+        if hasattr(num_trades, 'item'):
+            num_trades = int(num_trades.item())
+        else:
+            num_trades = int(num_trades)
             
         for i in range(num_trades):
             trade_return = self.strategy.simulate_return(self.per_side_cost, self.entry_slippage, self.stop_slippage)
