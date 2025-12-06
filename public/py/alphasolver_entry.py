@@ -174,6 +174,28 @@ def _create_bootstrapped_strategy(params: Dict[str, Any], trades_data: List[Dict
     )
 
 
+def _convert_to_json_serializable(obj):
+    """Convert numpy types and other non-JSON-serializable types to native Python types."""
+    import numpy as np
+    
+    if isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        if np.isinf(obj):
+            return None  # Convert infinity to None
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return [_convert_to_json_serializable(item) for item in obj.tolist()]
+    elif isinstance(obj, (list, tuple)):
+        return [_convert_to_json_serializable(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {key: _convert_to_json_serializable(value) for key, value in obj.items()}
+    elif isinstance(obj, float) and (obj == float('inf') or obj == float('-inf')):
+        return None  # Convert infinity to None
+    else:
+        return obj
+
+
 def _extract_results(sim: Simulation, num_paths: int) -> Dict[str, Any]:
     """Extract results from simulation into the expected format."""
     # Collect equity curves and final values
@@ -197,13 +219,15 @@ def _extract_results(sim: Simulation, num_paths: int) -> Dict[str, Any]:
         
         # Get equity curve (running balance)
         if trader.running_balance:
-            equity_curves.append(trader.running_balance.copy())
+            # Convert to list and ensure all values are native Python types
+            equity_curve = [float(x) for x in trader.running_balance]
+            equity_curves.append(equity_curve)
         else:
             # If no running balance, create from account balance history
-            equity_curves.append([trader.account.balance])
+            equity_curves.append([float(trader.account.balance)])
         
-        # Calculate final value (PnL)
-        final_values.append(trader.PnL)
+        # Calculate final value (PnL) - ensure it's a native Python float
+        final_values.append(float(trader.PnL))
         
         # Calculate max drawdown for this path
         if len(trader.running_balance) > 1:
@@ -271,7 +295,7 @@ def _extract_results(sim: Simulation, num_paths: int) -> Dict[str, Any]:
     
     # Enhanced metrics
     net_pnl_per_attempt = avg_final_value
-    expected_attempts_to_pass = 1.0 / (pass_probability / 100.0) if pass_probability > 0 else float('inf')
+    expected_attempts_to_pass = 1.0 / (pass_probability / 100.0) if pass_probability > 0 else None
     
     # Timeline metrics
     avg_days_to_pass = float(np.mean(days_to_pass)) if days_to_pass else 0
@@ -365,7 +389,7 @@ def _extract_results(sim: Simulation, num_paths: int) -> Dict[str, Any]:
                 'netPnl': float(np.mean(losing_pnls))
             })
     
-    return {
+    result = {
         'expectedPayout': expected_payout,
         'passProbability': pass_probability,
         'failProbability': fail_probability,
@@ -404,6 +428,9 @@ def _extract_results(sim: Simulation, num_paths: int) -> Dict[str, Any]:
         # Most probable outcomes
         'mostProbableOutcomes': most_probable_outcomes,
     }
+    
+    # Convert all numpy types to native Python types for JSON serialization
+    return _convert_to_json_serializable(result)
 
 
 def _create_histogram(data: List[float], bins: int = 10) -> List[int]:

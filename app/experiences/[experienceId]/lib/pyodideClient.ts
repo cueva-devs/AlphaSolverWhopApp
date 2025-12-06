@@ -233,10 +233,13 @@ mode = ${JSON.stringify(mode)}
 
 try:
     result = run_simulation(mode, params_json, trades_json)
-    result_json = json.dumps(result)
+    # Ensure result is JSON-serializable and convert to JSON string
+    result_json = json.dumps(result, allow_nan=False)
     result_json
 except Exception as e:
-    raise Exception(f"Python simulation error: {str(e)}")
+    import traceback
+    error_trace = traceback.format_exc()
+    raise Exception(f"Python simulation error: {str(e)}\\nTraceback:\\n{error_trace}")
 `;
 
 		const resultJson = await pyodide.runPythonAsync(pythonCode);
@@ -244,17 +247,25 @@ except Exception as e:
 		// Parse the result
 		let result: SimulationResult;
 		try {
-			result = JSON.parse(resultJson);
-		} catch (parseError) {
 			// If resultJson is already an object (Pyodide might return it as such)
 			if (typeof resultJson === "object" && resultJson !== null) {
 				result = pyodide.toJs(resultJson) as SimulationResult;
+			} else if (typeof resultJson === "string") {
+				result = JSON.parse(resultJson);
 			} else {
 				throw new SimulationError(
-					"Failed to parse simulation results. The simulation may have returned invalid data.",
-					parseError,
+					`Failed to parse simulation results. Unexpected type: ${typeof resultJson}. Value: ${String(resultJson).substring(0, 200)}`,
 				);
 			}
+		} catch (parseError) {
+			const errorMsg =
+				parseError instanceof Error
+					? parseError.message
+					: String(parseError);
+			throw new SimulationError(
+				`Failed to parse simulation results: ${errorMsg}. Raw result type: ${typeof resultJson}, value: ${String(resultJson).substring(0, 500)}`,
+				parseError,
+			);
 		}
 
 		// Validate result structure
