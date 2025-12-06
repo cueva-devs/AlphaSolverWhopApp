@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { whopsdk } from "@/lib/whop-sdk";
 import AlphaSolverApp from "./AlphaSolverApp";
-import { determinePlanId, getPlanConfig, type PlanId } from "./config/planConfig";
+import { determinePlanId, getEffectivePlanConfig, type PlanId } from "./config/planConfig";
 
 export default async function ExperiencePage({
 	params,
@@ -63,7 +63,7 @@ export default async function ExperiencePage({
 			firstProduct?.id,
 			firstProduct?.title,
 		);
-		const planConfig = getPlanConfig(planId);
+		const planConfig = getEffectivePlanConfig(planId);
 
 		// User has access - render AlphaSolverApp
 		return (

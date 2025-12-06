@@ -28,6 +28,26 @@ export const PLAN_CONFIGS: Record<PlanId, PlanConfig> = {
 	},
 };
 
+// Development/testing mode: allows unlimited paths and days for testing
+// Set NEXT_PUBLIC_DEV_MODE=true to enable
+export const DEV_MODE = process.env.NEXT_PUBLIC_DEV_MODE === "true";
+
+export function getEffectivePlanConfig(planId: PlanId | string): PlanConfig {
+	const config = getPlanConfig(planId);
+	
+	// In dev mode, allow unlimited testing
+	if (DEV_MODE) {
+		return {
+			...config,
+			maxPaths: 100000,
+			maxDays: 1000,
+			allowCsv: true,
+		};
+	}
+	
+	return config;
+}
+
 /**
  * Gets a plan configuration by plan ID.
  * Returns starter plan as fallback if plan ID is invalid.

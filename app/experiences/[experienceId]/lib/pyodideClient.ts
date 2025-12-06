@@ -223,6 +223,7 @@ export async function runSimulation(
 		const tradesJson = trades ? JSON.stringify(trades) : "null";
 
 		// Call the Python entry function
+		// Use a Python function that explicitly returns the result
 		const pythonCode = `
 import json
 from alphasolver_entry import run_simulation
@@ -231,18 +232,41 @@ params_json = ${JSON.stringify(paramsJson)}
 trades_json = ${JSON.stringify(tradesJson)}
 mode = ${JSON.stringify(mode)}
 
-try:
-    result = run_simulation(mode, params_json, trades_json)
-    # Ensure result is JSON-serializable and convert to JSON string
-    result_json = json.dumps(result, allow_nan=False)
-    result_json
-except Exception as e:
-    import traceback
-    error_trace = traceback.format_exc()
-    raise Exception(f"Python simulation error: {str(e)}\\nTraceback:\\n{error_trace}")
+def execute_simulation():
+    try:
+        result = run_simulation(mode, params_json, trades_json)
+        # Ensure result is JSON-serializable and convert to JSON string
+        result_json = json.dumps(result, allow_nan=False)
+        return result_json
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        raise Exception(f"Python simulation error: {str(e)}\\nTraceback:\\n{error_trace}")
+
+execute_simulation()
 `;
 
-		const resultJson = await pyodide.runPythonAsync(pythonCode);
+		let resultJson: any;
+		try {
+			resultJson = await pyodide.runPythonAsync(pythonCode);
+		} catch (pyError) {
+			// If Python code raises an exception, it will be caught here
+			const errorMsg =
+				pyError instanceof Error
+					? pyError.message
+					: String(pyError);
+			throw new SimulationError(
+				`Python execution error: ${errorMsg}`,
+				pyError,
+			);
+		}
+
+		// Check if result is undefined or null
+		if (resultJson === undefined || resultJson === null) {
+			throw new SimulationError(
+				"Python simulation returned undefined or null. The simulation may have failed silently. Check browser console for Python errors.",
+			);
+		}
 
 		// Parse the result
 		let result: SimulationResult;
