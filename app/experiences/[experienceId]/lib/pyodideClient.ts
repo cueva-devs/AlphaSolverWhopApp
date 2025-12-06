@@ -17,6 +17,7 @@ declare global {
 }
 
 interface PyodideInterface {
+	runPython: (code: string) => any;
 	runPythonAsync: (code: string) => Promise<any>;
 	loadPackage: (packages: string[]) => Promise<void>;
 	FS: {
