@@ -24,10 +24,10 @@ export default async function ExperiencePage({
 
 	// Check if user has access
 	// checkAccess returns an object with hasAccess boolean property
-	const host = reqHeaders.get("host") || "";
+	const env = process.env.VERCEL_ENV || process.env.NODE_ENV;
+	const isNonProd = env !== "production";
 	const bypassAccess =
-		process.env.NEXT_PUBLIC_BYPASS_ACCESS === "true" &&
-		(host.includes("localhost") || host.endsWith(".vercel.app"));
+		process.env.NEXT_PUBLIC_BYPASS_ACCESS === "true" && isNonProd;
 	const hasAccess = bypassAccess
 		? true // allow preview/vercel/localhost when explicitly enabled via env var
 		: (access as { hasAccess?: boolean }).hasAccess ?? false;
