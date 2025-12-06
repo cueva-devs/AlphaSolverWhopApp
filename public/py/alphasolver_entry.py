@@ -3,6 +3,14 @@ AlphaSolver Entry Point for Pyodide
 
 This module provides the main entry function run_simulation() that is called
 from the TypeScript/Pyodide client.
+
+Full feature parity with PropAlphaEvalSolver including:
+- Multiple simulation modes (full, eval_only, funded_only)
+- Monte Carlo trading plan generation
+- Cost breakdown analysis
+- Outcome scenario clustering (DBSCAN)
+- Kelly criterion calculations
+- Statistical edge analysis
 """
 
 import json
@@ -55,7 +63,11 @@ def run_simulation(mode: str, params_json: str, trades_json: Optional[str] = Non
     Main entry point for running Monte Carlo simulations.
     
     Args:
-        mode: "parametric" or "bootstrapped"
+        mode: Simulation mode - one of:
+            - "parametric": Use parametric strategy with win rate, stop, TP
+            - "bootstrapped": Use historical trade data
+            - "eval_only": Simulate only the evaluation phase
+            - "funded_only": Simulate only the funded phase (skip eval)
         params_json: JSON string with simulation parameters
         trades_json: Optional JSON string with trade records (for bootstrapped mode)
     
@@ -70,31 +82,39 @@ def run_simulation(mode: str, params_json: str, trades_json: Optional[str] = Non
         - medianFinalValue: float (optional)
         - winRate: float (optional)
         - totalTrades: int (optional)
+        - tradingPlan: dict (optional) - Monte Carlo derived trading plan
+        - costBreakdown: dict (optional) - Detailed cost analysis
+        - outcomeScenarios: dict (optional) - DBSCAN clustered scenarios
     """
     try:
         # Parse input parameters
         params = json.loads(params_json)
         
-        # Get account rules and fees (using defaults for now)
-        acct_rules = get_default_account_rules()
-        acct_fees = get_default_account_fees()
+        # Get account rules and fees - allow override from params
+        acct_rules = params.get('accountRules', get_default_account_rules())
+        acct_fees = params.get('accountFees', get_default_account_fees())
         
         # Extract common parameters
         num_paths = params.get('numPaths', 1000)
         num_days = params.get('numDays', 30)
         
-        # Create strategy based on mode
-        if mode == "parametric":
+        # Determine strategy type (parametric vs bootstrapped)
+        strategy_mode = params.get('strategyMode', 'parametric')
+        if trades_json and trades_json != "null":
+            strategy_mode = 'bootstrapped'
+        
+        # Create strategy
+        if strategy_mode == "parametric":
             strategy = _create_parametric_strategy(params)
-        elif mode == "bootstrapped":
+        elif strategy_mode == "bootstrapped":
             if not trades_json or trades_json == "null":
                 raise ValueError("Bootstrapped mode requires trades_json")
             trades_data = json.loads(trades_json)
             strategy = _create_bootstrapped_strategy(params, trades_data)
         else:
-            raise ValueError(f"Unknown simulation mode: {mode}")
+            raise ValueError(f"Unknown strategy mode: {strategy_mode}")
         
-        # Create and run simulation
+        # Create simulation
         sim = Simulation(
             trading_strat=strategy,
             num_traders=num_paths,
@@ -102,16 +122,26 @@ def run_simulation(mode: str, params_json: str, trades_json: Optional[str] = Non
             acct_fees=acct_fees
         )
         
-        # Run the Monte Carlo simulation
-        sim.run()
+        # Run the appropriate simulation mode
+        sim_mode = mode.lower() if mode else "full"
+        if sim_mode in ("parametric", "bootstrapped", "full"):
+            sim.run()
+        elif sim_mode == "eval_only":
+            sim.run_eval_only()
+        elif sim_mode == "funded_only":
+            sim.run_funded_only()
+        else:
+            # Default to full simulation
+            sim.run()
         
-        # Extract results
-        return _extract_results(sim, num_paths)
+        # Extract results with enhanced data
+        return _extract_results_enhanced(sim, num_paths, params)
         
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid JSON in parameters: {str(e)}")
     except Exception as e:
-        raise RuntimeError(f"Simulation error: {str(e)}")
+        import traceback
+        raise RuntimeError(f"Simulation error: {str(e)}\n{traceback.format_exc()}")
 
 
 def _create_parametric_strategy(params: Dict[str, Any]) -> TradingStrategy:
@@ -456,4 +486,162 @@ def _create_histogram(data: List[float], bins: int = 10) -> List[int]:
         histogram[bin_idx] += 1
     
     return histogram
+
+
+def _extract_results_enhanced(sim: Simulation, num_paths: int, params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Extract enhanced results from simulation using full PropAlphaEvalSolver features.
+    
+    This includes:
+    - Basic simulation results
+    - Monte Carlo trading plan
+    - Cost breakdown analysis
+    - Outcome scenario clustering
+    """
+    # Get basic results first
+    basic_results = _extract_results(sim, num_paths)
+    
+    # Add enhanced features from the full simulation
+    enhanced = {}
+    
+    # 1. Monte Carlo Trading Plan
+    try:
+        trading_plan = sim.get_monte_carlo_trading_plan()
+        enhanced['tradingPlan'] = _convert_to_json_serializable(trading_plan)
+    except Exception as e:
+        enhanced['tradingPlan'] = None
+        enhanced['tradingPlanError'] = str(e)
+    
+    # 2. Cost Breakdown
+    try:
+        cost_breakdown = sim.get_cost_breakdown()
+        enhanced['costBreakdown'] = _convert_to_json_serializable(cost_breakdown)
+    except Exception as e:
+        enhanced['costBreakdown'] = None
+        enhanced['costBreakdownError'] = str(e)
+    
+    # 3. Outcome Scenarios (DBSCAN clustering)
+    try:
+        # Only run if we have enough paths for meaningful clustering
+        if num_paths >= 50:
+            outcome_scenarios = sim.get_outcome_scenarios()
+            enhanced['outcomeScenarios'] = _convert_to_json_serializable(outcome_scenarios)
+        else:
+            enhanced['outcomeScenarios'] = None
+    except Exception as e:
+        enhanced['outcomeScenarios'] = None
+        enhanced['outcomeScenariosError'] = str(e)
+    
+    # 4. Enhanced simulation results
+    try:
+        enhanced_results = sim.get_enhanced_results()
+        enhanced['enhancedResults'] = _convert_to_json_serializable(enhanced_results)
+    except Exception as e:
+        enhanced['enhancedResults'] = None
+    
+    # 5. Simulation summary results (formatted strings)
+    try:
+        sim_results = sim.sim_results()
+        enhanced['simResultsFormatted'] = sim_results
+    except Exception as e:
+        enhanced['simResultsFormatted'] = None
+    
+    # 6. Confidence intervals
+    enhanced['passRateCILower'] = float(sim.pass_rate_ci_lower) if hasattr(sim, 'pass_rate_ci_lower') else None
+    enhanced['passRateCIUpper'] = float(sim.pass_rate_ci_upper) if hasattr(sim, 'pass_rate_ci_upper') else None
+    
+    # 7. Strategy statistics (for bootstrapped)
+    if hasattr(sim.strategy, 'get_statistics'):
+        try:
+            strategy_stats = sim.strategy.get_statistics()
+            enhanced['strategyStats'] = _convert_to_json_serializable(strategy_stats)
+        except Exception:
+            enhanced['strategyStats'] = None
+    
+    # 8. Kelly criterion from strategy
+    if hasattr(sim.strategy, 'calculate_kelly_criterion'):
+        try:
+            kelly = sim.strategy.calculate_kelly_criterion()
+            enhanced['kellyFromStrategy'] = _convert_to_json_serializable(kelly)
+        except Exception:
+            enhanced['kellyFromStrategy'] = None
+    
+    # 9. Edge confidence from strategy
+    if hasattr(sim.strategy, 'calculate_edge_confidence'):
+        try:
+            edge_confidence = sim.strategy.calculate_edge_confidence()
+            enhanced['edgeConfidence'] = _convert_to_json_serializable(edge_confidence)
+        except Exception:
+            enhanced['edgeConfidence'] = None
+    
+    # Merge basic and enhanced results
+    result = {**basic_results, **enhanced}
+    
+    return _convert_to_json_serializable(result)
+
+
+# ============================================================================
+# Additional Entry Points for Advanced Features
+# ============================================================================
+
+def get_trading_plan(params_json: str, trades_json: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Generate a Monte Carlo trading plan without running full simulation.
+    Useful for quick plan generation from existing simulation data.
+    """
+    # Run a quick simulation and extract trading plan
+    result = run_simulation("full", params_json, trades_json)
+    return {
+        'tradingPlan': result.get('tradingPlan'),
+        'costBreakdown': result.get('costBreakdown'),
+        'passRate': result.get('passProbability'),
+        'expectedPayout': result.get('expectedPayout'),
+    }
+
+
+def analyze_trade_log(trades_json: str) -> Dict[str, Any]:
+    """
+    Analyze a trade log without running Monte Carlo simulation.
+    Returns strategy statistics, Kelly criterion, and edge analysis.
+    """
+    try:
+        import pandas as pd
+        
+        trades_data = json.loads(trades_json)
+        if not trades_data:
+            raise ValueError("No trade data provided")
+        
+        df = pd.DataFrame(trades_data)
+        
+        # Handle date column
+        if 'date' not in df.columns:
+            df['date'] = pd.date_range(start='2024-01-01', periods=len(df), freq='D').date
+        else:
+            df['date'] = pd.to_datetime(df['date']).dt.date
+        
+        # Create strategy for analysis
+        strategy = BootstrappedTradingStrategy(
+            trade_log_df=df,
+            pnl_column='pnl',
+            date_column='date'
+        )
+        
+        result = {
+            'statistics': strategy.get_statistics(),
+            'kelly': strategy.calculate_kelly_criterion(),
+            'expectedValue': strategy.calculate_expected_value(),
+            'riskMetrics': strategy.calculate_risk_metrics(),
+        }
+        
+        # Add edge confidence if scipy is available
+        try:
+            result['edgeConfidence'] = strategy.calculate_edge_confidence()
+        except Exception:
+            result['edgeConfidence'] = None
+        
+        return _convert_to_json_serializable(result)
+        
+    except Exception as e:
+        import traceback
+        raise RuntimeError(f"Trade log analysis error: {str(e)}\n{traceback.format_exc()}")
 
