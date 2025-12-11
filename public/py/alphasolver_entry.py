@@ -306,9 +306,10 @@ def _extract_results(sim: Simulation, num_paths: int) -> Dict[str, Any]:
     # Expected payout is the average final value
     expected_payout = avg_final_value
     
-    # Pass/fail probabilities
-    pass_probability = float(np.mean(final_values_array > 0) * 100)
-    fail_probability = float(np.mean(final_values_array <= 0) * 100)
+    # Pass/fail probabilities - use simulation's calculated values
+    # (these are based on actual account.won status, not PnL)
+    pass_probability = float(sim.pct_wins)
+    fail_probability = float(sim.pct_fails)
     
     # Average max drawdown
     avg_max_drawdown = float(np.mean(max_drawdowns))
@@ -520,90 +521,145 @@ def _extract_results_enhanced(sim: Simulation, num_paths: int, params: Dict[str,
     """
     Extract enhanced results from simulation using full PropAlphaEvalSolver features.
     
-    This includes:
-    - Basic simulation results
-    - Monte Carlo trading plan
-    - Cost breakdown analysis
-    - Outcome scenario clustering
+    Uses the same methods as the Streamlit app for consistency:
+    - sim.get_enhanced_results() - pass rate, CI, fail rate, timeout rate
+    - sim.get_cost_breakdown() - winners/losers cost analysis, ROI
+    - sim.get_monte_carlo_trading_plan() - cluster-based trading plan
+    - sim.get_outcome_scenarios() - DBSCAN clustering
     """
-    # Get basic results first
-    basic_results = _extract_results(sim, num_paths)
+    # ============ USE SIMULATION'S BUILT-IN METHODS (same as Streamlit) ============
+    enhanced = sim.get_enhanced_results()
+    costs = sim.get_cost_breakdown()
     
-    # Add enhanced features from the full simulation
-    enhanced = {}
-    
-    # 1. Monte Carlo Trading Plan
+    # Get trading plan
+    trading_plan = None
     try:
-        trading_plan = sim.get_monte_carlo_trading_plan()
-        enhanced['tradingPlan'] = _convert_to_json_serializable(trading_plan)
+        mc_plan = sim.get_monte_carlo_trading_plan()
+        trading_plan = {
+            'passRate': mc_plan.get('pass_rate', 0),
+            'passRateCi': mc_plan.get('pass_rate_ci', (0, 0)),
+            'failRate': mc_plan.get('fail_rate', 0),
+            'numSimulations': mc_plan.get('num_simulations', 0),
+            'optimalStrategies': mc_plan.get('optimal_strategies', {}),
+            'winners': mc_plan.get('winners'),
+            'losers': mc_plan.get('losers'),
+            'bestPath': mc_plan.get('best_path'),
+            'rules': mc_plan.get('rules'),
+            'propFirm': mc_plan.get('prop_firm', {}),
+            'kelly': mc_plan.get('kelly', {}),
+            'allWinningClusters': mc_plan.get('all_winning_clusters', []),
+        }
     except Exception as e:
-        enhanced['tradingPlan'] = None
-        enhanced['tradingPlanError'] = str(e)
+        print(f"Warning: Could not generate trading plan: {e}")
     
-    # 2. Cost Breakdown
+    # Get outcome scenarios
+    outcome_scenarios = []
     try:
-        cost_breakdown = sim.get_cost_breakdown()
-        enhanced['costBreakdown'] = _convert_to_json_serializable(cost_breakdown)
+        scenarios = sim.get_outcome_scenarios()
+        for s in scenarios.get("scenarios", []):
+            if s.get("label", -1) != -1:  # Skip outliers
+                outcome_scenarios.append({
+                    'scenario': s.get('description', ''),
+                    'probability': s.get('probability', 0),
+                    'days': int(s.get('days_median', 0)),
+                    'maxDD': float(s.get('max_drawdown_median', 0)),
+                    'netPnl': float(s.get('final_pnl_median', 0)),
+                })
     except Exception as e:
-        enhanced['costBreakdown'] = None
-        enhanced['costBreakdownError'] = str(e)
+        print(f"Warning: Could not get outcome scenarios: {e}")
     
-    # 3. Outcome Scenarios (DBSCAN clustering)
-    try:
-        # Only run if we have enough paths for meaningful clustering
-        if num_paths >= 50:
-            outcome_scenarios = sim.get_outcome_scenarios()
-            enhanced['outcomeScenarios'] = _convert_to_json_serializable(outcome_scenarios)
+    # ============ COLLECT EQUITY CURVES AND PATH DATA ============
+    equity_curves = []
+    final_values = []
+    max_drawdowns = []
+    winning_paths = list(sim.winning_trader_numbers)
+    losing_paths = list(sim.losing_trader_numbers)
+    
+    for trader_num in range(len(sim.traders)):
+        trader = sim.traders[trader_num]
+        
+        # Get equity curve
+        if trader.running_balance:
+            equity_curve = [float(x) for x in trader.running_balance]
+            equity_curves.append(equity_curve)
         else:
-            enhanced['outcomeScenarios'] = None
-    except Exception as e:
-        enhanced['outcomeScenarios'] = None
-        enhanced['outcomeScenariosError'] = str(e)
+            equity_curves.append([float(trader.account.balance)])
+        
+        # Final P&L
+        final_values.append(float(trader.PnL))
+        
+        # Max drawdown
+        if len(trader.running_balance) > 1:
+            running_balance = np.array(trader.running_balance)
+            running_max = np.maximum.accumulate(running_balance)
+            drawdowns = running_max - running_balance
+            max_dd = float(np.max(drawdowns))
+        else:
+            max_dd = 0
+        max_drawdowns.append(max_dd)
     
-    # 4. Enhanced simulation results
-    try:
-        enhanced_results = sim.get_enhanced_results()
-        enhanced['enhancedResults'] = _convert_to_json_serializable(enhanced_results)
-    except Exception as e:
-        enhanced['enhancedResults'] = None
+    # ============ BUILD RESULT USING SIMULATION'S DATA ============
+    winners_data = costs.get('winners', {})
+    losers_data = costs.get('losers', {})
+    expected_data = costs.get('expected', {})
+    fees_data = costs.get('fees', {})
     
-    # 5. Simulation summary results (formatted strings)
-    try:
-        sim_results = sim.sim_results()
-        enhanced['simResultsFormatted'] = sim_results
-    except Exception as e:
-        enhanced['simResultsFormatted'] = None
-    
-    # 6. Confidence intervals
-    enhanced['passRateCILower'] = float(sim.pass_rate_ci_lower) if hasattr(sim, 'pass_rate_ci_lower') else None
-    enhanced['passRateCIUpper'] = float(sim.pass_rate_ci_upper) if hasattr(sim, 'pass_rate_ci_upper') else None
-    
-    # 7. Strategy statistics (for bootstrapped)
-    if hasattr(sim.strategy, 'get_statistics'):
-        try:
-            strategy_stats = sim.strategy.get_statistics()
-            enhanced['strategyStats'] = _convert_to_json_serializable(strategy_stats)
-        except Exception:
-            enhanced['strategyStats'] = None
-    
-    # 8. Kelly criterion from strategy
-    if hasattr(sim.strategy, 'calculate_kelly_criterion'):
-        try:
-            kelly = sim.strategy.calculate_kelly_criterion()
-            enhanced['kellyFromStrategy'] = _convert_to_json_serializable(kelly)
-        except Exception:
-            enhanced['kellyFromStrategy'] = None
-    
-    # 9. Edge confidence from strategy
-    if hasattr(sim.strategy, 'calculate_edge_confidence'):
-        try:
-            edge_confidence = sim.strategy.calculate_edge_confidence()
-            enhanced['edgeConfidence'] = _convert_to_json_serializable(edge_confidence)
-        except Exception:
-            enhanced['edgeConfidence'] = None
-    
-    # Merge basic and enhanced results
-    result = {**basic_results, **enhanced}
+    result = {
+        # Core metrics from simulation
+        'expectedPayout': float(sim.avg_pnl),
+        'passProbability': float(enhanced.get('pass_rate', sim.pct_wins)),
+        'failProbability': float(enhanced.get('fail_rate', sim.pct_fails)),
+        'maxDrawdown': float(np.mean(max_drawdowns)) if max_drawdowns else 0,
+        
+        # Path data
+        'equityCurves': equity_curves,
+        'finalValues': final_values,
+        'winningPathIndices': [int(x) for x in winning_paths],
+        'losingPathIndices': [int(x) for x in losing_paths],
+        
+        # Aggregate stats
+        'averageFinalValue': float(np.mean(final_values)) if final_values else 0,
+        'medianFinalValue': float(np.median(final_values)) if final_values else 0,
+        
+        # Strategy info
+        'winRate': float(sim.strategy.odds * 100) if hasattr(sim.strategy, 'odds') else None,
+        'totalTrades': None,
+        
+        # Enhanced metrics from simulation
+        'netPnlPerAttempt': float(sim.avg_pnl),
+        'expectedAttemptsToPass': expected_data.get('attempts_to_win'),
+        'avgDaysToPass': float(sim.avg_days_to_win) if sim.avg_days_to_win else 0,
+        'avgDaysInFunded': winners_data.get('avg_funded_days', 0),
+        'totalDaysToPayout': winners_data.get('avg_total_days', 0),
+        
+        # Cost analysis from simulation
+        'initialPurchase': fees_data.get('eval_cost', 0),
+        'monthlyRebill': fees_data.get('monthly_rebill', 0),
+        'fundedSetup': fees_data.get('funded_setup', 0),
+        'avgTotalCostsIfPass': winners_data.get('avg_total_costs', 0),
+        'avgGrossPayoutIfPass': winners_data.get('avg_gross_payout', 0),
+        'avgNetProfitIfPass': winners_data.get('avg_net_profit', 0),
+        'avgDaysBeforeFail': losers_data.get('avg_days_before_fail', 0),
+        'avgCostLostIfFail': losers_data.get('avg_total_cost', 0),
+        'failInEvalPercent': losers_data.get('pct_fail_in_eval', 0),
+        'failInFundedPercent': losers_data.get('pct_fail_in_funded', 0),
+        
+        # ROI from simulation
+        'expectedCostToPayout': expected_data.get('total_cost_to_payout', 0),
+        'expectedGrossPayout': expected_data.get('expected_gross_payout', 0),
+        'expectedROI': expected_data.get('roi_pct', 0),
+        
+        # Confidence intervals
+        'passRateCiLower': enhanced.get('pass_rate_ci_lower', 0),
+        'passRateCiUpper': enhanced.get('pass_rate_ci_upper', 0),
+        'timeoutRate': enhanced.get('timeout_rate', 0),
+        
+        # Outcome scenarios
+        'mostProbableOutcomes': outcome_scenarios,
+        
+        # Trading plan
+        'tradingPlan': trading_plan,
+    }
     
     return _convert_to_json_serializable(result)
 
