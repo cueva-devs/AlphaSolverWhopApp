@@ -216,12 +216,15 @@ export default function TradingPlanPanel({
 		);
 	}
 
-	const { optimalStrategies, propFirm, allWinningClusters, winners, losers } =
-		tradingPlan;
+	const optimalStrategies = tradingPlan.optimalStrategies || {};
+	const propFirm = tradingPlan.propFirm || { profit_target: 0, max_loss: 0, daily_limit: 0 };
+	const allWinningClusters = tradingPlan.allWinningClusters || [];
+	const winners = tradingPlan.winners;
+	const losers = tradingPlan.losers;
 
 	// Get available strategies in order
 	const availableStrategies = STRATEGY_ORDER.filter(
-		(key) => optimalStrategies[key]
+		(key) => optimalStrategies && optimalStrategies[key]
 	);
 
 	// Check if all strategies point to the same cluster
@@ -275,6 +278,13 @@ export default function TradingPlanPanel({
 			</div>
 
 			{/* Strategy Tabs */}
+			{availableStrategies.length === 0 && (
+				<div className="bg-slate-800/50 border border-purple-800/30 rounded-lg p-6">
+					<p className="text-yellow-300 text-sm">
+						⚠ No winning strategies found. The simulation may not have produced any passing paths, or the trading plan data is still loading.
+					</p>
+				</div>
+			)}
 			{availableStrategies.length > 0 && (
 				<div className="bg-slate-800/50 border border-purple-800/30 rounded-lg overflow-hidden">
 					{/* Tab Headers */}
@@ -302,12 +312,20 @@ export default function TradingPlanPanel({
 
 					{/* Tab Content */}
 					<div className="p-6">
-						{optimalStrategies[activeStrategy] && (
+						{activeStrategy && optimalStrategies[activeStrategy] ? (
 							<StrategyTab
 								strategy={optimalStrategies[activeStrategy]}
 								strategyKey={activeStrategy}
 								propFirm={propFirm}
 							/>
+						) : availableStrategies.length > 0 && optimalStrategies[availableStrategies[0]] ? (
+							<StrategyTab
+								strategy={optimalStrategies[availableStrategies[0]]}
+								strategyKey={availableStrategies[0]}
+								propFirm={propFirm}
+							/>
+						) : (
+							<p className="text-purple-400">No strategy data available</p>
 						)}
 					</div>
 				</div>
