@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import StrategyPanel from "./components/StrategyPanel";
 import ResultsPanel from "./components/ResultsPanel";
 import AccountConfigPanel from "./components/AccountConfig";
+import TradingPlanPanel from "./components/TradingPlanPanel";
 import { useSimulationEngine } from "./hooks/useSimulationEngine";
 import { parseTradeCsv } from "./lib/csvUtils";
 import type {
@@ -275,14 +276,10 @@ export default function AlphaSolverApp({
 								accountConfig={accountConfig}
 							/>
 						) : (
-							<div className="bg-slate-800/50 border border-purple-800/30 rounded-lg p-6">
-								<h2 className="text-lg font-semibold text-purple-200 mb-4">
-									Trading Plan
-								</h2>
-								<p className="text-purple-300 text-sm">
-									Trading plan analysis will be available here.
-								</p>
-							</div>
+							<TradingPlanPanel
+								tradingPlan={result?.tradingPlan}
+								isRunning={isRunning || isEngineLoading}
+							/>
 						)}
 					</div>
 				</div>

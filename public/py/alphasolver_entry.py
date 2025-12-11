@@ -423,6 +423,28 @@ def _extract_results(sim: Simulation, num_paths: int) -> Dict[str, Any]:
                 'netPnl': float(np.mean(losing_pnls))
             })
     
+    # ============ TRADING PLAN (cluster-based) ============
+    trading_plan = None
+    try:
+        mc_plan = sim.get_monte_carlo_trading_plan()
+        trading_plan = {
+            'passRate': mc_plan.get('pass_rate', 0),
+            'passRateCi': mc_plan.get('pass_rate_ci', (0, 0)),
+            'failRate': mc_plan.get('fail_rate', 0),
+            'numSimulations': mc_plan.get('num_simulations', 0),
+            'optimalStrategies': mc_plan.get('optimal_strategies', {}),
+            'winners': mc_plan.get('winners'),
+            'losers': mc_plan.get('losers'),
+            'bestPath': mc_plan.get('best_path'),
+            'rules': mc_plan.get('rules'),
+            'propFirm': mc_plan.get('prop_firm', {}),
+            'kelly': mc_plan.get('kelly', {}),
+            'allWinningClusters': mc_plan.get('all_winning_clusters', []),
+        }
+    except Exception as e:
+        # Trading plan is optional - don't fail the whole simulation
+        print(f"Warning: Could not generate trading plan: {e}")
+    
     result = {
         'expectedPayout': expected_payout,
         'passProbability': pass_probability,
@@ -464,6 +486,8 @@ def _extract_results(sim: Simulation, num_paths: int) -> Dict[str, Any]:
         'avgTradePnl': avg_trade_pnl,
         # Most probable outcomes
         'mostProbableOutcomes': most_probable_outcomes,
+        # Trading plan (cluster-based)
+        'tradingPlan': trading_plan,
     }
     
     # Convert all numpy types to native Python types for JSON serialization
