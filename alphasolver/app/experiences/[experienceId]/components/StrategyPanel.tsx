@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TextInput, Button, Text, Tabs, Collapsible, Callout } from "@whop/react/components";
+import { TextInput, Button, Text, Tabs, Callout } from "@whop/react/components";
 import ParametricForm from "./ParametricForm";
 import BootstrappedForm from "./BootstrappedForm";
 import PyodideDebugPanel from "./PyodideDebugPanel";
@@ -96,15 +96,19 @@ export default function StrategyPanel({
 			</div>
 
 			{/* Advanced (Expandable) */}
-			<Collapsible.Root open={showAdvanced} onOpenChange={setShowAdvanced}>
-				<Collapsible.Trigger asChild>
-					<button type="button" className="flex items-center gap-2">
-						<Text size="2" weight="medium">
-							Advanced
-						</Text>
-					</button>
-				</Collapsible.Trigger>
-				<Collapsible.Content>
+			<div>
+				<Button
+					type="button"
+					variant="ghost"
+					size="2"
+					onClick={() => setShowAdvanced(!showAdvanced)}
+					className="flex items-center gap-2 p-0 h-auto"
+				>
+					<Text size="2" weight="medium">
+						{showAdvanced ? "▼" : "▶"} Advanced
+					</Text>
+				</Button>
+				{showAdvanced && (
 					<div className="mt-2 space-y-3">
 						<Tabs.Root value={activeTab} onValueChange={(value) => setActiveTab(value as TabMode)}>
 							<Tabs.List>
@@ -125,8 +129,8 @@ export default function StrategyPanel({
 							</Tabs.Content>
 						</Tabs.Root>
 					</div>
-				</Collapsible.Content>
-			</Collapsible.Root>
+				)}
+			</div>
 
 			{/* Run Simulation Button */}
 			<Button

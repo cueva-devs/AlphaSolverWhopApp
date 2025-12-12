@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { RadioGroup, Select, Text, Heading, Collapsible } from "@whop/react/components";
+import { RadioGroup, Select, Text, Heading, Button } from "@whop/react/components";
 import type { AccountConfig, GameType, PropFirm, ChallengeSize } from "../types";
 
 interface AccountConfigProps {
@@ -104,18 +104,19 @@ export default function AccountConfigPanel({
 			</div>
 
 			{/* Account Rules (Expandable) */}
-			<Collapsible.Root open={showAccountRules} onOpenChange={setShowAccountRules}>
-				<Collapsible.Trigger asChild>
-					<button
-						type="button"
-						className="flex items-center gap-2"
-					>
-						<Text size="2" weight="medium">
-							Account Rules
-						</Text>
-					</button>
-				</Collapsible.Trigger>
-				<Collapsible.Content>
+			<div>
+				<Button
+					type="button"
+					variant="ghost"
+					size="2"
+					onClick={() => setShowAccountRules(!showAccountRules)}
+					className="flex items-center gap-2 p-0 h-auto"
+				>
+					<Text size="2" weight="medium">
+						{showAccountRules ? "▼" : "▶"} Account Rules
+					</Text>
+				</Button>
+				{showAccountRules && (
 					<div className="mt-2 p-3 bg-gray-a2 border border-gray-a5 rounded-md">
 						<Text size="1" weight="medium" className="mb-2 block">
 							Default Topstep Rules:
@@ -158,8 +159,8 @@ export default function AccountConfigPanel({
 							</li>
 						</ul>
 					</div>
-				</Collapsible.Content>
-			</Collapsible.Root>
+				)}
+			</div>
 		</div>
 	);
 }
