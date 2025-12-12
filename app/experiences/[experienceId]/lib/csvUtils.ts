@@ -1,7 +1,7 @@
-import type { ParsedTrade, BootstrappedParams } from "../types";
+import type { ParsedTrade, CsvFormat } from "../types";
 
 interface ParseOptions {
-	template: BootstrappedParams["template"];
+	template: CsvFormat;
 	pnlColumn?: string;
 	dateColumn?: string;
 	mfeColumn?: string;
@@ -39,7 +39,43 @@ export async function parseTradeCsv(
 		mfeIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
 			"mfe",
 		]);
-	} else if (options.template === "Generic") {
+	} else if (options.template === "TradingView (Strategy Tester)") {
+		// TradingView Strategy Tester: "Date/Time", "Profit"
+		pnlIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
+			"profit",
+		]);
+		dateIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
+			"date/time",
+			"datetime",
+		]);
+	} else if (options.template === "TradingView (Broker History)") {
+		// TradingView Broker History: "Close Time", "Profit"
+		pnlIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
+			"profit",
+		]);
+		dateIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
+			"close time",
+		]);
+	} else if (options.template === "Rithmic / R|Trader") {
+		// Rithmic: "Entry Time", "Profit"
+		pnlIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
+			"profit",
+		]);
+		dateIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
+			"entry time",
+		]);
+	} else if (options.template === "Tradovate") {
+		// Tradovate: "Time", "P&L"
+		pnlIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
+			"p&l",
+			"pnl",
+			"profit",
+		]);
+		dateIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
+			"time",
+		]);
+	} else if (options.template === "Generic (Simple)") {
+		// Generic: flexible column names
 		pnlIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
 			"pnl",
 			"profit",

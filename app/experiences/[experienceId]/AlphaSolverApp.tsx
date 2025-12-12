@@ -9,10 +9,8 @@ import TradingPlanPanel from "./components/TradingPlanPanel";
 import { useSimulationEngine } from "./hooks/useSimulationEngine";
 import { parseTradeCsv } from "./lib/csvUtils";
 import type {
-	ParametricParams,
 	BootstrappedParams,
 	ParsedTrade,
-	SimulationMode,
 	AccountConfig,
 	CsvFormat,
 } from "./types";
@@ -50,11 +48,10 @@ export default function AlphaSolverApp({
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	const handleRunSimulation = async (
-		mode: SimulationMode,
-		params: ParametricParams | BootstrappedParams,
-		trades?: ParsedTrade[],
+		params: BootstrappedParams,
+		trades: ParsedTrade[],
 	) => {
-		await run(mode, params, trades);
+		await run("bootstrapped", params, trades);
 	};
 
 	const handleFileSelect = () => {

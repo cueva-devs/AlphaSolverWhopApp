@@ -1,31 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Button, Text, Tabs, Callout } from "@whop/react/components";
-import ParametricForm from "./ParametricForm";
-import BootstrappedForm from "./BootstrappedForm";
-import PyodideDebugPanel from "./PyodideDebugPanel";
+import { useState } from "react";
+import { Button, Text, Callout } from "@whop/react/components";
 import type {
-	ParametricParams,
 	BootstrappedParams,
 	ParsedTrade,
-	SimulationMode,
 	CsvFormat,
 } from "../types";
 import type { PlanConfig } from "../config/planConfig";
 
 interface StrategyPanelProps {
 	onRunSimulation: (
-		mode: SimulationMode,
-		params: ParametricParams | BootstrappedParams,
-		trades?: ParsedTrade[],
+		params: BootstrappedParams,
+		trades: ParsedTrade[],
 	) => void;
 	planConfig: PlanConfig;
 	parsedTrades?: ParsedTrade[] | null;
 	csvFormat?: CsvFormat;
 }
-
-type TabMode = "parametric" | "bootstrapped";
 
 export default function StrategyPanel({
 	onRunSimulation,
@@ -33,31 +25,22 @@ export default function StrategyPanel({
 	parsedTrades,
 	csvFormat = "NinjaTrader",
 }: StrategyPanelProps) {
-	const [activeTab, setActiveTab] = useState<TabMode>(
-		parsedTrades ? "bootstrapped" : "parametric",
-	);
-
-	// Switch to bootstrapped mode when trades are loaded
-	useEffect(() => {
-		if (parsedTrades && parsedTrades.length > 0) {
-			setActiveTab("bootstrapped");
-		}
-	}, [parsedTrades]);
-
-	const handleParametricSubmit = (params: ParametricParams) => {
-		onRunSimulation("parametric", params);
-	};
-
-	const handleBootstrappedSubmit = (
-		params: BootstrappedParams,
-		trades: ParsedTrade[],
-	) => {
-		onRunSimulation("bootstrapped", params, trades);
-	};
-
 	const [showAdvanced, setShowAdvanced] = useState(false);
 	// Default to 10000 runs, but cap at plan limit
 	const [numPaths, setNumPaths] = useState(Math.min(10000, planConfig.maxPaths));
+
+	const handleRunSimulation = () => {
+		if (parsedTrades && parsedTrades.length > 0) {
+			onRunSimulation(
+				{
+					template: csvFormat,
+					numPaths,
+					numDays: Math.min(100, planConfig.maxDays),
+				},
+				parsedTrades,
+			);
+		}
+	};
 
 	return (
 		<div className="space-y-4">
@@ -109,25 +92,11 @@ export default function StrategyPanel({
 					</Text>
 				</Button>
 				{showAdvanced && (
-					<div className="mt-2 space-y-3">
-						<Tabs.Root value={activeTab} onValueChange={(value) => setActiveTab(value as TabMode)}>
-							<Tabs.List>
-								<Tabs.Trigger value="parametric">Parametric</Tabs.Trigger>
-								<Tabs.Trigger value="bootstrapped">Bootstrapped</Tabs.Trigger>
-							</Tabs.List>
-							<Tabs.Content value="parametric">
-								<ParametricForm
-									onSubmit={handleParametricSubmit}
-									planConfig={planConfig}
-								/>
-							</Tabs.Content>
-							<Tabs.Content value="bootstrapped">
-								<BootstrappedForm
-									onSubmit={handleBootstrappedSubmit}
-									planConfig={planConfig}
-								/>
-							</Tabs.Content>
-						</Tabs.Root>
+					<div className="mt-2 p-3 bg-gray-a2 border border-gray-a5 rounded-md">
+						<Text size="1" color="gray">
+							Bootstrapped simulation uses your uploaded trade log to resample historical trades.
+							This provides more realistic results based on your actual trading performance.
+						</Text>
 					</div>
 				)}
 			</div>
@@ -139,36 +108,15 @@ export default function StrategyPanel({
 				variant="solid"
 				color="blue"
 				className="w-full"
-				onClick={() => {
-					if (activeTab === "parametric") {
-						handleParametricSubmit({
-							stopSize: 100,
-							takeProfitSize: 200,
-							winRate: 50,
-							averageMFE: 150,
-							tradesPerDay: 5,
-							numPaths,
-							numDays: Math.min(100, planConfig.maxDays),
-						});
-					} else if (activeTab === "bootstrapped" && parsedTrades) {
-						handleBootstrappedSubmit(
-							{
-								template: csvFormat,
-								numPaths,
-								numDays: Math.min(100, planConfig.maxDays),
-							},
-							parsedTrades,
-						);
-					}
-				}}
-				disabled={activeTab === "bootstrapped" && !parsedTrades}
+				onClick={handleRunSimulation}
+				disabled={!parsedTrades || parsedTrades.length === 0}
 			>
 				Run Simulation
 			</Button>
-			{activeTab === "bootstrapped" && !parsedTrades && (
+			{(!parsedTrades || parsedTrades.length === 0) && (
 				<Callout.Root color="amber">
 					<Callout.Text size="2">
-						Please upload a CSV file first
+						Please upload a trade log CSV file first
 					</Callout.Text>
 				</Callout.Root>
 			)}

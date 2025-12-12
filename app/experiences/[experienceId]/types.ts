@@ -157,7 +157,6 @@ export interface TradingPlan {
 	bestPath: BestPath | null;
 	rules: Record<string, unknown> | null;
 	propFirm: Record<string, number>;
-	kelly: Record<string, number>;
 	allWinningClusters: ClusterInfo[];
 	simulatedEv?: number;
 }
