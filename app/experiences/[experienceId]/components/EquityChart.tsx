@@ -155,7 +155,7 @@ export default function EquityChart({
 
 	if (!chartData) {
 		return (
-			<div className="flex items-center justify-center h-80 text-purple-300 text-sm">
+			<div className="flex items-center justify-center h-80 text-gray-10 text-sm">
 				No equity curve data available
 			</div>
 		);
@@ -240,7 +240,7 @@ export default function EquityChart({
 			{chartData ? (
 				<Line data={chartData} options={options} />
 			) : (
-				<div className="flex items-center justify-center h-full text-purple-300 text-sm">
+				<div className="flex items-center justify-center h-full text-gray-10 text-sm">
 					No equity curve data available
 				</div>
 			)}

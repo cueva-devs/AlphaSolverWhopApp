@@ -1,4 +1,4 @@
-import { Button } from "@whop/react/components";
+import { Button, Card, Heading, Text } from "@whop/react/components";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { whopsdk } from "@/lib/whop-sdk";
@@ -39,20 +39,20 @@ export default async function ExperiencePage({
 
 			return (
 				<div className="min-h-screen bg-gray-1 flex items-center justify-center p-6">
-					<div className="max-w-md w-full bg-gray-a2 border border-gray-a4 rounded-lg p-8 text-center">
-						<h1 className="text-6 font-bold text-gray-12 mb-4">
+					<Card size="3" variant="surface" className="max-w-md w-full text-center">
+						<Heading size="6" className="mb-4">
 							Upgrade Required
-						</h1>
-						<p className="text-3 text-gray-10 mb-6">
+						</Heading>
+						<Text size="3" color="gray" className="mb-6">
 							You need access to this product to use AlphaSolver. Please upgrade
 							to continue.
-						</p>
+						</Text>
 						<Link href={checkoutUrl} className="block">
-							<Button variant="classic" className="w-full" size="4">
+							<Button variant="solid" color="blue" className="w-full" size="3">
 								Upgrade Now
 							</Button>
 						</Link>
-					</div>
+					</Card>
 				</div>
 			);
 		}
@@ -79,15 +79,15 @@ export default async function ExperiencePage({
 		console.error("ExperiencePage error", error);
 		return (
 			<div className="min-h-screen bg-gray-1 flex items-center justify-center p-6">
-				<div className="max-w-md w-full bg-gray-a2 border border-gray-a4 rounded-lg p-8 text-center">
-					<h1 className="text-6 font-bold text-gray-12 mb-4">
+				<Card size="3" variant="surface" className="max-w-md w-full text-center">
+					<Heading size="6" className="mb-4">
 						AlphaSolver is unavailable
-					</h1>
-					<p className="text-3 text-gray-10 mb-6">
+					</Heading>
+					<Text size="3" color="gray">
 						Something went wrong loading this experience. Please confirm your
 						access or try again in a moment.
-					</p>
-				</div>
+					</Text>
+				</Card>
 			</div>
 		);
 	}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Button, Text, Tabs, Callout } from "@whop/react/components";
 import ParametricForm from "./ParametricForm";
 import BootstrappedForm from "./BootstrappedForm";
 import PyodideDebugPanel from "./PyodideDebugPanel";
@@ -61,66 +62,82 @@ export default function StrategyPanel({
 		<div className="space-y-4">
 			{/* Monte Carlo Runs */}
 			<div>
-				<label className="block text-xs text-purple-300 mb-1">
+				<Text size="2" weight="medium" className="mb-2 block">
 					Monte Carlo Runs
-				</label>
+				</Text>
 				<div className="flex items-center gap-2">
-					<button
+					<Button
 						type="button"
+						size="1"
+						variant="soft"
 						onClick={() => setNumPaths(Math.max(1, numPaths - 1000))}
-						className="px-2 py-1 bg-slate-700/50 border border-purple-800/30 rounded text-purple-200 hover:bg-slate-700 text-sm"
 					>
 						-
-					</button>
+					</Button>
 					<input
 						type="number"
-						value={numPaths}
+						value={numPaths.toString()}
 						onChange={(e) => {
 							const val = parseInt(e.target.value) || 0;
 							setNumPaths(Math.min(Math.max(1, val), planConfig.maxPaths));
 						}}
-						className="flex-1 px-3 py-2 bg-slate-700/50 border border-purple-800/30 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+						className="flex-1 px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 					/>
-					<button
+					<Button
 						type="button"
+						size="1"
+						variant="soft"
 						onClick={() => setNumPaths(Math.min(numPaths + 1000, planConfig.maxPaths))}
-						className="px-2 py-1 bg-slate-700/50 border border-purple-800/30 rounded text-purple-200 hover:bg-slate-700 text-sm"
 					>
 						+
-					</button>
+					</Button>
 				</div>
 			</div>
 
 			{/* Advanced (Expandable) */}
 			<div>
-				<button
+				<Button
 					type="button"
+					variant="ghost"
+					size="2"
 					onClick={() => setShowAdvanced(!showAdvanced)}
-					className="flex items-center gap-2 text-xs font-medium text-purple-300 hover:text-purple-200 transition-colors"
+					className="flex items-center gap-2 p-0 h-auto"
 				>
-					<span>{showAdvanced ? "▼" : "▶"}</span>
-					<span>Advanced</span>
-				</button>
+					<Text size="2" weight="medium">
+						{showAdvanced ? "▼" : "▶"} Advanced
+					</Text>
+				</Button>
 				{showAdvanced && (
 					<div className="mt-2 space-y-3">
-						{activeTab === "parametric" ? (
-							<ParametricForm
-								onSubmit={handleParametricSubmit}
-								planConfig={planConfig}
-							/>
-						) : (
-							<BootstrappedForm
-								onSubmit={handleBootstrappedSubmit}
-								planConfig={planConfig}
-							/>
-						)}
+						<Tabs.Root value={activeTab} onValueChange={(value) => setActiveTab(value as TabMode)}>
+							<Tabs.List>
+								<Tabs.Trigger value="parametric">Parametric</Tabs.Trigger>
+								<Tabs.Trigger value="bootstrapped">Bootstrapped</Tabs.Trigger>
+							</Tabs.List>
+							<Tabs.Content value="parametric">
+								<ParametricForm
+									onSubmit={handleParametricSubmit}
+									planConfig={planConfig}
+								/>
+							</Tabs.Content>
+							<Tabs.Content value="bootstrapped">
+								<BootstrappedForm
+									onSubmit={handleBootstrappedSubmit}
+									planConfig={planConfig}
+								/>
+							</Tabs.Content>
+						</Tabs.Root>
 					</div>
 				)}
 			</div>
 
 			{/* Run Simulation Button */}
-			<button
+			<Button
 				type="button"
+				size="3"
+				variant="solid"
+				color="blue"
+				className="w-full"
 				onClick={() => {
 					if (activeTab === "parametric") {
 						handleParametricSubmit({
@@ -144,14 +161,15 @@ export default function StrategyPanel({
 					}
 				}}
 				disabled={activeTab === "bootstrapped" && !parsedTrades}
-				className="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md text-white font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
 			>
 				Run Simulation
-			</button>
+			</Button>
 			{activeTab === "bootstrapped" && !parsedTrades && (
-				<p className="text-xs text-purple-400 mt-2">
-					Please upload a CSV file first
-				</p>
+				<Callout.Root color="amber">
+					<Callout.Text size="2">
+						Please upload a CSV file first
+					</Callout.Text>
+				</Callout.Root>
 			)}
 		</div>
 	);

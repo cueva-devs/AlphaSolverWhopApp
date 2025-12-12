@@ -133,19 +133,19 @@ export default function TradeDistributionCharts({
 			{/* Trades Per Day Distribution */}
 			{tradesPerDayData && (
 				<div>
-					<h4 className="text-xs font-semibold text-purple-200 mb-2">
+					<h4 className="text-xs font-semibold text-gray-11 mb-2">
 						Trades Per Day Distribution
 					</h4>
 					<div className="h-48 relative">
 						<Bar data={tradesPerDayData} options={chartOptions} />
 						{tradesPerDayData.mean > 0 && (
 							<div
-								className="absolute top-0 bottom-0 w-0.5 bg-purple-400 opacity-50"
+								className="absolute top-0 bottom-0 w-0.5 bg-blue-6 opacity-50"
 								style={{
 									left: `${(tradesPerDayData.mean / tradesPerDayData.labels.length) * 100}%`,
 								}}
 							>
-								<div className="absolute -top-5 left-1/2 transform -translate-x-1/2 text-xs text-purple-300 whitespace-nowrap">
+								<div className="absolute -top-5 left-1/2 transform -translate-x-1/2 text-xs text-gray-11 whitespace-nowrap">
 									Mean: {tradesPerDayData.mean.toFixed(1)}
 								</div>
 							</div>
@@ -157,19 +157,19 @@ export default function TradeDistributionCharts({
 			{/* Trade P&L Distribution */}
 			{tradePnlData && (
 				<div>
-					<h4 className="text-xs font-semibold text-purple-200 mb-2">
+					<h4 className="text-xs font-semibold text-gray-11 mb-2">
 						Trade P&L Distribution
 					</h4>
 					<div className="h-48 relative">
 						<Bar data={tradePnlData} options={chartOptions} />
 						{tradePnlData.mean !== 0 && (
 							<div
-								className="absolute top-0 bottom-0 w-0.5 bg-purple-400 opacity-50 border-dashed"
+								className="absolute top-0 bottom-0 w-0.5 bg-blue-6 opacity-50 border-dashed"
 								style={{
 									left: `${((tradePnlData.mean - parseFloat(tradePnlData.labels[0])) / (parseFloat(tradePnlData.labels[tradePnlData.labels.length - 1]) - parseFloat(tradePnlData.labels[0]))) * 100}%`,
 								}}
 							>
-								<div className="absolute -top-5 left-1/2 transform -translate-x-1/2 text-xs text-purple-300 whitespace-nowrap">
+								<div className="absolute -top-5 left-1/2 transform -translate-x-1/2 text-xs text-gray-11 whitespace-nowrap">
 									Mean: ${tradePnlData.mean.toFixed(2)}
 								</div>
 							</div>
@@ -179,7 +179,7 @@ export default function TradeDistributionCharts({
 			)}
 
 			{!tradesPerDayData && !tradePnlData && (
-				<div className="text-xs text-purple-400 text-center py-8">
+				<div className="text-xs text-gray-10 text-center py-8">
 					Trade distribution data not available
 				</div>
 			)}

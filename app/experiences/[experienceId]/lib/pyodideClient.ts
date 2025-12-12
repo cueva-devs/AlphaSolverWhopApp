@@ -122,13 +122,8 @@ export async function loadPyodide(): Promise<PyodideInterface> {
 
 			// Load required packages
 			// json is part of the Python stdlib, so only load external packages
-			// Full scientific stack for PropAlphaEvalSolver feature parity:
-			// - numpy: Core numerical operations
-			// - pandas: DataFrame operations for trade logs
-			// - scipy: Statistical functions (confidence intervals, t-tests)
-			// - scikit-learn: DBSCAN clustering for outcome scenarios
-			// - matplotlib: Plotting (optional, charts rendered in React but available for Python-side plots)
-			await pyodide.loadPackage(["numpy", "pandas", "scipy", "scikit-learn", "matplotlib"]);
+			// matplotlib, scipy, and sklearn are needed for simulation analysis (clustering, confidence intervals, plotting)
+			await pyodide.loadPackage(["numpy", "pandas", "matplotlib", "scipy", "scikit-learn"]);
 
 			// Create a directory for our Python modules and add it to sys.path
 			pyodide.runPython(`
