@@ -110,7 +110,13 @@ export default function AlphaSolverApp({
 
 	return (
 		<div className="min-h-screen bg-gray-1 flex flex-col">
-			<main className="flex-1 flex flex-col md:flex-row gap-4 md:gap-6 p-4 md:p-6 min-h-0 overflow-hidden">
+			{/* TEST BANNER - Remove after confirming deployment works */}
+			<div className="bg-blue-6 text-blue-11 text-center py-2 px-4">
+				<Text size="2" weight="bold">
+					✓ Frosted UI Design System Active - Build: {new Date().toISOString().split('T')[0]}
+				</Text>
+			</div>
+			<main className="flex-1 flex flex-col md:flex-row gap-4 md:gap-6 p-4 md:gap-6 min-h-0 overflow-hidden">
 				{/* Left Sidebar */}
 				<aside className="w-full md:w-80 flex-shrink-0 flex flex-col gap-4 overflow-y-auto">
 					{/* Account Section */}
