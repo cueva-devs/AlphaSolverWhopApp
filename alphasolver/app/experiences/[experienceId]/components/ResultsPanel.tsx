@@ -275,11 +275,11 @@ export default function ResultsPanel({
 									<Table.Root>
 										<Table.Header>
 											<Table.Row>
-												<Table.ColumnHeader>Scenario</Table.ColumnHeader>
-												<Table.ColumnHeader className="text-right">Probability</Table.ColumnHeader>
-												<Table.ColumnHeader className="text-right">Days</Table.ColumnHeader>
-												<Table.ColumnHeader className="text-right">Max DD</Table.ColumnHeader>
-												<Table.ColumnHeader className="text-right">Net P&L</Table.ColumnHeader>
+												<Table.ColumnHeaderCell>Scenario</Table.ColumnHeaderCell>
+												<Table.ColumnHeaderCell className="text-right">Probability</Table.ColumnHeaderCell>
+												<Table.ColumnHeaderCell className="text-right">Days</Table.ColumnHeaderCell>
+												<Table.ColumnHeaderCell className="text-right">Max DD</Table.ColumnHeaderCell>
+												<Table.ColumnHeaderCell className="text-right">Net P&L</Table.ColumnHeaderCell>
 											</Table.Row>
 										</Table.Header>
 										<Table.Body>
