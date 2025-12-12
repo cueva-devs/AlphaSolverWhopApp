@@ -44,16 +44,69 @@ export default function ResultsPanel({
 					</div>
 				)}
 
-				{/* Empty State */}
+				{/* Empty State - Landing Page Content */}
 				{!result && !isRunning && !error && (
-					<div className="flex flex-col items-center justify-center py-12 text-center">
-						<Text size="9" color="gray" className="mb-4">
-							📊
-						</Text>
-						<Text size="3" color="gray">
-							Run a simulation to see results
-						</Text>
-					</div>
+					<Card size="3" variant="surface" className="p-6">
+						<div className="space-y-6">
+							<div>
+								<Heading size="6" as="h2" className="mb-3">
+									🎯 What is AlphaSolver?
+								</Heading>
+								<Text size="3" color="gray">
+									AlphaSolver is a <strong>Monte Carlo simulation tool</strong> designed to help prop firm traders understand their true probability of passing evaluations and getting funded.
+								</Text>
+							</div>
+
+							<div>
+								<Heading size="5" as="h3" className="mb-3">
+									How It Works
+								</Heading>
+								<ol className="list-decimal list-inside space-y-2">
+									<li>
+										<Text size="2"><strong>Upload your trade log</strong> — Import your historical trades from NinjaTrader, TradingView, Tradovate, or any CSV format</Text>
+									</li>
+									<li>
+										<Text size="2"><strong>Select your prop firm</strong> — Choose from Topstep, Take Profit Trader, Funded Futures Network, Tradeify, or create custom rules</Text>
+									</li>
+									<li>
+										<Text size="2"><strong>Run the simulation</strong> — We simulate thousands of possible outcomes using your actual trading statistics</Text>
+									</li>
+									<li>
+										<Text size="2"><strong>Get actionable insights</strong> — See your pass rate, expected costs, ROI, and optimal trading strategies</Text>
+									</li>
+								</ol>
+							</div>
+
+							<div>
+								<Heading size="5" as="h3" className="mb-3">
+									Why Use AlphaSolver?
+								</Heading>
+								<ul className="space-y-2">
+									<li>
+										<Text size="2">📊 <strong>Data-driven decisions</strong> — Know your actual odds before paying for an evaluation</Text>
+									</li>
+									<li>
+										<Text size="2">💰 <strong>Cost analysis</strong> — Understand the true cost of getting funded including resets and monthly fees</Text>
+									</li>
+									<li>
+										<Text size="2">🎲 <strong>Risk assessment</strong> — See best and worst case scenarios based on your trading style</Text>
+									</li>
+									<li>
+										<Text size="2">📈 <strong>Strategy optimization</strong> — Get personalized recommendations for daily profit targets and risk limits</Text>
+									</li>
+								</ul>
+							</div>
+
+							<div className="pt-4 border-t border-gray-a5">
+								<Heading size="5" as="h3" className="mb-2">
+									Get Started
+								</Heading>
+								<Text size="2" color="gray">
+									👈 <strong>Upload your trade log</strong> in the sidebar and click <strong>Run Simulation</strong> to see your personalized results.
+								</Text>
+							</div>
+						</div>
+					</Card>
 				)}
 
 				{/* Results Content */}
