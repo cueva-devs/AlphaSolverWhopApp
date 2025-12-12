@@ -596,6 +596,34 @@ CSV_TEMPLATES = {
         "mfe_column": "MFE",
         "parser": "ninjatrader"
     },
+    "TradingView (Strategy Tester)": {
+        "description": "TradingView Strategy Tester export (List of Trades)",
+        "pnl_column": "Profit",
+        "date_column": "Date/Time",
+        "mfe_column": None,
+        "parser": "tradingview_strategy"
+    },
+    "TradingView (Broker History)": {
+        "description": "TradingView Broker Account History export",
+        "pnl_column": "Profit",
+        "date_column": "Close Time",
+        "mfe_column": None,
+        "parser": "tradingview_broker"
+    },
+    "Rithmic / R|Trader": {
+        "description": "Rithmic R|Trader trade export",
+        "pnl_column": "Profit",
+        "date_column": "Entry Time",
+        "mfe_column": None,
+        "parser": "rithmic"
+    },
+    "Tradovate": {
+        "description": "Tradovate trade history export",
+        "pnl_column": "P&L",
+        "date_column": "Time",
+        "mfe_column": None,
+        "parser": "tradovate"
+    },
     "Custom": {
         "description": "Specify your own column names",
         "pnl_column": "",
@@ -666,6 +694,220 @@ def parse_ninjatrader_csv(uploaded_file, no_trade_override: Optional[float] = No
                                         no_trade_override=no_trade_override)
 
 
+def parse_tradingview_strategy_csv(uploaded_file, no_trade_override: Optional[float] = None) -> BootstrappedTradingStrategy:
+    """
+    Parse a TradingView Strategy Tester CSV export (List of Trades tab).
+    
+    TradingView Strategy Tester columns:
+    - 'Trade #': Trade number
+    - 'Type': Entry/Exit
+    - 'Signal': Long/Short
+    - 'Date/Time': Trade datetime
+    - 'Price': Entry/Exit price
+    - 'Profit': P&L (may include %, need to handle)
+    - 'Profit %': Percentage profit
+    - 'Cumulative Profit': Running total
+    """
+    df = pd.read_csv(uploaded_file)
+    
+    # TradingView may have different column names, try common variations
+    profit_cols = ['Profit', 'Profit, $', 'Net Profit', 'P/L']
+    date_cols = ['Date/Time', 'Exit Date/Time', 'Close Date', 'Time']
+    
+    # Find profit column
+    pnl_col = None
+    for col in profit_cols:
+        if col in df.columns:
+            pnl_col = col
+            break
+    
+    if pnl_col is None:
+        # Try to find any column with 'profit' in the name
+        for col in df.columns:
+            if 'profit' in col.lower() and '%' not in col.lower():
+                pnl_col = col
+                break
+    
+    if pnl_col is None:
+        raise ValueError(f"Could not find profit column. Found columns: {list(df.columns)}")
+    
+    # Find date column
+    date_col = None
+    for col in date_cols:
+        if col in df.columns:
+            date_col = col
+            break
+    
+    if date_col is None:
+        for col in df.columns:
+            if 'date' in col.lower() or 'time' in col.lower():
+                date_col = col
+                break
+    
+    # Parse profit (handle currency format)
+    df['pnl'] = df[pnl_col].apply(parse_currency_value)
+    
+    # Parse date
+    if date_col:
+        df['date'] = pd.to_datetime(df[date_col], errors='coerce').dt.date
+    else:
+        df['date'] = pd.date_range(start='2024-01-01', periods=len(df), freq='D').date
+    
+    return BootstrappedTradingStrategy(df, pnl_column='pnl', date_column='date',
+                                        no_trade_override=no_trade_override)
+
+
+def parse_tradingview_broker_csv(uploaded_file, no_trade_override: Optional[float] = None) -> BootstrappedTradingStrategy:
+    """
+    Parse a TradingView Broker Account History CSV export.
+    
+    TradingView Broker History columns (varies by broker):
+    - 'Symbol': Instrument traded
+    - 'Side': Buy/Sell
+    - 'Qty': Quantity
+    - 'Open Time' / 'Entry Time': Entry datetime
+    - 'Close Time' / 'Exit Time': Exit datetime  
+    - 'Open Price': Entry price
+    - 'Close Price': Exit price
+    - 'Profit' / 'P&L' / 'Net P/L': Realized P&L
+    - 'Commission': Trading fees
+    """
+    df = pd.read_csv(uploaded_file)
+    
+    # Find profit column
+    profit_cols = ['Profit', 'P&L', 'Net P/L', 'Realized P&L', 'Net Profit']
+    pnl_col = None
+    for col in profit_cols:
+        if col in df.columns:
+            pnl_col = col
+            break
+    
+    if pnl_col is None:
+        for col in df.columns:
+            if 'profit' in col.lower() or 'p&l' in col.lower() or 'pnl' in col.lower():
+                pnl_col = col
+                break
+    
+    if pnl_col is None:
+        raise ValueError(f"Could not find profit column. Found columns: {list(df.columns)}")
+    
+    # Find date column (prefer close time)
+    date_cols = ['Close Time', 'Exit Time', 'Close Date', 'Open Time', 'Entry Time', 'Time', 'Date']
+    date_col = None
+    for col in date_cols:
+        if col in df.columns:
+            date_col = col
+            break
+    
+    # Parse profit
+    df['pnl'] = df[pnl_col].apply(parse_currency_value)
+    
+    # Parse date
+    if date_col:
+        df['date'] = pd.to_datetime(df[date_col], errors='coerce').dt.date
+    else:
+        df['date'] = pd.date_range(start='2024-01-01', periods=len(df), freq='D').date
+    
+    return BootstrappedTradingStrategy(df, pnl_column='pnl', date_column='date',
+                                        no_trade_override=no_trade_override)
+
+
+def parse_rithmic_csv(uploaded_file, no_trade_override: Optional[float] = None) -> BootstrappedTradingStrategy:
+    """
+    Parse a Rithmic / R|Trader trade export CSV.
+    
+    Common Rithmic columns:
+    - 'Entry Time': Entry datetime
+    - 'Exit Time': Exit datetime
+    - 'Symbol': Instrument
+    - 'Side': Buy/Sell
+    - 'Qty': Quantity
+    - 'Entry Price': Entry price
+    - 'Exit Price': Exit price
+    - 'Profit': Realized P&L
+    - 'Commission': Fees
+    """
+    df = pd.read_csv(uploaded_file)
+    
+    # Find profit column
+    profit_cols = ['Profit', 'P&L', 'Net Profit', 'Realized PnL']
+    pnl_col = None
+    for col in profit_cols:
+        if col in df.columns:
+            pnl_col = col
+            break
+    
+    if pnl_col is None:
+        raise ValueError(f"Could not find profit column. Found columns: {list(df.columns)}")
+    
+    # Find date column
+    date_cols = ['Entry Time', 'Exit Time', 'Time', 'Date']
+    date_col = None
+    for col in date_cols:
+        if col in df.columns:
+            date_col = col
+            break
+    
+    # Parse profit
+    df['pnl'] = df[pnl_col].apply(parse_currency_value)
+    
+    # Parse date
+    if date_col:
+        df['date'] = pd.to_datetime(df[date_col], errors='coerce').dt.date
+    else:
+        df['date'] = pd.date_range(start='2024-01-01', periods=len(df), freq='D').date
+    
+    return BootstrappedTradingStrategy(df, pnl_column='pnl', date_column='date',
+                                        no_trade_override=no_trade_override)
+
+
+def parse_tradovate_csv(uploaded_file, no_trade_override: Optional[float] = None) -> BootstrappedTradingStrategy:
+    """
+    Parse a Tradovate trade history CSV export.
+    
+    Tradovate columns:
+    - 'Time': Trade datetime
+    - 'Contract': Instrument
+    - 'B/S': Buy/Sell
+    - 'Qty': Quantity
+    - 'Price': Trade price
+    - 'P&L': Realized P&L
+    - 'Fees': Commission/fees
+    """
+    df = pd.read_csv(uploaded_file)
+    
+    # Find profit column
+    profit_cols = ['P&L', 'Profit', 'Net P&L', 'Realized P&L']
+    pnl_col = None
+    for col in profit_cols:
+        if col in df.columns:
+            pnl_col = col
+            break
+    
+    if pnl_col is None:
+        raise ValueError(f"Could not find profit column. Found columns: {list(df.columns)}")
+    
+    # Find date column
+    date_cols = ['Time', 'Date', 'DateTime', 'Close Time']
+    date_col = None
+    for col in date_cols:
+        if col in df.columns:
+            date_col = col
+            break
+    
+    # Parse profit
+    df['pnl'] = df[pnl_col].apply(parse_currency_value)
+    
+    # Parse date
+    if date_col:
+        df['date'] = pd.to_datetime(df[date_col], errors='coerce').dt.date
+    else:
+        df['date'] = pd.date_range(start='2024-01-01', periods=len(df), freq='D').date
+    
+    return BootstrappedTradingStrategy(df, pnl_column='pnl', date_column='date',
+                                        no_trade_override=no_trade_override)
+
+
 def parse_trade_log_with_template(uploaded_file, template_name: str,
                                    custom_pnl_col: str = '',
                                    custom_date_col: str = '',
@@ -690,8 +932,17 @@ def parse_trade_log_with_template(uploaded_file, template_name: str,
     template = CSV_TEMPLATES[template_name]
     
     # Use specialized parser if available
-    if template["parser"] == "ninjatrader":
+    parser = template["parser"]
+    if parser == "ninjatrader":
         return parse_ninjatrader_csv(uploaded_file, no_trade_override=no_trade_override)
+    elif parser == "tradingview_strategy":
+        return parse_tradingview_strategy_csv(uploaded_file, no_trade_override=no_trade_override)
+    elif parser == "tradingview_broker":
+        return parse_tradingview_broker_csv(uploaded_file, no_trade_override=no_trade_override)
+    elif parser == "rithmic":
+        return parse_rithmic_csv(uploaded_file, no_trade_override=no_trade_override)
+    elif parser == "tradovate":
+        return parse_tradovate_csv(uploaded_file, no_trade_override=no_trade_override)
     
     # For Custom template, use provided column names
     if template_name == "Custom":
