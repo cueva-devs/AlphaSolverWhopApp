@@ -25,8 +25,12 @@ export default function ResultsPanel({
 				{/* Error Banner */}
 				{error && (
 					<Callout.Root color="red">
-						<Callout.Title>Simulation Error</Callout.Title>
-						<Callout.Text>{error}</Callout.Text>
+						<Callout.Text>
+							<Text size="2" weight="bold" className="block mb-1">
+								Simulation Error
+							</Text>
+							{error}
+						</Callout.Text>
 					</Callout.Root>
 				)}
 
