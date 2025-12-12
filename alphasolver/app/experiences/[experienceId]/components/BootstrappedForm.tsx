@@ -223,7 +223,7 @@ export default function BootstrappedForm({
 						} as React.ChangeEvent<HTMLSelectElement>);
 					}}
 				>
-					<Select.Trigger size="2" />
+					<Select.Trigger />
 					<Select.Content>
 						<Select.Item value="NinjaTrader">NinjaTrader</Select.Item>
 						<Select.Item value="Generic">Generic</Select.Item>

@@ -68,7 +68,7 @@ export default function AccountConfigPanel({
 					value={config.propFirm}
 					onValueChange={(value) => handlePropFirmChange(value as PropFirm)}
 				>
-					<Select.Trigger size="2" />
+					<Select.Trigger />
 					<Select.Content>
 						<Select.Item value="Topstep">Topstep</Select.Item>
 						<Select.Item value="Apex">Apex</Select.Item>
@@ -90,7 +90,7 @@ export default function AccountConfigPanel({
 						handleChallengeChange(value as ChallengeSize)
 					}
 				>
-					<Select.Trigger size="2" />
+					<Select.Trigger />
 					<Select.Content>
 						<Select.Item value="10k">10k</Select.Item>
 						<Select.Item value="25k">25k</Select.Item>

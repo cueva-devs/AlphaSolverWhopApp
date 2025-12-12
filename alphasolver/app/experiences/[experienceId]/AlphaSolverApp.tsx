@@ -145,7 +145,7 @@ export default function AlphaSolverApp({
 										}
 									}}
 								>
-									<Select.Trigger size="2" />
+									<Select.Trigger />
 									<Select.Content>
 										<Select.Item value="NinjaTrader">NinjaTrader</Select.Item>
 										<Select.Item value="Generic">Generic</Select.Item>
