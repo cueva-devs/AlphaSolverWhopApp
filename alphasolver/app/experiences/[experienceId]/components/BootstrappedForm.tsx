@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TextInput, Select, Button, Text, Callout } from "@whop/react/components";
+import { Select, Button, Text, Callout } from "@whop/react/components";
 import type { BootstrappedParams, ParsedTrade } from "../types";
 import { parseTradeCsv } from "../lib/csvUtils";
 import type { PlanConfig } from "../config/planConfig";
@@ -241,14 +241,14 @@ export default function BootstrappedForm({
 						<Text size="2" weight="medium" className="mb-2 block">
 							PNL Column Name
 						</Text>
-						<TextInput
+						<input
 							type="text"
 							id="pnlColumn"
 							name="pnlColumn"
-							size="2"
 							value={formData.pnlColumn || ""}
 							onChange={handleChange}
 							placeholder="e.g., Profit, PnL, Net"
+							className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 						/>
 						{errors.pnlColumn && (
 							<Callout.Root color="red" className="mt-1">
@@ -264,14 +264,14 @@ export default function BootstrappedForm({
 						<Text size="2" weight="medium" className="mb-2 block">
 							Date Column Name
 						</Text>
-						<TextInput
+						<input
 							type="text"
 							id="dateColumn"
 							name="dateColumn"
-							size="2"
 							value={formData.dateColumn || ""}
 							onChange={handleChange}
 							placeholder="e.g., Date, Time, DateTime"
+							className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 						/>
 						{errors.dateColumn && (
 							<Callout.Root color="red" className="mt-1">
@@ -287,14 +287,14 @@ export default function BootstrappedForm({
 						<Text size="2" weight="medium" className="mb-2 block">
 							MFE Column Name
 						</Text>
-						<TextInput
+						<input
 							type="text"
 							id="mfeColumn"
 							name="mfeColumn"
-							size="2"
 							value={formData.mfeColumn || ""}
 							onChange={handleChange}
 							placeholder="e.g., MFE, MaxFavorableExcursion"
+							className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 						/>
 						{errors.mfeColumn && (
 							<Callout.Root color="red" className="mt-1">
@@ -312,16 +312,16 @@ export default function BootstrappedForm({
 				<Text size="2" weight="medium" className="mb-2 block">
 					Number of Paths
 				</Text>
-				<TextInput
+				<input
 					type="number"
 					id="numPaths"
 					name="numPaths"
-					size="2"
 					value={formData.numPaths.toString()}
 					onChange={handleChange}
 					step="1"
 					min="1"
 					max={planConfig.maxPaths}
+					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 				/>
 				{errors.numPaths && (
 					<Callout.Root color="red" className="mt-1">
@@ -338,16 +338,16 @@ export default function BootstrappedForm({
 				<Text size="2" weight="medium" className="mb-2 block">
 					Number of Days
 				</Text>
-				<TextInput
+				<input
 					type="number"
 					id="numDays"
 					name="numDays"
-					size="2"
 					value={formData.numDays.toString()}
 					onChange={handleChange}
 					step="1"
 					min="1"
 					max={planConfig.maxDays}
+					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 				/>
 				{errors.numDays && (
 					<Callout.Root color="red" className="mt-1">

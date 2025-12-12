@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TextInput, Button, Text, Callout } from "@whop/react/components";
+import { Button, Text, Callout } from "@whop/react/components";
 import type { ParametricParams } from "../types";
 import type { PlanConfig } from "../config/planConfig";
 
@@ -135,15 +135,15 @@ export default function ParametricForm({
 				<Text size="2" weight="medium" className="mb-2 block">
 					Stop Size
 				</Text>
-				<TextInput
+				<input
 					type="number"
 					id="stopSize"
 					name="stopSize"
-					size="2"
 					value={formData.stopSize.toString()}
 					onChange={handleChange}
 					step="any"
 					min="0"
+					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 				/>
 				{errors.stopSize && (
 					<Callout.Root color="red" className="mt-1">
@@ -159,15 +159,15 @@ export default function ParametricForm({
 				<Text size="2" weight="medium" className="mb-2 block">
 					Take Profit Size
 				</Text>
-				<TextInput
+				<input
 					type="number"
 					id="takeProfitSize"
 					name="takeProfitSize"
-					size="2"
 					value={formData.takeProfitSize.toString()}
 					onChange={handleChange}
 					step="any"
 					min="0"
+					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 				/>
 				{errors.takeProfitSize && (
 					<Callout.Root color="red" className="mt-1">
@@ -183,16 +183,16 @@ export default function ParametricForm({
 				<Text size="2" weight="medium" className="mb-2 block">
 					Win Rate (%)
 				</Text>
-				<TextInput
+				<input
 					type="number"
 					id="winRate"
 					name="winRate"
-					size="2"
 					value={formData.winRate.toString()}
 					onChange={handleChange}
 					step="0.1"
 					min="0"
 					max="100"
+					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 				/>
 				{errors.winRate && (
 					<Callout.Root color="red" className="mt-1">
@@ -208,15 +208,15 @@ export default function ParametricForm({
 				<Text size="2" weight="medium" className="mb-2 block">
 					Average MFE
 				</Text>
-				<TextInput
+				<input
 					type="number"
 					id="averageMFE"
 					name="averageMFE"
-					size="2"
 					value={formData.averageMFE.toString()}
 					onChange={handleChange}
 					step="any"
 					min="0"
+					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 				/>
 				{errors.averageMFE && (
 					<Callout.Root color="red" className="mt-1">
@@ -232,15 +232,15 @@ export default function ParametricForm({
 				<Text size="2" weight="medium" className="mb-2 block">
 					Trades Per Day
 				</Text>
-				<TextInput
+				<input
 					type="number"
 					id="tradesPerDay"
 					name="tradesPerDay"
-					size="2"
 					value={formData.tradesPerDay.toString()}
 					onChange={handleChange}
 					step="1"
 					min="1"
+					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 				/>
 				{errors.tradesPerDay && (
 					<Callout.Root color="red" className="mt-1">
@@ -256,16 +256,16 @@ export default function ParametricForm({
 				<Text size="2" weight="medium" className="mb-2 block">
 					Number of Paths
 				</Text>
-				<TextInput
+				<input
 					type="number"
 					id="numPaths"
 					name="numPaths"
-					size="2"
 					value={formData.numPaths.toString()}
 					onChange={handleChange}
 					step="1"
 					min="1"
 					max={planConfig.maxPaths}
+					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 				/>
 				{errors.numPaths && (
 					<Callout.Root color="red" className="mt-1">
@@ -281,16 +281,16 @@ export default function ParametricForm({
 				<Text size="2" weight="medium" className="mb-2 block">
 					Number of Days
 				</Text>
-				<TextInput
+				<input
 					type="number"
 					id="numDays"
 					name="numDays"
-					size="2"
 					value={formData.numDays.toString()}
 					onChange={handleChange}
 					step="1"
 					min="1"
 					max={planConfig.maxDays}
+					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 				/>
 				{errors.numDays && (
 					<Callout.Root color="red" className="mt-1">

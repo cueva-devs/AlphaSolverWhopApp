@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TextInput, Button, Text, Tabs, Callout } from "@whop/react/components";
+import { Button, Text, Tabs, Callout } from "@whop/react/components";
 import ParametricForm from "./ParametricForm";
 import BootstrappedForm from "./BootstrappedForm";
 import PyodideDebugPanel from "./PyodideDebugPanel";
@@ -74,15 +74,14 @@ export default function StrategyPanel({
 					>
 						-
 					</Button>
-					<TextInput
+					<input
 						type="number"
-						size="2"
 						value={numPaths.toString()}
 						onChange={(e) => {
 							const val = parseInt(e.target.value) || 0;
 							setNumPaths(Math.min(Math.max(1, val), planConfig.maxPaths));
 						}}
-						className="flex-1"
+						className="flex-1 px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 					/>
 					<Button
 						type="button"
