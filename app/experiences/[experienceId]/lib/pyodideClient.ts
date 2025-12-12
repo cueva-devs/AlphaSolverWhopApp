@@ -122,7 +122,8 @@ export async function loadPyodide(): Promise<PyodideInterface> {
 
 			// Load required packages
 			// json is part of the Python stdlib, so only load external packages
-			await pyodide.loadPackage(["numpy", "pandas"]);
+			// matplotlib, scipy, and sklearn are needed for simulation analysis (clustering, confidence intervals, plotting)
+			await pyodide.loadPackage(["numpy", "pandas", "matplotlib", "scipy", "scikit-learn"]);
 
 			// Create a directory for our Python modules and add it to sys.path
 			pyodide.runPython(`
