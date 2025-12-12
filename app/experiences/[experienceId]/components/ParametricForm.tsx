@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Button, Text, Callout } from "@whop/react/components";
 import type { ParametricParams } from "../types";
 import type { PlanConfig } from "../config/planConfig";
 
@@ -122,198 +123,194 @@ export default function ParametricForm({
 			{(showUpgradeWarning ||
 				formData.numPaths > planConfig.maxPaths ||
 				formData.numDays > planConfig.maxDays) && (
-				<div className="p-3 bg-yellow-a2 border border-yellow-a5 rounded-lg">
-					<p className="text-xs text-yellow-11">
+				<Callout.Root color="amber">
+					<Callout.Text size="2">
 						Your current plan ({planConfig.label}) allows up to{" "}
 						{planConfig.maxPaths} paths / {planConfig.maxDays} days. Upgrade
 						on Whop to increase these limits.
-					</p>
-				</div>
+					</Callout.Text>
+				</Callout.Root>
 			)}
 			<div>
-				<label
-					htmlFor="stopSize"
-					className="block text-sm font-medium text-gray-11 mb-1"
-				>
+				<Text size="2" weight="medium" className="mb-2 block">
 					Stop Size
-				</label>
+				</Text>
 				<input
 					type="number"
 					id="stopSize"
 					name="stopSize"
-					value={formData.stopSize}
+					value={formData.stopSize.toString()}
 					onChange={handleChange}
 					step="any"
 					min="0"
-					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 focus:outline-none focus:ring-2 focus:ring-gray-a6 focus:border-transparent"
+					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 				/>
 				{errors.stopSize && (
-					<p className="mt-1 text-xs text-red-9">{errors.stopSize}</p>
+					<Callout.Root color="red" className="mt-1">
+						<Callout.Text size="1">{errors.stopSize}</Callout.Text>
+					</Callout.Root>
 				)}
-				<p className="mt-1 text-xs text-gray-9">
+				<Text size="1" color="gray" className="mt-1">
 					The size of your stop loss in dollars
-				</p>
+				</Text>
 			</div>
 
 			<div>
-				<label
-					htmlFor="takeProfitSize"
-					className="block text-sm font-medium text-gray-11 mb-1"
-				>
+				<Text size="2" weight="medium" className="mb-2 block">
 					Take Profit Size
-				</label>
+				</Text>
 				<input
 					type="number"
 					id="takeProfitSize"
 					name="takeProfitSize"
-					value={formData.takeProfitSize}
+					value={formData.takeProfitSize.toString()}
 					onChange={handleChange}
 					step="any"
 					min="0"
-					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 focus:outline-none focus:ring-2 focus:ring-gray-a6 focus:border-transparent"
+					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 				/>
 				{errors.takeProfitSize && (
-					<p className="mt-1 text-xs text-red-9">{errors.takeProfitSize}</p>
+					<Callout.Root color="red" className="mt-1">
+						<Callout.Text size="1">{errors.takeProfitSize}</Callout.Text>
+					</Callout.Root>
 				)}
-				<p className="mt-1 text-xs text-gray-9">
+				<Text size="1" color="gray" className="mt-1">
 					The size of your take profit target in dollars
-				</p>
+				</Text>
 			</div>
 
 			<div>
-				<label
-					htmlFor="winRate"
-					className="block text-sm font-medium text-gray-11 mb-1"
-				>
+				<Text size="2" weight="medium" className="mb-2 block">
 					Win Rate (%)
-				</label>
+				</Text>
 				<input
 					type="number"
 					id="winRate"
 					name="winRate"
-					value={formData.winRate}
+					value={formData.winRate.toString()}
 					onChange={handleChange}
 					step="0.1"
 					min="0"
 					max="100"
-					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 focus:outline-none focus:ring-2 focus:ring-gray-a6 focus:border-transparent"
+					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 				/>
 				{errors.winRate && (
-					<p className="mt-1 text-xs text-red-9">{errors.winRate}</p>
+					<Callout.Root color="red" className="mt-1">
+						<Callout.Text size="1">{errors.winRate}</Callout.Text>
+					</Callout.Root>
 				)}
-				<p className="mt-1 text-xs text-gray-9">
+				<Text size="1" color="gray" className="mt-1">
 					Expected win rate percentage (0-100)
-				</p>
+				</Text>
 			</div>
 
 			<div>
-				<label
-					htmlFor="averageMFE"
-					className="block text-sm font-medium text-gray-11 mb-1"
-				>
+				<Text size="2" weight="medium" className="mb-2 block">
 					Average MFE
-				</label>
+				</Text>
 				<input
 					type="number"
 					id="averageMFE"
 					name="averageMFE"
-					value={formData.averageMFE}
+					value={formData.averageMFE.toString()}
 					onChange={handleChange}
 					step="any"
 					min="0"
-					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 focus:outline-none focus:ring-2 focus:ring-gray-a6 focus:border-transparent"
+					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 				/>
 				{errors.averageMFE && (
-					<p className="mt-1 text-xs text-red-9">{errors.averageMFE}</p>
+					<Callout.Root color="red" className="mt-1">
+						<Callout.Text size="1">{errors.averageMFE}</Callout.Text>
+					</Callout.Root>
 				)}
-				<p className="mt-1 text-xs text-gray-9">
+				<Text size="1" color="gray" className="mt-1">
 					Average Maximum Favorable Excursion in dollars
-				</p>
+				</Text>
 			</div>
 
 			<div>
-				<label
-					htmlFor="tradesPerDay"
-					className="block text-sm font-medium text-gray-11 mb-1"
-				>
+				<Text size="2" weight="medium" className="mb-2 block">
 					Trades Per Day
-				</label>
+				</Text>
 				<input
 					type="number"
 					id="tradesPerDay"
 					name="tradesPerDay"
-					value={formData.tradesPerDay}
+					value={formData.tradesPerDay.toString()}
 					onChange={handleChange}
 					step="1"
 					min="1"
-					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 focus:outline-none focus:ring-2 focus:ring-gray-a6 focus:border-transparent"
+					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 				/>
 				{errors.tradesPerDay && (
-					<p className="mt-1 text-xs text-red-9">{errors.tradesPerDay}</p>
+					<Callout.Root color="red" className="mt-1">
+						<Callout.Text size="1">{errors.tradesPerDay}</Callout.Text>
+					</Callout.Root>
 				)}
-				<p className="mt-1 text-xs text-gray-9">
+				<Text size="1" color="gray" className="mt-1">
 					Average number of trades executed per day
-				</p>
+				</Text>
 			</div>
 
 			<div>
-				<label
-					htmlFor="numPaths"
-					className="block text-sm font-medium text-gray-11 mb-1"
-				>
+				<Text size="2" weight="medium" className="mb-2 block">
 					Number of Paths
-				</label>
+				</Text>
 				<input
 					type="number"
 					id="numPaths"
 					name="numPaths"
-					value={formData.numPaths}
+					value={formData.numPaths.toString()}
 					onChange={handleChange}
 					step="1"
 					min="1"
 					max={planConfig.maxPaths}
-					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 focus:outline-none focus:ring-2 focus:ring-gray-a6 focus:border-transparent"
+					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 				/>
 				{errors.numPaths && (
-					<p className="mt-1 text-xs text-red-9">{errors.numPaths}</p>
+					<Callout.Root color="red" className="mt-1">
+						<Callout.Text size="1">{errors.numPaths}</Callout.Text>
+					</Callout.Root>
 				)}
-				<p className="mt-1 text-xs text-gray-9">
+				<Text size="1" color="gray" className="mt-1">
 					Number of simulation paths to generate (max: {planConfig.maxPaths})
-				</p>
+				</Text>
 			</div>
 
 			<div>
-				<label
-					htmlFor="numDays"
-					className="block text-sm font-medium text-gray-11 mb-1"
-				>
+				<Text size="2" weight="medium" className="mb-2 block">
 					Number of Days
-				</label>
+				</Text>
 				<input
 					type="number"
 					id="numDays"
 					name="numDays"
-					value={formData.numDays}
+					value={formData.numDays.toString()}
 					onChange={handleChange}
 					step="1"
 					min="1"
 					max={planConfig.maxDays}
-					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 focus:outline-none focus:ring-2 focus:ring-gray-a6 focus:border-transparent"
+					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 				/>
 				{errors.numDays && (
-					<p className="mt-1 text-xs text-red-9">{errors.numDays}</p>
+					<Callout.Root color="red" className="mt-1">
+						<Callout.Text size="1">{errors.numDays}</Callout.Text>
+					</Callout.Root>
 				)}
-				<p className="mt-1 text-xs text-gray-9">
+				<Text size="1" color="gray" className="mt-1">
 					Number of days to simulate (max: {planConfig.maxDays})
-				</p>
+				</Text>
 			</div>
 
-			<button
+			<Button
 				type="submit"
-				className="w-full px-4 py-2 bg-gray-a4 hover:bg-gray-a5 border border-gray-a6 text-gray-12 font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-gray-a6 focus:ring-offset-2 focus:ring-offset-gray-a2"
+				size="2"
+				variant="solid"
+				color="blue"
+				className="w-full"
 			>
 				Run Simulation
-			</button>
+			</Button>
 		</form>
 	);
 }

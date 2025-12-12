@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Select, Button, Text, Callout } from "@whop/react/components";
 import type { BootstrappedParams, ParsedTrade } from "../types";
 import { parseTradeCsv } from "../lib/csvUtils";
 import type { PlanConfig } from "../config/planConfig";
@@ -165,84 +166,81 @@ export default function BootstrappedForm({
 	return (
 		<form onSubmit={handleSubmit} className="space-y-4">
 			{errors.general && (
-				<div className="p-3 bg-red-a2 border border-red-a5 rounded-md text-red-11 text-sm">
-					{errors.general}
-				</div>
+				<Callout.Root color="red">
+					<Callout.Text size="2">{errors.general}</Callout.Text>
+				</Callout.Root>
 			)}
 
 			{/* Plan Limits Warning */}
 			{(showUpgradeWarning ||
 				formData.numPaths > planConfig.maxPaths ||
 				formData.numDays > planConfig.maxDays) && (
-				<div className="p-3 bg-yellow-a2 border border-yellow-a5 rounded-lg">
-					<p className="text-xs text-yellow-11">
+				<Callout.Root color="amber">
+					<Callout.Text size="2">
 						Your current plan ({planConfig.label}) allows up to{" "}
 						{planConfig.maxPaths} paths / {planConfig.maxDays} days. Upgrade
 						on Whop to increase these limits.
-					</p>
-				</div>
+					</Callout.Text>
+				</Callout.Root>
 			)}
 
 			<div>
-				<label
-					htmlFor="csvFile"
-					className="block text-sm font-medium text-gray-11 mb-1"
-				>
+				<Text size="2" weight="medium" className="mb-2 block">
 					CSV File
-				</label>
+				</Text>
 				<input
 					type="file"
 					id="csvFile"
 					name="csvFile"
 					accept=".csv,text/csv"
 					onChange={handleFileChange}
-					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-gray-a4 file:text-gray-12 hover:file:bg-gray-a5 focus:outline-none focus:ring-2 focus:ring-gray-a6 focus:border-transparent"
+					className="w-full text-2 file:mr-4 file:py-2 file:px-3 file:rounded-md file:border-0 file:font-medium file:bg-gray-a4 file:text-gray-12 hover:file:bg-gray-a5"
 				/>
 				{errors.csvFile && (
-					<p className="mt-1 text-xs text-red-9">{errors.csvFile}</p>
+					<Callout.Root color="red" className="mt-1">
+						<Callout.Text size="1">{errors.csvFile}</Callout.Text>
+					</Callout.Root>
 				)}
 				{csvFile && (
-					<p className="mt-1 text-xs text-gray-9">
+					<Text size="1" color="gray" className="mt-1">
 						Selected: {csvFile.name} ({(csvFile.size / 1024).toFixed(2)} KB)
-					</p>
+					</Text>
 				)}
-				<p className="mt-1 text-xs text-gray-9">
+				<Text size="1" color="gray" className="mt-1">
 					Upload a CSV file containing your trade history
-				</p>
+				</Text>
 			</div>
 
 			<div>
-				<label
-					htmlFor="template"
-					className="block text-sm font-medium text-gray-11 mb-1"
-				>
+				<Text size="2" weight="medium" className="mb-2 block">
 					Template
-				</label>
-				<select
-					id="template"
-					name="template"
+				</Text>
+				<Select.Root
 					value={formData.template}
-					onChange={handleChange}
-					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 focus:outline-none focus:ring-2 focus:ring-gray-a6 focus:border-transparent"
+					onValueChange={(value) => {
+						handleChange({
+							target: { name: "template", value },
+						} as React.ChangeEvent<HTMLSelectElement>);
+					}}
 				>
-					<option value="NinjaTrader">NinjaTrader</option>
-					<option value="Generic">Generic</option>
-					<option value="Custom">Custom</option>
-				</select>
-				<p className="mt-1 text-xs text-gray-9">
+					<Select.Trigger />
+					<Select.Content>
+						<Select.Item value="NinjaTrader">NinjaTrader</Select.Item>
+						<Select.Item value="Generic">Generic</Select.Item>
+						<Select.Item value="Custom">Custom</Select.Item>
+					</Select.Content>
+				</Select.Root>
+				<Text size="1" color="gray" className="mt-1">
 					Select the CSV format template or use Custom to specify column names
-				</p>
+				</Text>
 			</div>
 
 			{formData.template === "Custom" && (
 				<>
 					<div>
-						<label
-							htmlFor="pnlColumn"
-							className="block text-sm font-medium text-gray-11 mb-1"
-						>
+						<Text size="2" weight="medium" className="mb-2 block">
 							PNL Column Name
-						</label>
+						</Text>
 						<input
 							type="text"
 							id="pnlColumn"
@@ -250,23 +248,22 @@ export default function BootstrappedForm({
 							value={formData.pnlColumn || ""}
 							onChange={handleChange}
 							placeholder="e.g., Profit, PnL, Net"
-							className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 focus:outline-none focus:ring-2 focus:ring-gray-a6 focus:border-transparent"
+							className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 						/>
 						{errors.pnlColumn && (
-							<p className="mt-1 text-xs text-red-9">{errors.pnlColumn}</p>
+							<Callout.Root color="red" className="mt-1">
+								<Callout.Text size="1">{errors.pnlColumn}</Callout.Text>
+							</Callout.Root>
 						)}
-						<p className="mt-1 text-xs text-gray-9">
+						<Text size="1" color="gray" className="mt-1">
 							Name of the column containing profit/loss values
-						</p>
+						</Text>
 					</div>
 
 					<div>
-						<label
-							htmlFor="dateColumn"
-							className="block text-sm font-medium text-gray-11 mb-1"
-						>
+						<Text size="2" weight="medium" className="mb-2 block">
 							Date Column Name
-						</label>
+						</Text>
 						<input
 							type="text"
 							id="dateColumn"
@@ -274,23 +271,22 @@ export default function BootstrappedForm({
 							value={formData.dateColumn || ""}
 							onChange={handleChange}
 							placeholder="e.g., Date, Time, DateTime"
-							className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 focus:outline-none focus:ring-2 focus:ring-gray-a6 focus:border-transparent"
+							className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 						/>
 						{errors.dateColumn && (
-							<p className="mt-1 text-xs text-red-9">{errors.dateColumn}</p>
+							<Callout.Root color="red" className="mt-1">
+								<Callout.Text size="1">{errors.dateColumn}</Callout.Text>
+							</Callout.Root>
 						)}
-						<p className="mt-1 text-xs text-gray-9">
+						<Text size="1" color="gray" className="mt-1">
 							Name of the column containing trade dates/times
-						</p>
+						</Text>
 					</div>
 
 					<div>
-						<label
-							htmlFor="mfeColumn"
-							className="block text-sm font-medium text-gray-11 mb-1"
-						>
+						<Text size="2" weight="medium" className="mb-2 block">
 							MFE Column Name
-						</label>
+						</Text>
 						<input
 							type="text"
 							id="mfeColumn"
@@ -298,78 +294,82 @@ export default function BootstrappedForm({
 							value={formData.mfeColumn || ""}
 							onChange={handleChange}
 							placeholder="e.g., MFE, MaxFavorableExcursion"
-							className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 focus:outline-none focus:ring-2 focus:ring-gray-a6 focus:border-transparent"
+							className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 						/>
 						{errors.mfeColumn && (
-							<p className="mt-1 text-xs text-red-9">{errors.mfeColumn}</p>
+							<Callout.Root color="red" className="mt-1">
+								<Callout.Text size="1">{errors.mfeColumn}</Callout.Text>
+							</Callout.Root>
 						)}
-						<p className="mt-1 text-xs text-gray-9">
+						<Text size="1" color="gray" className="mt-1">
 							Name of the column containing Maximum Favorable Excursion values
-						</p>
+						</Text>
 					</div>
 				</>
 			)}
 
 			<div>
-				<label
-					htmlFor="numPaths"
-					className="block text-sm font-medium text-gray-11 mb-1"
-				>
+				<Text size="2" weight="medium" className="mb-2 block">
 					Number of Paths
-				</label>
+				</Text>
 				<input
 					type="number"
 					id="numPaths"
 					name="numPaths"
-					value={formData.numPaths}
+					value={formData.numPaths.toString()}
 					onChange={handleChange}
 					step="1"
 					min="1"
 					max={planConfig.maxPaths}
-					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 focus:outline-none focus:ring-2 focus:ring-gray-a6 focus:border-transparent"
+					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 				/>
 				{errors.numPaths && (
-					<p className="mt-1 text-xs text-red-9">{errors.numPaths}</p>
+					<Callout.Root color="red" className="mt-1">
+						<Callout.Text size="1">{errors.numPaths}</Callout.Text>
+					</Callout.Root>
 				)}
-				<p className="mt-1 text-xs text-gray-9">
+				<Text size="1" color="gray" className="mt-1">
 					Number of simulation paths to generate from your trade data (max:{" "}
 					{planConfig.maxPaths})
-				</p>
+				</Text>
 			</div>
 
 			<div>
-				<label
-					htmlFor="numDays"
-					className="block text-sm font-medium text-gray-11 mb-1"
-				>
+				<Text size="2" weight="medium" className="mb-2 block">
 					Number of Days
-				</label>
+				</Text>
 				<input
 					type="number"
 					id="numDays"
 					name="numDays"
-					value={formData.numDays}
+					value={formData.numDays.toString()}
 					onChange={handleChange}
 					step="1"
 					min="1"
 					max={planConfig.maxDays}
-					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 focus:outline-none focus:ring-2 focus:ring-gray-a6 focus:border-transparent"
+					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
 				/>
 				{errors.numDays && (
-					<p className="mt-1 text-xs text-red-9">{errors.numDays}</p>
+					<Callout.Root color="red" className="mt-1">
+						<Callout.Text size="1">{errors.numDays}</Callout.Text>
+					</Callout.Root>
 				)}
-				<p className="mt-1 text-xs text-gray-9">
+				<Text size="1" color="gray" className="mt-1">
 					Number of days to simulate (max: {planConfig.maxDays})
-				</p>
+				</Text>
 			</div>
 
-			<button
+			<Button
 				type="submit"
+				size="2"
+				variant="solid"
+				color="blue"
+				className="w-full"
 				disabled={isParsing}
-				className="w-full px-4 py-2 bg-gray-a4 hover:bg-gray-a5 disabled:opacity-50 disabled:cursor-not-allowed border border-gray-a6 text-gray-12 font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-gray-a6 focus:ring-offset-2 focus:ring-offset-gray-a2"
+				loading={isParsing}
 			>
 				{isParsing ? "Parsing CSV..." : "Run Simulation"}
-			</button>
+			</Button>
 		</form>
 	);
 }

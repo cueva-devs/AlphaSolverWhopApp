@@ -1,5 +1,6 @@
 "use client";
 
+import { Card, Text, Heading, Callout, Table, Spinner } from "@whop/react/components";
 import type { SimulationResult, AccountConfig } from "../types";
 import EquityChart from "./EquityChart";
 import TradeDistributionCharts from "./TradeDistributionCharts";
@@ -18,63 +19,40 @@ export default function ResultsPanel({
 	accountConfig,
 }: ResultsPanelProps) {
 	return (
-		<div className="flex gap-6 h-full">
+		<div className="flex flex-col lg:flex-row gap-4 lg:gap-6 h-full">
 			{/* Left Column - Results */}
-			<div className="flex-1 space-y-6 overflow-y-auto pr-4">
+			<div className="flex-1 space-y-4 lg:space-y-6 overflow-y-auto pr-0 lg:pr-4">
 				{/* Error Banner */}
 				{error && (
-					<div className="p-4 bg-red-900/50 border border-red-800 rounded-lg">
-						<div className="flex items-start gap-3">
-							<div className="flex-shrink-0">
-								<svg
-									className="w-5 h-5 text-red-400"
-									fill="currentColor"
-									viewBox="0 0 20 20"
-								>
-									<path
-										fillRule="evenodd"
-										d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-										clipRule="evenodd"
-									/>
-								</svg>
-							</div>
-							<div className="flex-1">
-								<h3 className="text-sm font-semibold text-red-400 mb-1">
-									Simulation Error
-								</h3>
-								<p className="text-sm text-red-300">{error}</p>
-							</div>
-						</div>
-					</div>
+					<Callout.Root color="red">
+						<Callout.Text>
+							<Text size="2" weight="bold" className="block mb-1">
+								Simulation Error
+							</Text>
+							{error}
+						</Callout.Text>
+					</Callout.Root>
 				)}
 
 				{/* Loading State */}
 				{isRunning && (
 					<div className="flex flex-col items-center justify-center py-12">
-						<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mb-4"></div>
-						<p className="text-sm text-purple-300">Running simulation...</p>
+						<Spinner size="4" className="mb-4" />
+						<Text size="3" color="gray">
+							Running simulation...
+						</Text>
 					</div>
 				)}
 
 				{/* Empty State */}
 				{!result && !isRunning && !error && (
 					<div className="flex flex-col items-center justify-center py-12 text-center">
-						<svg
-							className="w-16 h-16 text-purple-600 mb-4"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth={1.5}
-								d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-							/>
-						</svg>
-						<p className="text-sm text-purple-300">
+						<Text size="9" color="gray" className="mb-4">
+							📊
+						</Text>
+						<Text size="3" color="gray">
 							Run a simulation to see results
-						</p>
+						</Text>
 					</div>
 				)}
 
@@ -82,274 +60,284 @@ export default function ResultsPanel({
 				{result && !isRunning && (
 					<>
 						{/* Outcome Probability */}
-						<div className="bg-slate-800/50 border border-purple-800/30 rounded-lg p-4">
-							<h3 className="text-sm font-semibold text-purple-200 mb-3">
+						<Card size="2" variant="surface">
+							<Heading size="4" as="h3" className="mb-3">
 								Outcome Probability
-							</h3>
+							</Heading>
 							<div className="grid grid-cols-2 gap-4">
 								<div>
-									<div className="text-xs text-purple-300 mb-1">Pass Rate</div>
-									<div className="text-2xl font-bold text-green-400">
+									<Text size="1" color="gray" className="mb-1">
+										Pass Rate
+									</Text>
+									<Heading size="7" color="green">
 										{result.passProbability.toFixed(1)}%
-									</div>
+									</Heading>
 								</div>
 								<div>
-									<div className="text-xs text-purple-300 mb-1">Fail Rate</div>
-									<div className="text-2xl font-bold text-red-400">
+									<Text size="1" color="gray" className="mb-1">
+										Fail Rate
+									</Text>
+									<Heading size="7" color="red">
 										{(result.failProbability || 100 - result.passProbability).toFixed(1)}%
-									</div>
+									</Heading>
 								</div>
 							</div>
-						</div>
+						</Card>
 
 						{/* Expected Value */}
-						<div className="bg-slate-800/50 border border-purple-800/30 rounded-lg p-4">
-							<h3 className="text-sm font-semibold text-purple-200 mb-3">
+						<Card size="2" variant="surface">
+							<Heading size="4" as="h3" className="mb-3">
 								Expected Value
-							</h3>
+							</Heading>
 							<div className="space-y-2">
 								<div>
-									<div className="text-xs text-purple-300 mb-1">
+									<Text size="1" color="gray" className="mb-1">
 										Net P&L Per Attempt
-									</div>
-									<div className="text-lg font-semibold text-white">
+									</Text>
+									<Text size="5" weight="bold">
 										${(result.netPnlPerAttempt || result.expectedPayout).toLocaleString(undefined, {
 											minimumFractionDigits: 2,
 											maximumFractionDigits: 2,
 										})}
-									</div>
+									</Text>
 								</div>
 								<div>
-									<div className="text-xs text-purple-300 mb-1">
+									<Text size="1" color="gray" className="mb-1">
 										Expected Attempts to Pass
-									</div>
-									<div className="text-lg font-semibold text-white">
+									</Text>
+									<Text size="5" weight="bold">
 										{(result.expectedAttemptsToPass || 1.0).toFixed(1)}
-									</div>
+									</Text>
 								</div>
 							</div>
-						</div>
+						</Card>
 
 						{/* Timeline */}
-						<div className="bg-slate-800/50 border border-purple-800/30 rounded-lg p-4">
-							<h3 className="text-sm font-semibold text-purple-200 mb-3">
+						<Card size="2" variant="surface">
+							<Heading size="4" as="h3" className="mb-3">
 								Timeline (Winners)
-							</h3>
+							</Heading>
 							<div className="space-y-2">
 								<div>
-									<div className="text-xs text-purple-300 mb-1">
+									<Text size="1" color="gray" className="mb-1">
 										Avg Days to Pass
-									</div>
-									<div className="text-lg font-semibold text-white">
+									</Text>
+									<Text size="5" weight="bold">
 										{Math.round(result.avgDaysToPass || 0)}
-									</div>
+									</Text>
 								</div>
 								<div>
-									<div className="text-xs text-purple-300 mb-1">
+									<Text size="1" color="gray" className="mb-1">
 										Avg Days in Funded
-									</div>
-									<div className="text-lg font-semibold text-white">
+									</Text>
+									<Text size="5" weight="bold">
 										{Math.round(result.avgDaysInFunded || 0)}
-									</div>
+									</Text>
 								</div>
 								<div>
-									<div className="text-xs text-purple-300 mb-1">
+									<Text size="1" color="gray" className="mb-1">
 										Total Days to Payout
-									</div>
-									<div className="text-lg font-semibold text-white">
+									</Text>
+									<Text size="5" weight="bold">
 										{Math.round(result.totalDaysToPayout || 0)}
-										<span className="text-xs text-purple-400 ml-2">
+										<Text size="1" color="gray" className="ml-2">
 											≈ {Math.round((result.totalDaysToPayout || 0) / 30 * 10) / 10} months
-										</span>
-									</div>
+										</Text>
+									</Text>
 								</div>
 							</div>
-						</div>
+						</Card>
 
 						{/* Cost Analysis */}
-						<div className="bg-slate-800/50 border border-purple-800/30 rounded-lg p-4">
-							<h3 className="text-sm font-semibold text-purple-200 mb-3">
+						<Card size="2" variant="surface">
+							<Heading size="4" as="h3" className="mb-3">
 								Cost Analysis
-							</h3>
+							</Heading>
 							<div className="space-y-3">
-								<div className="grid grid-cols-3 gap-2 text-xs">
+								<div className="grid grid-cols-3 gap-2">
 									<div>
-										<div className="text-purple-300">Initial Purchase</div>
-										<div className="text-white font-semibold">
+										<Text size="1" color="gray">Initial Purchase</Text>
+										<Text size="2" weight="bold">
 											${(result.initialPurchase || 149).toFixed(0)}
-										</div>
+										</Text>
 									</div>
 									<div>
-										<div className="text-purple-300">Monthly Rebill</div>
-										<div className="text-white font-semibold">
+										<Text size="1" color="gray">Monthly Rebill</Text>
+										<Text size="2" weight="bold">
 											${(result.monthlyRebill || 149).toFixed(0)}
-										</div>
+										</Text>
 									</div>
 									<div>
-										<div className="text-purple-300">Funded Setup</div>
-										<div className="text-white font-semibold">
+										<Text size="1" color="gray">Funded Setup</Text>
+										<Text size="2" weight="bold">
 											${(result.fundedSetup || 149).toFixed(0)}
-										</div>
+										</Text>
 									</div>
 								</div>
 
-								<div className="pt-2 border-t border-purple-800/30">
-									<div className="text-xs font-semibold text-purple-200 mb-2">
+								<div className="pt-2 border-t border-gray-a5">
+									<Text size="1" weight="bold" className="mb-2 block">
 										If You Pass:
-									</div>
-									<div className="space-y-1 text-xs">
+									</Text>
+									<div className="space-y-1">
 										<div className="flex justify-between">
-											<span className="text-purple-300">Avg Total Costs:</span>
-											<span className="text-white font-semibold">
+											<Text size="1" color="gray">Avg Total Costs:</Text>
+											<Text size="1" weight="bold">
 												${(result.avgTotalCostsIfPass || 0).toFixed(0)}
-											</span>
+											</Text>
 										</div>
 										<div className="flex justify-between">
-											<span className="text-purple-300">Avg Gross Payout:</span>
-											<span className="text-white font-semibold">
+											<Text size="1" color="gray">Avg Gross Payout:</Text>
+											<Text size="1" weight="bold">
 												${(result.avgGrossPayoutIfPass || 0).toFixed(0)}
-											</span>
+											</Text>
 										</div>
 										<div className="flex justify-between">
-											<span className="text-purple-300">Avg Net Profit:</span>
-											<span className="text-green-400 font-semibold">
+											<Text size="1" color="gray">Avg Net Profit:</Text>
+											<Text size="1" weight="bold" color="green">
 												${(result.avgNetProfitIfPass || 0).toFixed(0)}
-											</span>
+											</Text>
 										</div>
 									</div>
 								</div>
 
-								<div className="pt-2 border-t border-purple-800/30">
-									<div className="text-xs font-semibold text-purple-200 mb-2">
+								<div className="pt-2 border-t border-gray-a5">
+									<Text size="1" weight="bold" className="mb-2 block">
 										If You Fail:
-									</div>
-									<div className="space-y-1 text-xs">
+									</Text>
+									<div className="space-y-1">
 										<div className="flex justify-between">
-											<span className="text-purple-300">Avg Days Before Fail:</span>
-											<span className="text-white font-semibold">
+											<Text size="1" color="gray">Avg Days Before Fail:</Text>
+											<Text size="1" weight="bold">
 												{Math.round(result.avgDaysBeforeFail || 0)}
-											</span>
+											</Text>
 										</div>
 										<div className="flex justify-between">
-											<span className="text-purple-300">Avg Cost Lost:</span>
-											<span className="text-red-400 font-semibold">
+											<Text size="1" color="gray">Avg Cost Lost:</Text>
+											<Text size="1" weight="bold" color="red">
 												${(result.avgCostLostIfFail || 0).toFixed(0)}
-											</span>
+											</Text>
 										</div>
-										<div className="text-xs text-purple-300 mt-1">
+										<Text size="1" color="gray" className="mt-1">
 											Fail in Eval: {Math.round(result.failInEvalPercent || 0)}% | Fail in Funded: {Math.round(result.failInFundedPercent || 0)}%
-										</div>
+										</Text>
 									</div>
 								</div>
 							</div>
-						</div>
+						</Card>
 
 						{/* Investment Summary */}
-						<div className="bg-slate-800/50 border border-purple-800/30 rounded-lg p-4">
-							<h3 className="text-sm font-semibold text-purple-200 mb-3">
+						<Card size="2" variant="surface">
+							<Heading size="4" as="h3" className="mb-3">
 								Investment Summary
-							</h3>
+							</Heading>
 							<div className="space-y-2">
 								<div>
-									<div className="text-xs text-purple-300 mb-1">
+									<Text size="1" color="gray" className="mb-1">
 										Expected Cost to Payout
-									</div>
-									<div className="text-lg font-semibold text-white">
+									</Text>
+									<Text size="5" weight="bold">
 										${(result.expectedCostToPayout || 0).toFixed(0)}
-									</div>
+									</Text>
 								</div>
 								<div>
-									<div className="text-xs text-purple-300 mb-1">
+									<Text size="1" color="gray" className="mb-1">
 										Expected Gross Payout
-									</div>
-									<div className="text-lg font-semibold text-white">
+									</Text>
+									<Text size="5" weight="bold">
 										${(result.expectedGrossPayout || result.expectedPayout).toLocaleString(undefined, {
 											minimumFractionDigits: 0,
 											maximumFractionDigits: 0,
 										})}
-									</div>
+									</Text>
 								</div>
 								<div>
-									<div className="text-xs text-purple-300 mb-1">Expected ROI</div>
-									<div className="text-lg font-semibold text-green-400">
+									<Text size="1" color="gray" className="mb-1">
+										Expected ROI
+									</Text>
+									<Text size="5" weight="bold" color="green">
 										{result.expectedROI ? `+${result.expectedROI.toFixed(1)}%` : "N/A"}
-									</div>
+									</Text>
 								</div>
 							</div>
-						</div>
+						</Card>
 
 						{/* Most Probable Outcomes */}
 						{result.mostProbableOutcomes && result.mostProbableOutcomes.length > 0 && (
-							<div className="bg-slate-800/50 border border-purple-800/30 rounded-lg p-4">
-								<h3 className="text-sm font-semibold text-purple-200 mb-3">
+							<Card size="2" variant="surface">
+								<Heading size="4" as="h3" className="mb-3">
 									Most Probable Outcomes
-								</h3>
-								<div className="text-xs text-purple-300 mb-2">
+								</Heading>
+								<Text size="1" color="gray" className="mb-2 block">
 									Scenarios identified via density-based clustering of simulation paths.
-								</div>
+								</Text>
 								<div className="overflow-x-auto">
-									<table className="w-full text-xs">
-										<thead>
-											<tr className="border-b border-purple-800/30">
-												<th className="text-left py-2 text-purple-300">Scenario</th>
-												<th className="text-right py-2 text-purple-300">Probability</th>
-												<th className="text-right py-2 text-purple-300">Days</th>
-												<th className="text-right py-2 text-purple-300">Max DD</th>
-												<th className="text-right py-2 text-purple-300">Net P&L</th>
-											</tr>
-										</thead>
-										<tbody>
+									<Table.Root>
+										<Table.Header>
+											<Table.Row>
+												<Table.ColumnHeaderCell>Scenario</Table.ColumnHeaderCell>
+												<Table.ColumnHeaderCell className="text-right">Probability</Table.ColumnHeaderCell>
+												<Table.ColumnHeaderCell className="text-right">Days</Table.ColumnHeaderCell>
+												<Table.ColumnHeaderCell className="text-right">Max DD</Table.ColumnHeaderCell>
+												<Table.ColumnHeaderCell className="text-right">Net P&L</Table.ColumnHeaderCell>
+											</Table.Row>
+										</Table.Header>
+										<Table.Body>
 											{result.mostProbableOutcomes.map((outcome, idx) => (
-												<tr key={idx} className="border-b border-purple-800/20">
-													<td className="py-2 text-white">{outcome.scenario}</td>
-													<td className="text-right py-2 text-white">
-														{outcome.probability.toFixed(1)}%
-													</td>
-													<td className="text-right py-2 text-white">{outcome.days}</td>
-													<td className="text-right py-2 text-white">
-														${outcome.maxDD.toFixed(0)}
-													</td>
-													<td className="text-right py-2 text-white">
-														${outcome.netPnl.toFixed(0)}
-													</td>
-												</tr>
+												<Table.Row key={idx}>
+													<Table.Cell>
+														<Text size="2">{outcome.scenario}</Text>
+													</Table.Cell>
+													<Table.Cell className="text-right">
+														<Text size="2">{outcome.probability.toFixed(1)}%</Text>
+													</Table.Cell>
+													<Table.Cell className="text-right">
+														<Text size="2">{outcome.days}</Text>
+													</Table.Cell>
+													<Table.Cell className="text-right">
+														<Text size="2">${outcome.maxDD.toFixed(0)}</Text>
+													</Table.Cell>
+													<Table.Cell className="text-right">
+														<Text size="2">${outcome.netPnl.toFixed(0)}</Text>
+													</Table.Cell>
+												</Table.Row>
 											))}
-										</tbody>
-									</table>
+										</Table.Body>
+									</Table.Root>
 								</div>
-								<div className="text-xs text-purple-400 mt-2">
+								<Text size="1" color="gray" className="mt-2">
 									Note: Some paths were outliers (unusual outcomes)
-								</div>
-							</div>
+								</Text>
+							</Card>
 						)}
 					</>
 				)}
 			</div>
 
 			{/* Right Column - Visualizations */}
-			<div className="w-96 flex-shrink-0 space-y-6 overflow-y-auto">
+			<div className="w-full lg:w-96 flex-shrink-0 space-y-4 lg:space-y-6 overflow-y-auto">
 				{result && !isRunning && (
 					<>
 						{/* Simulation Paths Chart */}
-						<div className="bg-slate-800/50 border border-purple-800/30 rounded-lg p-4">
-							<h3 className="text-sm font-semibold text-purple-200 mb-3">
+						<Card size="2" variant="surface">
+							<Heading size="4" as="h3" className="mb-3">
 								{accountConfig.propFirm} {accountConfig.challenge} - Simulation Paths
-							</h3>
+							</Heading>
 							<EquityChart 
 								equityCurves={result.equityCurves} 
 								finalValues={result.finalValues}
 								winningPathIndices={result.winningPathIndices}
 								losingPathIndices={result.losingPathIndices}
 							/>
-						</div>
+						</Card>
 
 						{/* Trade Distributions */}
-						<div className="bg-slate-800/50 border border-purple-800/30 rounded-lg p-4">
-							<h3 className="text-sm font-semibold text-purple-200 mb-3">
+						<Card size="2" variant="surface">
+							<Heading size="4" as="h3" className="mb-3">
 								Trade Distributions
-							</h3>
+							</Heading>
 							<TradeDistributionCharts result={result} />
-						</div>
+						</Card>
 					</>
 				)}
 			</div>

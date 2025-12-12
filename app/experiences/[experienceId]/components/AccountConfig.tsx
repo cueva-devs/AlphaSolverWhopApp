@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { RadioGroup, Select, Text, Heading, Button } from "@whop/react/components";
 import type { AccountConfig, GameType, PropFirm, ChallengeSize } from "../types";
 
 interface AccountConfigProps {
@@ -30,115 +31,132 @@ export default function AccountConfigPanel({
 		<div className="space-y-4">
 			{/* Game Type */}
 			<div>
-				<label className="block text-sm font-medium text-gray-11 mb-2">
+				<Text size="2" weight="medium" className="mb-2 block">
 					Game Type
-				</label>
-				<div className="space-y-2">
-					<label className="flex items-center gap-2 cursor-pointer">
-						<input
-							type="radio"
-							name="gameType"
-							value="combine"
-							checked={config.gameType === "combine"}
-							onChange={() => handleGameTypeChange("combine")}
-							className="w-4 h-4 text-blue-600 bg-gray-a3 border-gray-a5 focus:ring-blue-500"
-						/>
-						<span className="text-sm text-gray-12">Combine + Funded</span>
-					</label>
-					<label className="flex items-center gap-2 cursor-pointer">
-						<input
-							type="radio"
-							name="gameType"
-							value="combine_only"
-							checked={config.gameType === "combine_only"}
-							onChange={() => handleGameTypeChange("combine_only")}
-							className="w-4 h-4 text-blue-600 bg-gray-a3 border-gray-a5 focus:ring-blue-500"
-						/>
-						<span className="text-sm text-gray-12">Combine Only</span>
-					</label>
-					<label className="flex items-center gap-2 cursor-pointer">
-						<input
-							type="radio"
-							name="gameType"
-							value="funded_only"
-							checked={config.gameType === "funded_only"}
-							onChange={() => handleGameTypeChange("funded_only")}
-							className="w-4 h-4 text-blue-600 bg-gray-a3 border-gray-a5 focus:ring-blue-500"
-						/>
-						<span className="text-sm text-gray-12">Funded Only</span>
-					</label>
-				</div>
+				</Text>
+				<RadioGroup.Root
+					value={config.gameType}
+					onValueChange={(value) => handleGameTypeChange(value as GameType)}
+				>
+					<div className="flex items-center gap-2">
+						<RadioGroup.Item value="combine" id="combine" />
+						<label htmlFor="combine">
+							<Text size="2">Combine + Funded</Text>
+						</label>
+					</div>
+					<div className="flex items-center gap-2">
+						<RadioGroup.Item value="combine_only" id="combine_only" />
+						<label htmlFor="combine_only">
+							<Text size="2">Combine Only</Text>
+						</label>
+					</div>
+					<div className="flex items-center gap-2">
+						<RadioGroup.Item value="funded_only" id="funded_only" />
+						<label htmlFor="funded_only">
+							<Text size="2">Funded Only</Text>
+						</label>
+					</div>
+				</RadioGroup.Root>
 			</div>
 
 			{/* Prop Firm */}
 			<div>
-				<label
-					htmlFor="propFirm"
-					className="block text-sm font-medium text-gray-11 mb-1"
-				>
+				<Text size="2" weight="medium" className="mb-2 block">
 					Prop Firm
-				</label>
-				<select
-					id="propFirm"
+				</Text>
+				<Select.Root
 					value={config.propFirm}
-					onChange={(e) => handlePropFirmChange(e.target.value as PropFirm)}
-					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					onValueChange={(value) => handlePropFirmChange(value as PropFirm)}
 				>
-					<option value="Topstep">Topstep</option>
-					<option value="Apex">Apex</option>
-					<option value="FTMO">FTMO</option>
-					<option value="E8">E8</option>
-					<option value="Custom">Custom</option>
-				</select>
+					<Select.Trigger />
+					<Select.Content>
+						<Select.Item value="Topstep">Topstep</Select.Item>
+						<Select.Item value="Apex">Apex</Select.Item>
+						<Select.Item value="FTMO">FTMO</Select.Item>
+						<Select.Item value="E8">E8</Select.Item>
+						<Select.Item value="Custom">Custom</Select.Item>
+					</Select.Content>
+				</Select.Root>
 			</div>
 
 			{/* Challenge */}
 			<div>
-				<label
-					htmlFor="challenge"
-					className="block text-sm font-medium text-gray-11 mb-1"
-				>
+				<Text size="2" weight="medium" className="mb-2 block">
 					Challenge
-				</label>
-				<select
-					id="challenge"
+				</Text>
+				<Select.Root
 					value={config.challenge}
-					onChange={(e) =>
-						handleChallengeChange(e.target.value as ChallengeSize)
+					onValueChange={(value) =>
+						handleChallengeChange(value as ChallengeSize)
 					}
-					className="w-full px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 				>
-					<option value="10k">10k</option>
-					<option value="25k">25k</option>
-					<option value="50k">50k</option>
-					<option value="100k">100k</option>
-					<option value="150k">150k</option>
-					<option value="250k">250k</option>
-					<option value="300k">300k</option>
-				</select>
+					<Select.Trigger />
+					<Select.Content>
+						<Select.Item value="10k">10k</Select.Item>
+						<Select.Item value="25k">25k</Select.Item>
+						<Select.Item value="50k">50k</Select.Item>
+						<Select.Item value="100k">100k</Select.Item>
+						<Select.Item value="150k">150k</Select.Item>
+						<Select.Item value="250k">250k</Select.Item>
+						<Select.Item value="300k">300k</Select.Item>
+					</Select.Content>
+				</Select.Root>
 			</div>
 
 			{/* Account Rules (Expandable) */}
 			<div>
-				<button
+				<Button
 					type="button"
+					variant="ghost"
+					size="2"
 					onClick={() => setShowAccountRules(!showAccountRules)}
-					className="flex items-center gap-2 text-sm font-medium text-gray-11 hover:text-gray-12 transition-colors"
+					className="flex items-center gap-2 p-0 h-auto"
 				>
-					<span>{showAccountRules ? "▼" : "▶"}</span>
-					<span>Account Rules</span>
-				</button>
+					<Text size="2" weight="medium">
+						{showAccountRules ? "▼" : "▶"} Account Rules
+					</Text>
+				</Button>
 				{showAccountRules && (
-					<div className="mt-2 p-3 bg-gray-a3 border border-gray-a5 rounded-md text-xs text-gray-10">
-						<p className="mb-2">Default Topstep Rules:</p>
+					<div className="mt-2 p-3 bg-gray-a2 border border-gray-a5 rounded-md">
+						<Text size="1" weight="medium" className="mb-2 block">
+							Default Topstep Rules:
+						</Text>
 						<ul className="list-disc list-inside space-y-1">
-							<li>Initial Balance: $50,000</li>
-							<li>Max Loss (Eval): $2,000</li>
-							<li>Max Daily Loss: $1,000</li>
-							<li>Max Daily Win: $5,000</li>
-							<li>Funding Target: $52,500 (5%)</li>
-							<li>Profit Share: 90%</li>
-							<li>Min Winning Days: 5</li>
+							<li>
+								<Text size="1" color="gray">
+									Initial Balance: $50,000
+								</Text>
+							</li>
+							<li>
+								<Text size="1" color="gray">
+									Max Loss (Eval): $2,000
+								</Text>
+							</li>
+							<li>
+								<Text size="1" color="gray">
+									Max Daily Loss: $1,000
+								</Text>
+							</li>
+							<li>
+								<Text size="1" color="gray">
+									Max Daily Win: $5,000
+								</Text>
+							</li>
+							<li>
+								<Text size="1" color="gray">
+									Funding Target: $52,500 (5%)
+								</Text>
+							</li>
+							<li>
+								<Text size="1" color="gray">
+									Profit Share: 90%
+								</Text>
+							</li>
+							<li>
+								<Text size="1" color="gray">
+									Min Winning Days: 5
+								</Text>
+							</li>
 						</ul>
 					</div>
 				)}

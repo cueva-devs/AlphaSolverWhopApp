@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { Card, Tabs, Select, Button, Text, Heading, Callout, Spinner } from "@whop/react/components";
 import StrategyPanel from "./components/StrategyPanel";
 import ResultsPanel from "./components/ResultsPanel";
 import AccountConfigPanel from "./components/AccountConfig";
-import TradingPlanPanel from "./components/TradingPlanPanel";
 import { useSimulationEngine } from "./hooks/useSimulationEngine";
 import { parseTradeCsv } from "./lib/csvUtils";
 import type {
@@ -109,52 +109,60 @@ export default function AlphaSolverApp({
 	};
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white flex flex-col">
-			<main className="flex-1 flex gap-6 p-6 min-h-0 overflow-hidden">
+		<div className="min-h-screen bg-gray-1 flex flex-col">
+			{/* TEST BANNER - Remove after confirming deployment works */}
+			<div className="bg-blue-6 text-blue-11 text-center py-2 px-4">
+				<Text size="2" weight="bold">
+					✓ Frosted UI Design System Active - Build: {new Date().toISOString().split('T')[0]}
+				</Text>
+			</div>
+			<main className="flex-1 flex flex-col md:flex-row gap-4 md:gap-6 p-4 md:p-6 min-h-0 overflow-hidden">
 				{/* Left Sidebar */}
-				<aside className="w-80 flex-shrink-0 flex flex-col gap-4 overflow-y-auto">
+				<aside className="w-full md:w-80 flex-shrink-0 flex flex-col gap-4 overflow-y-auto">
 					{/* Account Section */}
-					<section className="bg-slate-800/50 border border-purple-800/30 rounded-lg p-4">
-						<h2 className="text-sm font-semibold text-purple-200 mb-3">
+					<Card size="2" variant="surface">
+						<Heading size="4" as="h2" className="mb-3">
 							Account
-						</h2>
+						</Heading>
 						<AccountConfigPanel
 							config={accountConfig}
 							onChange={setAccountConfig}
 						/>
-					</section>
+					</Card>
 
 					{/* Trade Log Section */}
-					<section className="bg-slate-800/50 border border-purple-800/30 rounded-lg p-4">
-						<h2 className="text-sm font-semibold text-purple-200 mb-3">
+					<Card size="2" variant="surface">
+						<Heading size="4" as="h2" className="mb-3">
 							Trade Log
-						</h2>
+						</Heading>
 						<div className="space-y-3">
 							<div>
-								<label className="block text-xs text-purple-300 mb-1">
+								<Text size="2" weight="medium" className="mb-2 block">
 									CSV Format
-								</label>
-								<select
+								</Text>
+								<Select.Root
 									value={csvFormat}
-									onChange={async (e) => {
-										const newFormat = e.target.value as "NinjaTrader" | "Generic" | "Custom";
+									onValueChange={async (value) => {
+										const newFormat = value as "NinjaTrader" | "Generic" | "Custom";
 										setCsvFormat(newFormat);
 										// Re-parse if file is already loaded
 										if (csvFile) {
 											await parseCsvFile(csvFile, newFormat);
 										}
 									}}
-									className="w-full px-3 py-2 bg-slate-700/50 border border-purple-800/30 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
 								>
-									<option value="NinjaTrader">NinjaTrader</option>
-									<option value="Generic">Generic</option>
-									<option value="Custom">Custom</option>
-								</select>
+									<Select.Trigger />
+									<Select.Content>
+										<Select.Item value="NinjaTrader">NinjaTrader</Select.Item>
+										<Select.Item value="Generic">Generic</Select.Item>
+										<Select.Item value="Custom">Custom</Select.Item>
+									</Select.Content>
+								</Select.Root>
 							</div>
 							<div>
-								<label className="block text-xs text-purple-300 mb-1">
+								<Text size="2" weight="medium" className="mb-2 block">
 									Upload Trade Log
-								</label>
+								</Text>
 								<input
 									ref={fileInputRef}
 									type="file"
@@ -165,27 +173,32 @@ export default function AlphaSolverApp({
 								<div
 									onDragOver={handleDragOver}
 									onDrop={handleDrop}
-									className="border-2 border-dashed border-purple-800/50 rounded-lg p-6 text-center cursor-pointer hover:border-purple-600 transition-colors"
+									className="border-2 border-dashed border-gray-a6 rounded-lg p-6 text-center cursor-pointer hover:border-gray-a8 transition-colors bg-gray-a2"
 									onClick={handleFileSelect}
 								>
 									{isParsingCsv ? (
 										<div className="flex flex-col items-center">
-											<div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-400 mb-2"></div>
-											<p className="text-xs text-purple-300">Parsing CSV...</p>
+											<Spinner size="2" className="mb-2" />
+											<Text size="2" color="gray">
+												Parsing CSV...
+											</Text>
 										</div>
 									) : csvFile ? (
 										<div className="space-y-2">
-											<p className="text-xs text-green-400 font-medium">
+											<Text size="2" weight="medium" color="green">
 												✓ Loaded {parsedTrades?.length || 0} trades
-											</p>
-											<p className="text-xs text-purple-300">
+											</Text>
+											<Text size="2" color="gray">
 												{csvFile.name}
-											</p>
-											<p className="text-xs text-purple-400">
+											</Text>
+											<Text size="1" color="gray">
 												{(csvFile.size / 1024).toFixed(2)} KB
-											</p>
-											<button
+											</Text>
+											<Button
 												type="button"
+												size="1"
+												variant="soft"
+												color="red"
 												onClick={(e) => {
 													e.stopPropagation();
 													setCsvFile(null);
@@ -195,96 +208,89 @@ export default function AlphaSolverApp({
 														fileInputRef.current.value = "";
 													}
 												}}
-												className="text-xs px-3 py-1 bg-red-600/50 hover:bg-red-600 rounded-md text-white transition-colors mt-2"
+												className="mt-2"
 											>
 												Remove
-											</button>
+											</Button>
 										</div>
 									) : (
 										<>
-											<p className="text-xs text-purple-300 mb-2">
+											<Text size="2" color="gray" className="mb-2">
 												Drag and drop file here
-											</p>
-											<p className="text-xs text-purple-400 mb-3">
+											</Text>
+											<Text size="1" color="gray" className="mb-3">
 												Limit 200MB per file...
-											</p>
-											<button
+											</Text>
+											<Button
 												type="button"
-												className="text-xs px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-md text-white transition-colors"
+												size="2"
+												variant="soft"
+												onClick={(e) => {
+													e.stopPropagation();
+													handleFileSelect();
+												}}
 											>
 												Browse files
-											</button>
+											</Button>
 										</>
 									)}
 								</div>
 								{csvError && (
-									<p className="mt-2 text-xs text-red-400">{csvError}</p>
+									<Callout.Root color="red" className="mt-2">
+										<Callout.Text size="2">{csvError}</Callout.Text>
+									</Callout.Root>
 								)}
 							</div>
 						</div>
-					</section>
+					</Card>
 
 					{/* Simulation Section */}
-					<section className="bg-slate-800/50 border border-purple-800/30 rounded-lg p-4">
-						<h2 className="text-sm font-semibold text-purple-200 mb-3">
+					<Card size="2" variant="surface">
+						<Heading size="4" as="h2" className="mb-3">
 							Simulation
-						</h2>
+						</Heading>
 						<StrategyPanel
 							onRunSimulation={handleRunSimulation}
 							planConfig={planConfig}
 							parsedTrades={parsedTrades}
 							csvFormat={csvFormat}
 						/>
-					</section>
+					</Card>
 				</aside>
 
 				{/* Main Content Area */}
 				<div className="flex-1 flex flex-col min-w-0">
 					{/* Tabs */}
-					<div className="flex gap-6 mb-4 border-b border-purple-800/50">
-						<button
-							type="button"
-							onClick={() => setActiveTab("simulation")}
-							className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
-								activeTab === "simulation"
-									? "border-purple-400 text-purple-300"
-									: "border-transparent text-purple-400 hover:text-purple-300"
-							}`}
-						>
-							Simulation
-						</button>
-						<button
-							type="button"
-							onClick={() => setActiveTab("trading_plan")}
-							className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
-								activeTab === "trading_plan"
-									? "border-purple-400 text-purple-300"
-									: "border-transparent text-purple-400 hover:text-purple-300"
-							}`}
-						>
-							Trading Plan
-						</button>
-					</div>
+					<Tabs.Root value={activeTab} onValueChange={(value) => setActiveTab(value as TabType)}>
+						<Tabs.List>
+							<Tabs.Trigger value="simulation">Simulation</Tabs.Trigger>
+							<Tabs.Trigger value="trading_plan">Trading Plan</Tabs.Trigger>
+						</Tabs.List>
 
-					{/* Tab Content */}
-					<div className="flex-1 overflow-y-auto">
-						{activeTab === "simulation" ? (
-							<ResultsPanel
-								result={result}
-								isRunning={isRunning || isEngineLoading}
-								error={error}
-								accountConfig={accountConfig}
-							/>
-						) : (
-							<TradingPlanPanel
-								tradingPlan={result?.tradingPlan}
-								isRunning={isRunning || isEngineLoading}
-							/>
-						)}
-					</div>
+						{/* Tab Content */}
+						<div className="flex-1 overflow-y-auto mt-4">
+							<Tabs.Content value="simulation">
+								<ResultsPanel
+									result={result}
+									isRunning={isRunning || isEngineLoading}
+									error={error}
+									accountConfig={accountConfig}
+								/>
+							</Tabs.Content>
+							<Tabs.Content value="trading_plan">
+								<Card size="2" variant="surface">
+									<Heading size="5" as="h2" className="mb-4">
+										Trading Plan
+									</Heading>
+									<Text size="3" color="gray">
+										Trading plan analysis will be available here.
+									</Text>
+								</Card>
+							</Tabs.Content>
+						</div>
+					</Tabs.Root>
 				</div>
 			</main>
 		</div>
 	);
 }
-
