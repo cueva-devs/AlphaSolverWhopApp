@@ -1,3 +1,12 @@
+export type CsvFormat = 
+	| "NinjaTrader" 
+	| "TradingView (Strategy Tester)" 
+	| "TradingView (Broker History)" 
+	| "Rithmic / R|Trader" 
+	| "Tradovate" 
+	| "Generic (Simple)" 
+	| "Custom";
+
 export interface ParametricParams {
 	stopSize: number;
 	takeProfitSize: number;
@@ -11,7 +20,7 @@ export interface ParametricParams {
 export interface BootstrappedParams {
 	numPaths: number;
 	numDays: number;
-	template: "NinjaTrader" | "Generic" | "Custom";
+	template: CsvFormat;
 	pnlColumn?: string;
 	dateColumn?: string;
 	mfeColumn?: string;
@@ -28,8 +37,8 @@ export type SimulationMode = "parametric" | "bootstrapped";
 export type SimulationParams = ParametricParams | BootstrappedParams;
 
 export type GameType = "combine" | "funded" | "combine_only" | "funded_only";
-export type PropFirm = "Topstep" | "Apex" | "FTMO" | "E8" | "Custom";
-export type ChallengeSize = "10k" | "25k" | "50k" | "100k" | "150k" | "250k" | "300k";
+export type PropFirm = "Topstep" | "Take Profit Trader" | "Funded Futures Network" | "Tradeify" | "Custom";
+export type ChallengeSize = string; // Dynamic based on prop firm
 
 export interface AccountConfig {
 	gameType: GameType;
@@ -79,6 +88,8 @@ export interface SimulationResult {
 	avgTradePnl?: number;
 	// Most probable outcomes
 	mostProbableOutcomes?: OutcomeScenario[];
+	// Trading plan
+	tradingPlan?: TradingPlan;
 }
 
 export interface OutcomeScenario {
@@ -87,5 +98,67 @@ export interface OutcomeScenario {
 	days: number;
 	maxDD: number;
 	netPnl: number;
+}
+
+// Trading Plan Types
+export interface ClusterInfo {
+	name: string;
+	probability: number;
+	days_median: number;
+	max_drawdown_median: number;
+	final_pnl_median: number;
+	description: string;
+}
+
+export interface OptimalStrategy {
+	label: string;
+	description: string;
+	optimization: string;
+	cluster_info: ClusterInfo;
+	viable_for_30d: boolean;
+	months_to_pass: number;
+	target_days: number;
+	target_days_range: [number, number];
+	daily_pnl_target: number;
+	daily_loss_stop: number;
+	daily_win_rate_needed: number;
+	max_drawdown_safe: number;
+	prop_firm_max_loss?: number;
+	expected_pnl: number;
+	cluster_probability: number;
+}
+
+export interface WinnerLoserStats {
+	count: number;
+	days_median?: number;
+	days_range?: [number, number];
+	avg_daily_pnl?: number;
+	daily_win_rate?: number;
+	max_drawdown_median?: number;
+	final_pnl_median?: number;
+}
+
+export interface BestPath {
+	days: number;
+	final_pnl: number;
+	avg_daily_pnl: number;
+	daily_win_rate: number;
+	max_drawdown: number;
+}
+
+export interface TradingPlan {
+	passRate: number;
+	passRateCi: [number, number];
+	failRate: number;
+	numSimulations: number;
+	optimalStrategies: Record<string, OptimalStrategy>;
+	winners: WinnerLoserStats | null;
+	losers: WinnerLoserStats | null;
+	bestPath: BestPath | null;
+	rules: Record<string, unknown> | null;
+	propFirm: Record<string, number>;
+	kelly: Record<string, number>;
+	allWinningClusters: ClusterInfo[];
+	simulatedEv?: number;
 }
 

@@ -5,6 +5,7 @@ import { Card, Tabs, Select, Button, Text, Heading, Callout, Spinner } from "@wh
 import StrategyPanel from "./components/StrategyPanel";
 import ResultsPanel from "./components/ResultsPanel";
 import AccountConfigPanel from "./components/AccountConfig";
+import TradingPlanPanel from "./components/TradingPlanPanel";
 import { useSimulationEngine } from "./hooks/useSimulationEngine";
 import { parseTradeCsv } from "./lib/csvUtils";
 import type {
@@ -13,7 +14,9 @@ import type {
 	ParsedTrade,
 	SimulationMode,
 	AccountConfig,
+	CsvFormat,
 } from "./types";
+import { CSV_TEMPLATES, getCsvTemplateList } from "./config/propFirmConfig";
 import type { PlanId, PlanConfig } from "./config/planConfig";
 
 interface AlphaSolverAppProps {
@@ -40,7 +43,7 @@ export default function AlphaSolverApp({
 		challenge: "50k",
 	});
 	const [csvFile, setCsvFile] = useState<File | null>(null);
-	const [csvFormat, setCsvFormat] = useState<"NinjaTrader" | "Generic" | "Custom">("NinjaTrader");
+	const [csvFormat, setCsvFormat] = useState<CsvFormat>("NinjaTrader");
 	const [parsedTrades, setParsedTrades] = useState<ParsedTrade[] | null>(null);
 	const [isParsingCsv, setIsParsingCsv] = useState(false);
 	const [csvError, setCsvError] = useState<string | null>(null);
@@ -58,7 +61,7 @@ export default function AlphaSolverApp({
 		fileInputRef.current?.click();
 	};
 
-	const parseCsvFile = async (file: File, format: "NinjaTrader" | "Generic" | "Custom") => {
+	const parseCsvFile = async (file: File, format: CsvFormat) => {
 		// Validate file type
 		if (file.type !== "text/csv" && !file.name.endsWith(".csv")) {
 			setCsvError("Please select a valid CSV file");
@@ -143,7 +146,7 @@ export default function AlphaSolverApp({
 								<Select.Root
 									value={csvFormat}
 									onValueChange={async (value) => {
-										const newFormat = value as "NinjaTrader" | "Generic" | "Custom";
+										const newFormat = value as CsvFormat;
 										setCsvFormat(newFormat);
 										// Re-parse if file is already loaded
 										if (csvFile) {
@@ -153,9 +156,9 @@ export default function AlphaSolverApp({
 								>
 									<Select.Trigger />
 									<Select.Content>
-										<Select.Item value="NinjaTrader">NinjaTrader</Select.Item>
-										<Select.Item value="Generic">Generic</Select.Item>
-										<Select.Item value="Custom">Custom</Select.Item>
+										{getCsvTemplateList().map((template) => (
+											<Select.Item key={template} value={template}>{template}</Select.Item>
+										))}
 									</Select.Content>
 								</Select.Root>
 							</div>
@@ -278,14 +281,12 @@ export default function AlphaSolverApp({
 								/>
 							</Tabs.Content>
 							<Tabs.Content value="trading_plan">
-								<Card size="2" variant="surface">
-									<Heading size="5" as="h2" className="mb-4">
-										Trading Plan
-									</Heading>
-									<Text size="3" color="gray">
-										Trading plan analysis will be available here.
-									</Text>
-								</Card>
+								<TradingPlanPanel
+									tradingPlan={result?.tradingPlan}
+									isRunning={isRunning || isEngineLoading}
+									hasTradeLog={!!parsedTrades && parsedTrades.length > 0}
+									hasRunSimulation={!!result}
+								/>
 							</Tabs.Content>
 						</div>
 					</Tabs.Root>

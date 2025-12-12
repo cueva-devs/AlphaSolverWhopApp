@@ -10,6 +10,7 @@ import type {
 	BootstrappedParams,
 	ParsedTrade,
 	SimulationMode,
+	CsvFormat,
 } from "../types";
 import type { PlanConfig } from "../config/planConfig";
 
@@ -21,7 +22,7 @@ interface StrategyPanelProps {
 	) => void;
 	planConfig: PlanConfig;
 	parsedTrades?: ParsedTrade[] | null;
-	csvFormat?: "NinjaTrader" | "Generic" | "Custom";
+	csvFormat?: CsvFormat;
 }
 
 type TabMode = "parametric" | "bootstrapped";

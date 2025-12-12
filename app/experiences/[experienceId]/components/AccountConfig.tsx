@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { RadioGroup, Select, Text, Heading, Button } from "@whop/react/components";
+import { useState, useEffect } from "react";
+import { RadioGroup, Select, Text, Button } from "@whop/react/components";
 import type { AccountConfig, GameType, PropFirm, ChallengeSize } from "../types";
+import { PROP_FIRMS, getPropFirmList, getChallengeList, getAccountConfig } from "../config/propFirmConfig";
 
 interface AccountConfigProps {
 	config: AccountConfig;
@@ -14,17 +15,36 @@ export default function AccountConfigPanel({
 	onChange,
 }: AccountConfigProps) {
 	const [showAccountRules, setShowAccountRules] = useState(false);
+	
+	const propFirmList = getPropFirmList();
+	const challengeList = getChallengeList(config.propFirm);
+	const accountRules = getAccountConfig(config.propFirm, config.challenge);
+
+	// When prop firm changes, reset challenge to first available
+	useEffect(() => {
+		const challenges = getChallengeList(config.propFirm);
+		if (challenges.length > 0 && !challenges.includes(config.challenge)) {
+			onChange({ ...config, challenge: challenges[0] });
+		}
+	}, [config.propFirm]);
 
 	const handleGameTypeChange = (gameType: GameType) => {
 		onChange({ ...config, gameType });
 	};
 
 	const handlePropFirmChange = (propFirm: PropFirm) => {
-		onChange({ ...config, propFirm });
+		const challenges = getChallengeList(propFirm);
+		const newChallenge = challenges.length > 0 ? challenges[0] : config.challenge;
+		onChange({ ...config, propFirm, challenge: newChallenge });
 	};
 
 	const handleChallengeChange = (challenge: ChallengeSize) => {
 		onChange({ ...config, challenge });
+	};
+
+	const formatCurrency = (value: number) => {
+		if (value >= 99999) return "No limit";
+		return `$${value.toLocaleString()}`;
 	};
 
 	return (
@@ -70,11 +90,9 @@ export default function AccountConfigPanel({
 				>
 					<Select.Trigger />
 					<Select.Content>
-						<Select.Item value="Topstep">Topstep</Select.Item>
-						<Select.Item value="Apex">Apex</Select.Item>
-						<Select.Item value="FTMO">FTMO</Select.Item>
-						<Select.Item value="E8">E8</Select.Item>
-						<Select.Item value="Custom">Custom</Select.Item>
+						{propFirmList.map((firm) => (
+							<Select.Item key={firm} value={firm}>{firm}</Select.Item>
+						))}
 					</Select.Content>
 				</Select.Root>
 			</div>
@@ -86,19 +104,13 @@ export default function AccountConfigPanel({
 				</Text>
 				<Select.Root
 					value={config.challenge}
-					onValueChange={(value) =>
-						handleChallengeChange(value as ChallengeSize)
-					}
+					onValueChange={(value) => handleChallengeChange(value as ChallengeSize)}
 				>
 					<Select.Trigger />
 					<Select.Content>
-						<Select.Item value="10k">10k</Select.Item>
-						<Select.Item value="25k">25k</Select.Item>
-						<Select.Item value="50k">50k</Select.Item>
-						<Select.Item value="100k">100k</Select.Item>
-						<Select.Item value="150k">150k</Select.Item>
-						<Select.Item value="250k">250k</Select.Item>
-						<Select.Item value="300k">300k</Select.Item>
+						{challengeList.map((challenge) => (
+							<Select.Item key={challenge} value={challenge}>{challenge}</Select.Item>
+						))}
 					</Select.Content>
 				</Select.Root>
 			</div>
@@ -116,45 +128,50 @@ export default function AccountConfigPanel({
 						{showAccountRules ? "▼" : "▶"} Account Rules
 					</Text>
 				</Button>
-				{showAccountRules && (
+				{showAccountRules && accountRules && (
 					<div className="mt-2 p-3 bg-gray-a2 border border-gray-a5 rounded-md">
 						<Text size="1" weight="medium" className="mb-2 block">
-							Default Topstep Rules:
+							{config.propFirm} {config.challenge} Rules:
 						</Text>
 						<ul className="list-disc list-inside space-y-1">
 							<li>
 								<Text size="1" color="gray">
-									Initial Balance: $50,000
+									Initial Balance: {formatCurrency(accountRules.rules['Initial Balance (Eval)'])}
 								</Text>
 							</li>
 							<li>
 								<Text size="1" color="gray">
-									Max Loss (Eval): $2,000
+									Max Loss (Eval): {formatCurrency(accountRules.rules['Max Loss (Eval)'])}
 								</Text>
 							</li>
 							<li>
 								<Text size="1" color="gray">
-									Max Daily Loss: $1,000
+									Max Daily Loss: {formatCurrency(accountRules.rules['Maximum Daily Loss'])}
 								</Text>
 							</li>
 							<li>
 								<Text size="1" color="gray">
-									Max Daily Win: $5,000
+									Max Daily Win: {formatCurrency(accountRules.rules['Maximum Daily Win'])}
 								</Text>
 							</li>
 							<li>
 								<Text size="1" color="gray">
-									Funding Target: $52,500 (5%)
+									Funding Target: {formatCurrency(accountRules.rules['Funding Target Balance'])}
 								</Text>
 							</li>
 							<li>
 								<Text size="1" color="gray">
-									Profit Share: 90%
+									Profit Share: {(accountRules.rules['Profit Share Fraction'] * 100).toFixed(0)}%
 								</Text>
 							</li>
 							<li>
 								<Text size="1" color="gray">
-									Min Winning Days: 5
+									Min Winning Days: {accountRules.rules['Minimum Winning Days for Payout']}
+								</Text>
+							</li>
+							<li>
+								<Text size="1" color="gray">
+									Eval Cost: {formatCurrency(accountRules.fees['Eval Acct Cost'])}/month
 								</Text>
 							</li>
 						</ul>
