@@ -60,19 +60,19 @@ export default function Page() {
 					<div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
 						{BYPASS_ACCESS ? (
 							<Link href="/app">
-								<button className="px-6 py-3 font-medium rounded-lg bg-teal-500 hover:bg-teal-400 text-[#080c14] transition-all">
+								<button className="px-6 py-3 font-semibold rounded-lg bg-teal-500 hover:bg-teal-400 text-black transition-all">
 									Launch App
 								</button>
 							</Link>
 						) : (
 							<a href={WHOP_CHECKOUT_URL}>
-								<button className="px-6 py-3 font-medium rounded-lg bg-teal-500 hover:bg-teal-400 text-[#080c14] transition-all">
+								<button className="px-6 py-3 font-semibold rounded-lg bg-teal-500 hover:bg-teal-400 text-black transition-all">
 									Start Free →
 								</button>
 							</a>
 						)}
 						<Link href="/app">
-							<button className="px-6 py-3 font-medium rounded-lg bg-[#0f1520] border border-[#1e293b] hover:border-[#334155] transition-all text-white">
+							<button className="px-6 py-3 font-semibold rounded-lg bg-slate-700 border border-slate-600 hover:bg-slate-600 transition-all text-white">
 								I Have Access
 							</button>
 						</Link>
@@ -288,7 +288,7 @@ export default function Page() {
 							</ul>
 							
 							<a href={WHOP_CHECKOUT_URL} className="block">
-								<button className="w-full py-3 px-4 rounded-lg bg-[#0a0e16] border border-[#1e293b] font-medium text-white hover:border-[#334155] transition-all">
+								<button className="w-full py-3 px-4 rounded-lg bg-slate-700 border border-slate-600 font-semibold text-white hover:bg-slate-600 transition-all">
 									Get Started Free
 								</button>
 							</a>
@@ -297,7 +297,7 @@ export default function Page() {
 						{/* Unlimited Plan */}
 						<div className="bg-[#0f1520] border-2 border-teal-500/50 rounded-xl p-6 relative">
 							<div className="absolute -top-3 left-1/2 -translate-x-1/2">
-								<span className="px-3 py-1 rounded-full bg-teal-500 text-[#080c14] text-xs font-semibold uppercase">
+								<span className="px-3 py-1 rounded-full bg-teal-500 text-black text-xs font-bold uppercase">
 									Popular
 								</span>
 							</div>
@@ -326,7 +326,7 @@ export default function Page() {
 							</ul>
 							
 							<a href={WHOP_CHECKOUT_URL} className="block">
-								<button className="w-full py-3 px-4 rounded-lg bg-teal-500 hover:bg-teal-400 font-medium text-[#080c14] transition-all">
+								<button className="w-full py-3 px-4 rounded-lg bg-teal-500 hover:bg-teal-400 font-bold text-black transition-all">
 									Upgrade to Unlimited
 								</button>
 							</a>
@@ -347,13 +347,13 @@ export default function Page() {
 					<div className="flex flex-col sm:flex-row gap-3 justify-center">
 						{BYPASS_ACCESS ? (
 							<Link href="/app">
-								<button className="px-6 py-3 font-medium rounded-lg bg-teal-500 hover:bg-teal-400 text-[#080c14] transition-all">
+								<button className="px-6 py-3 font-semibold rounded-lg bg-teal-500 hover:bg-teal-400 text-black transition-all">
 									Launch App →
 								</button>
 							</Link>
 						) : (
 							<a href={WHOP_CHECKOUT_URL}>
-								<button className="px-6 py-3 font-medium rounded-lg bg-teal-500 hover:bg-teal-400 text-[#080c14] transition-all">
+								<button className="px-6 py-3 font-semibold rounded-lg bg-teal-500 hover:bg-teal-400 text-black transition-all">
 									Start Free Today →
 								</button>
 							</a>
