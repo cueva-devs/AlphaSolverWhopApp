@@ -166,16 +166,7 @@ export default function EquityChart({
 		maintainAspectRatio: false,
 		plugins: {
 			legend: {
-				display: true,
-				position: "top" as const,
-				labels: {
-					color: "rgb(196, 181, 253)",
-					font: {
-						size: 11,
-					},
-					usePointStyle: true,
-					padding: 10,
-				},
+				display: false,
 			},
 			tooltip: {
 				mode: "index" as const,

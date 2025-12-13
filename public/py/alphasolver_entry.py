@@ -371,30 +371,42 @@ def _extract_results(sim: Simulation, num_paths: int) -> Dict[str, Any]:
     expected_gross_payout = expected_payout
     expected_roi = ((expected_gross_payout - expected_cost_to_payout) / expected_cost_to_payout * 100) if expected_cost_to_payout > 0 else 0
     
-    # Trade distributions (simplified)
-    avg_trades_per_day = float(np.mean(trades_per_day_list)) if trades_per_day_list else 0
-    # Create histogram data for trades per day
-    if trades_per_day_list:
-        trades_per_day_distribution = _create_histogram(trades_per_day_list, bins=10)
-    else:
-        trades_per_day_distribution = []
-    
-    # Trade P&L distribution (estimate from strategy if available)
+    # Trade distributions - extract from bootstrapped strategy if available
+    trades_per_day_distribution = []
     trade_pnl_distribution = []
+    avg_trades_per_day = 0
     avg_trade_pnl = 0
-    if hasattr(sim.strategy, 'odds') and hasattr(sim.strategy, 'stop_width') and hasattr(sim.strategy, 'tp_width'):
-        win_pnl = sim.strategy.tp_width
-        loss_pnl = -sim.strategy.stop_width
-        # Create a simple distribution
-        num_samples = 1000
-        trade_pnl_samples = []
-        for _ in range(num_samples):
-            if np.random.random() < sim.strategy.odds:
-                trade_pnl_samples.append(win_pnl)
-            else:
-                trade_pnl_samples.append(loss_pnl)
-        trade_pnl_distribution = _create_histogram(trade_pnl_samples, bins=20)
-        avg_trade_pnl = float(np.mean(trade_pnl_samples))
+    
+    # Check for bootstrapped strategy with actual trade data
+    if hasattr(sim.strategy, 'trades_per_day_distribution') and hasattr(sim.strategy, 'pnl_pool'):
+        # Bootstrapped strategy - use actual trade data
+        tpd_dist = sim.strategy.trades_per_day_distribution
+        if tpd_dist is not None and len(tpd_dist) > 0:
+            trades_per_day_distribution = _create_histogram(tpd_dist.tolist(), bins=min(10, int(max(tpd_dist)) + 1))
+            avg_trades_per_day = float(np.mean(tpd_dist))
+        
+        pnl_pool = sim.strategy.pnl_pool
+        if pnl_pool is not None and len(pnl_pool) > 0:
+            trade_pnl_distribution = _create_histogram(pnl_pool.tolist(), bins=20)
+            avg_trade_pnl = float(np.mean(pnl_pool))
+    elif trades_per_day_list:
+        # Fallback to collected data during simulation
+        trades_per_day_distribution = _create_histogram(trades_per_day_list, bins=10)
+        avg_trades_per_day = float(np.mean(trades_per_day_list))
+        
+        # Trade P&L distribution (estimate from parametric strategy if available)
+        if hasattr(sim.strategy, 'odds') and hasattr(sim.strategy, 'stop_width') and hasattr(sim.strategy, 'tp_width'):
+            win_pnl = sim.strategy.tp_width
+            loss_pnl = -sim.strategy.stop_width
+            num_samples = 1000
+            trade_pnl_samples = []
+            for _ in range(num_samples):
+                if np.random.random() < sim.strategy.odds:
+                    trade_pnl_samples.append(win_pnl)
+                else:
+                    trade_pnl_samples.append(loss_pnl)
+            trade_pnl_distribution = _create_histogram(trade_pnl_samples, bins=20)
+            avg_trade_pnl = float(np.mean(trade_pnl_samples))
     
     # Most probable outcomes (simplified - top 3 scenarios)
     most_probable_outcomes = []
