@@ -26,7 +26,7 @@ export default function BootstrappedForm({
 	planConfig,
 }: BootstrappedFormProps) {
 	const [formData, setFormData] = useState<BootstrappedParams>({
-		template: "Generic",
+		template: "Generic (Simple)",
 		numPaths: Math.min(1000, planConfig.maxPaths),
 		numDays: Math.min(30, planConfig.maxDays),
 	});
@@ -226,7 +226,7 @@ export default function BootstrappedForm({
 					<Select.Trigger />
 					<Select.Content>
 						<Select.Item value="NinjaTrader">NinjaTrader</Select.Item>
-						<Select.Item value="Generic">Generic</Select.Item>
+						<Select.Item value="Generic (Simple)">Generic</Select.Item>
 						<Select.Item value="Custom">Custom</Select.Item>
 					</Select.Content>
 				</Select.Root>
