@@ -1,30 +1,33 @@
-export type PlanId = "starter" | "pro" | "elite";
+export type PlanId = "free" | "unlimited";
 
 export interface PlanConfig {
 	label: string;
-	maxPaths: number;
+	maxPaths: number; // No limit enforced - runs on user's CPU
 	maxDays: number;
 	allowCsv: boolean;
+	dailyCredits: number; // -1 = unlimited
+	allowExport: boolean;
+	allowTradingPlan: boolean;
 }
 
 export const PLAN_CONFIGS: Record<PlanId, PlanConfig> = {
-	starter: {
-		label: "Starter",
-		maxPaths: 10000, // Increased for better testing
-		maxDays: 100, // Increased for better testing
-		allowCsv: true, // Enabled for testing
-	},
-	pro: {
-		label: "Pro",
-		maxPaths: 10000,
+	free: {
+		label: "Free",
+		maxPaths: 100000, // No real limit - runs on user's CPU
 		maxDays: 365,
 		allowCsv: true,
+		dailyCredits: 10, // 10 runs per day
+		allowExport: false,
+		allowTradingPlan: true,
 	},
-	elite: {
-		label: "Elite",
-		maxPaths: 100000,
+	unlimited: {
+		label: "Unlimited",
+		maxPaths: 100000, // No real limit - runs on user's CPU
 		maxDays: 365,
 		allowCsv: true,
+		dailyCredits: -1, // Unlimited
+		allowExport: true,
+		allowTradingPlan: true,
 	},
 };
 
@@ -50,19 +53,18 @@ export function getEffectivePlanConfig(planId: PlanId | string): PlanConfig {
 
 /**
  * Gets a plan configuration by plan ID.
- * Returns starter plan as fallback if plan ID is invalid.
+ * Returns free plan as fallback if plan ID is invalid.
  */
 export function getPlanConfig(planId: PlanId | string): PlanConfig {
 	if (planId in PLAN_CONFIGS) {
 		return PLAN_CONFIGS[planId as PlanId];
 	}
-	// Fallback to starter plan
-	return PLAN_CONFIGS.starter;
+	// Fallback to free plan
+	return PLAN_CONFIGS.free;
 }
 
 /**
  * Determines the plan ID from environment variables or product mapping.
- * This is a helper function that can be extended with more complex logic.
  */
 export function determinePlanId(
 	productId?: string,
@@ -76,22 +78,17 @@ export function determinePlanId(
 		return envPlanId;
 	}
 
-	// Map product ID or name to plan (can be extended)
-	// For now, default to starter if no mapping found
-	// In production, you might want to map specific product IDs to plans
+	// Map product ID or name to plan
 	if (productId || productTitle) {
 		const lowerName = (productTitle || "").toLowerCase();
-		if (lowerName.includes("elite")) {
-			return "elite";
+		if (lowerName.includes("unlimited") || lowerName.includes("pro") || lowerName.includes("premium")) {
+			return "unlimited";
 		}
-		if (lowerName.includes("pro")) {
-			return "pro";
-		}
-		if (lowerName.includes("starter")) {
-			return "starter";
+		if (lowerName.includes("free")) {
+			return "free";
 		}
 	}
 
-	// Default to starter plan
-	return "starter";
+	// Default to free plan
+	return "free";
 }

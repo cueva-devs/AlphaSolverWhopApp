@@ -17,6 +17,7 @@ import type {
 import { CSV_TEMPLATES, getCsvTemplateList, getAccountConfig } from "./config/propFirmConfig";
 import type { PlanId, PlanConfig } from "./config/planConfig";
 import { createSavedRun, exportRun, importRun, estimateFileSize } from "./lib/saveRunUtils";
+import { useCredit, getCreditsDisplay, hasCredits } from "./lib/creditsService";
 import type { SavedRun } from "./types";
 
 interface AlphaSolverAppProps {
@@ -50,11 +51,27 @@ export default function AlphaSolverApp({
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const importInputRef = useRef<HTMLInputElement>(null);
 	const [lastParams, setLastParams] = useState<BootstrappedParams | null>(null);
+	const [creditsDisplay, setCreditsDisplay] = useState<string>(getCreditsDisplay(planConfig));
 
 	const handleRunSimulation = async (
 		params: BootstrappedParams,
 		trades: ParsedTrade[],
 	) => {
+		// Check credits before running
+		if (!hasCredits(planConfig)) {
+			setCsvError("No credits remaining. Credits reset daily or upgrade to Unlimited for unlimited runs.");
+			return;
+		}
+		
+		// Use a credit
+		if (!useCredit(planConfig)) {
+			setCsvError("Failed to use credit. Please try again.");
+			return;
+		}
+		
+		// Update credits display
+		setCreditsDisplay(getCreditsDisplay(planConfig));
+		
 		// Get base account config and merge with overrides
 		const baseConfig = getAccountConfig(accountConfig.propFirm, accountConfig.challenge);
 		
@@ -206,6 +223,28 @@ export default function AlphaSolverApp({
 			<main className="flex-1 flex flex-col md:flex-row gap-4 md:gap-6 p-4 md:gap-6 min-h-0 overflow-hidden">
 				{/* Left Sidebar */}
 				<aside className="w-full md:w-80 flex-shrink-0 flex flex-col gap-4 overflow-y-auto">
+					{/* Plan & Credits Section */}
+					<Card size="2" variant="surface">
+						<div className="flex items-center justify-between mb-3">
+							<Heading size="4" as="h2">
+								{planConfig.label} Plan
+							</Heading>
+							<div className="text-right">
+								<Text size="1" color="gray" className="block">
+									Daily Runs
+								</Text>
+								<Text size="3" weight="bold" className={planConfig.dailyCredits === -1 ? "text-green-500" : ""}>
+									{creditsDisplay}
+								</Text>
+							</div>
+						</div>
+						{planConfig.dailyCredits !== -1 && (
+							<Text size="1" color="gray" className="block">
+								Credits reset daily at midnight. Upgrade to Unlimited for unlimited runs.
+							</Text>
+						)}
+					</Card>
+
 					{/* Save/Load Section */}
 					<Card size="2" variant="surface">
 						<Heading size="4" as="h2" className="mb-3">
@@ -216,9 +255,10 @@ export default function AlphaSolverApp({
 								type="button"
 								size="2"
 								variant="soft"
-								disabled={!result || !parsedTrades}
+								disabled={!result || !parsedTrades || !planConfig.allowExport}
 								onClick={handleExportRun}
 								className="flex-1"
+								title={!planConfig.allowExport ? "Upgrade to Unlimited to export runs" : undefined}
 							>
 								Export Run
 							</Button>
