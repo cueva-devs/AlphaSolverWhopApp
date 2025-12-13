@@ -29,7 +29,7 @@ function MostProbableOutcomesTable({ outcomes }: { outcomes: OutcomeScenario[] }
 				Most Probable Outcomes
 			</Heading>
 			<Text size="1" color="gray" className="mb-3 block">
-				Scenarios identified via density-based clustering of simulation paths.
+				Scenarios identified via clustering algorithm on simulation paths.
 			</Text>
 
 			{/* Dominant Scenario Callout */}

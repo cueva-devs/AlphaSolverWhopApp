@@ -7,6 +7,20 @@ export type CsvFormat =
 	| "Generic (Simple)" 
 	| "Custom";
 
+// Saved Run type for export/import
+export interface SavedRun {
+	version: string;
+	timestamp: string;
+	name?: string;
+	// Inputs
+	trades: ParsedTrade[];
+	accountConfig: AccountConfig;
+	params: BootstrappedParams;
+	csvFormat: CsvFormat;
+	// Full results for complete restoration
+	result: SimulationResult;
+}
+
 export interface ParametricParams {
 	stopSize: number;
 	takeProfitSize: number;

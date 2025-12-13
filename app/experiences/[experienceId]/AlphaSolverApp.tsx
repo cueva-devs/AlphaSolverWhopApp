@@ -16,6 +16,8 @@ import type {
 } from "./types";
 import { CSV_TEMPLATES, getCsvTemplateList, getAccountConfig } from "./config/propFirmConfig";
 import type { PlanId, PlanConfig } from "./config/planConfig";
+import { createSavedRun, exportRun, importRun, estimateFileSize } from "./lib/saveRunUtils";
+import type { SavedRun } from "./types";
 
 interface AlphaSolverAppProps {
 	experienceId: string;
@@ -46,6 +48,8 @@ export default function AlphaSolverApp({
 	const [isParsingCsv, setIsParsingCsv] = useState(false);
 	const [csvError, setCsvError] = useState<string | null>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const importInputRef = useRef<HTMLInputElement>(null);
+	const [lastParams, setLastParams] = useState<BootstrappedParams | null>(null);
 
 	const handleRunSimulation = async (
 		params: BootstrappedParams,
@@ -83,11 +87,59 @@ export default function AlphaSolverApp({
 			gameType: accountConfig.gameType,
 		};
 		
+		setLastParams(paramsWithAccount);
 		await run("bootstrapped", paramsWithAccount, trades);
 	};
 
 	const handleFileSelect = () => {
 		fileInputRef.current?.click();
+	};
+
+	// Export current run
+	const handleExportRun = async () => {
+		if (!result || !parsedTrades || !lastParams) return;
+		
+		try {
+			const savedRun = createSavedRun(
+				result,
+				parsedTrades,
+				accountConfig,
+				lastParams,
+				csvFormat,
+				`${accountConfig.propFirm} ${accountConfig.challenge}`
+			);
+			await exportRun(savedRun);
+		} catch (err) {
+			setCsvError(err instanceof Error ? err.message : "Failed to export run");
+		}
+	};
+
+	// Import a saved run
+	const handleImportRun = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		
+		try {
+			const savedRun = await importRun(file);
+			
+			// Restore all state
+			setParsedTrades(savedRun.trades);
+			setAccountConfig(savedRun.accountConfig);
+			setCsvFormat(savedRun.csvFormat);
+			setLastParams(savedRun.params);
+			
+			// Directly set the result (no need to re-run simulation)
+			await run("bootstrapped", savedRun.params, savedRun.trades);
+			// Note: We could also directly set result if we modify useSimulationEngine
+			// For now, we re-run to ensure consistency
+		} catch (err) {
+			setCsvError(err instanceof Error ? err.message : "Failed to import run");
+		}
+		
+		// Reset input
+		if (importInputRef.current) {
+			importInputRef.current.value = "";
+		}
 	};
 
 	const parseCsvFile = async (file: File, format: CsvFormat) => {
@@ -142,9 +194,51 @@ export default function AlphaSolverApp({
 
 	return (
 		<div className="min-h-screen bg-gray-1 flex flex-col">
+			{/* Hidden import input */}
+			<input
+				ref={importInputRef}
+				type="file"
+				accept=".alphasolver"
+				onChange={handleImportRun}
+				className="hidden"
+			/>
+			
 			<main className="flex-1 flex flex-col md:flex-row gap-4 md:gap-6 p-4 md:gap-6 min-h-0 overflow-hidden">
 				{/* Left Sidebar */}
 				<aside className="w-full md:w-80 flex-shrink-0 flex flex-col gap-4 overflow-y-auto">
+					{/* Save/Load Section */}
+					<Card size="2" variant="surface">
+						<Heading size="4" as="h2" className="mb-3">
+							Save / Load
+						</Heading>
+						<div className="flex gap-2">
+							<Button
+								type="button"
+								size="2"
+								variant="soft"
+								disabled={!result || !parsedTrades}
+								onClick={handleExportRun}
+								className="flex-1"
+							>
+								Export Run
+							</Button>
+							<Button
+								type="button"
+								size="2"
+								variant="soft"
+								onClick={() => importInputRef.current?.click()}
+								className="flex-1"
+							>
+								Import Run
+							</Button>
+						</div>
+						{result && (
+							<Text size="1" color="gray" className="mt-2 block">
+								Est. file size: {estimateFileSize(result)}
+							</Text>
+						)}
+					</Card>
+
 					{/* Account Section */}
 					<Card size="2" variant="surface">
 						<Heading size="4" as="h2" className="mb-3">
