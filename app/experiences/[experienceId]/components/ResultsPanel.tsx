@@ -321,46 +321,61 @@ export default function ResultsPanel({
 								<Heading size="4" as="h3" className="mb-3">
 									Most Probable Outcomes
 								</Heading>
-								<Text size="1" color="gray" className="mb-2 block">
+								<Text size="1" color="gray" className="mb-3 block">
 									Scenarios identified via density-based clustering of simulation paths.
 								</Text>
+
+								{/* Dominant Scenario Callout */}
+								{(() => {
+									const dominant = result.mostProbableOutcomes[0];
+									const isPass = dominant.netPnl > 0;
+									return (
+										<div 
+											className={`mb-4 p-3 rounded-r-md border-l-4 ${
+												isPass 
+													? 'bg-green-500/10 border-green-500' 
+													: 'bg-red-500/10 border-red-500'
+											}`}
+										>
+											<Text size="1" color="gray" className="uppercase tracking-wide block mb-1">
+												Most Likely Outcome ({dominant.probability.toFixed(1)}%)
+											</Text>
+											<Text size="3" weight="bold" className={isPass ? 'text-green-500' : 'text-red-500'}>
+												{dominant.scenario}
+											</Text>
+										</div>
+									);
+								})()}
+
+								{/* Scenario Table */}
 								<div className="overflow-x-auto">
-									<Table.Root>
-										<Table.Header>
-											<Table.Row>
-												<Table.ColumnHeaderCell>Scenario</Table.ColumnHeaderCell>
-												<Table.ColumnHeaderCell className="text-right">Probability</Table.ColumnHeaderCell>
-												<Table.ColumnHeaderCell className="text-right">Days</Table.ColumnHeaderCell>
-												<Table.ColumnHeaderCell className="text-right">Max DD</Table.ColumnHeaderCell>
-												<Table.ColumnHeaderCell className="text-right">Net P&L</Table.ColumnHeaderCell>
-											</Table.Row>
-										</Table.Header>
-										<Table.Body>
+									<table className="w-full text-sm">
+										<thead>
+											<tr className="border-b border-gray-a6">
+												<th className="text-left py-2 px-3 font-semibold">Scenario</th>
+												<th className="text-right py-2 px-3 font-semibold">Probability</th>
+												<th className="text-right py-2 px-3 font-semibold">Days</th>
+												<th className="text-right py-2 px-3 font-semibold">Max DD</th>
+												<th className="text-right py-2 px-3 font-semibold">Net P&L</th>
+											</tr>
+										</thead>
+										<tbody>
 											{result.mostProbableOutcomes.map((outcome, idx) => (
-												<Table.Row key={idx}>
-													<Table.Cell>
-														<Text size="2">{outcome.scenario}</Text>
-													</Table.Cell>
-													<Table.Cell className="text-right">
-														<Text size="2">{outcome.probability.toFixed(1)}%</Text>
-													</Table.Cell>
-													<Table.Cell className="text-right">
-														<Text size="2">{outcome.days}</Text>
-													</Table.Cell>
-													<Table.Cell className="text-right">
-														<Text size="2">${outcome.maxDD.toFixed(0)}</Text>
-													</Table.Cell>
-													<Table.Cell className="text-right">
-														<Text size="2">${outcome.netPnl.toFixed(0)}</Text>
-													</Table.Cell>
-												</Table.Row>
+												<tr key={idx} className="border-b border-gray-a4 hover:bg-gray-a2">
+													<td className="py-2 px-3">{outcome.scenario}</td>
+													<td className="py-2 px-3 text-right">{outcome.probability.toFixed(1)}%</td>
+													<td className="py-2 px-3 text-right">{outcome.days}</td>
+													<td className="py-2 px-3 text-right">${outcome.maxDD.toFixed(0)}</td>
+													<td className={`py-2 px-3 text-right font-medium ${
+														outcome.netPnl >= 0 ? 'text-green-500' : 'text-red-500'
+													}`}>
+														${outcome.netPnl.toFixed(0)}
+													</td>
+												</tr>
 											))}
-										</Table.Body>
-									</Table.Root>
+										</tbody>
+									</table>
 								</div>
-								<Text size="1" color="gray" className="mt-2">
-									Note: Some paths were outliers (unusual outcomes)
-								</Text>
 							</Card>
 						)}
 					</>
