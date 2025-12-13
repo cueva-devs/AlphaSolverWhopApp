@@ -1,6 +1,7 @@
 "use client";
 
-import { Card, Heading, Text, Tabs, Callout, Badge } from "@whop/react/components";
+import { useState } from "react";
+import { Card, Heading, Text, Tabs, Callout, Badge, Button, Select } from "@whop/react/components";
 import type { TradingPlan, OptimalStrategy, ClusterInfo, BestPath } from "../types";
 
 interface TradingPlanPanelProps {
@@ -111,32 +112,113 @@ function StrategyTab({ strategy }: { strategy: OptimalStrategy }) {
 }
 
 function WinningClustersTable({ clusters }: { clusters: ClusterInfo[] }) {
+	const [currentPage, setCurrentPage] = useState(1);
+	const [pageSize, setPageSize] = useState(10);
+
+	const totalPages = Math.ceil(clusters.length / pageSize);
+	const startIndex = (currentPage - 1) * pageSize;
+	const endIndex = Math.min(startIndex + pageSize, clusters.length);
+	const paginatedClusters = clusters.slice(startIndex, endIndex);
+
+	const showPagination = clusters.length > 10;
+
 	return (
-		<div className="overflow-x-auto">
-			<table className="w-full text-sm">
-				<thead>
-					<tr className="border-b border-gray-a6">
-						<th className="text-left py-2 px-3">Cluster</th>
-						<th className="text-left py-2 px-3">Probability</th>
-						<th className="text-left py-2 px-3">Median Days</th>
-						<th className="text-left py-2 px-3">Max Drawdown</th>
-						<th className="text-left py-2 px-3">Expected P&L</th>
-						<th className="text-left py-2 px-3">Description</th>
-					</tr>
-				</thead>
-				<tbody>
-					{clusters.map((cluster, idx) => (
-						<tr key={idx} className="border-b border-gray-a4 hover:bg-gray-a2">
-							<td className="py-2 px-3 font-medium">{cluster.name}</td>
-							<td className="py-2 px-3">{formatPercent(cluster.probability)}</td>
-							<td className="py-2 px-3">{Math.round(cluster.days_median)}</td>
-							<td className="py-2 px-3">{formatCurrency(cluster.max_drawdown_median)}</td>
-							<td className="py-2 px-3">{formatCurrency(cluster.final_pnl_median)}</td>
-							<td className="py-2 px-3 text-gray-11">{cluster.description}</td>
+		<div className="space-y-3">
+			{/* Page size selector - only show if many results */}
+			{showPagination && (
+				<div className="flex items-center justify-between">
+					<Text size="2" color="gray">
+						Showing {startIndex + 1}-{endIndex} of {clusters.length} clusters
+					</Text>
+					<div className="flex items-center gap-2">
+						<Text size="2" color="gray">Rows:</Text>
+						<Select.Root 
+							value={String(pageSize)} 
+							onValueChange={(val) => {
+								setPageSize(Number(val));
+								setCurrentPage(1);
+							}}
+						>
+							<Select.Trigger className="w-20" />
+							<Select.Content>
+								<Select.Item value="10">10</Select.Item>
+								<Select.Item value="25">25</Select.Item>
+								<Select.Item value="50">50</Select.Item>
+								<Select.Item value="100">100</Select.Item>
+							</Select.Content>
+						</Select.Root>
+					</div>
+				</div>
+			)}
+
+			{/* Table with max height and scroll */}
+			<div className="overflow-x-auto max-h-[400px] overflow-y-auto border border-gray-a4 rounded-lg">
+				<table className="w-full text-sm">
+					<thead className="sticky top-0 bg-gray-a3">
+						<tr className="border-b border-gray-a6">
+							<th className="text-left py-2 px-3 whitespace-nowrap">Cluster</th>
+							<th className="text-left py-2 px-3 whitespace-nowrap">Probability</th>
+							<th className="text-left py-2 px-3 whitespace-nowrap">Median Days</th>
+							<th className="text-left py-2 px-3 whitespace-nowrap">Max Drawdown</th>
+							<th className="text-left py-2 px-3 whitespace-nowrap">Expected P&L</th>
+							<th className="text-left py-2 px-3">Description</th>
 						</tr>
-					))}
-				</tbody>
-			</table>
+					</thead>
+					<tbody>
+						{paginatedClusters.map((cluster, idx) => (
+							<tr key={startIndex + idx} className="border-b border-gray-a4 hover:bg-gray-a2">
+								<td className="py-2 px-3 font-medium whitespace-nowrap">{cluster.name}</td>
+								<td className="py-2 px-3 whitespace-nowrap">{formatPercent(cluster.probability)}</td>
+								<td className="py-2 px-3 whitespace-nowrap">{Math.round(cluster.days_median)}</td>
+								<td className="py-2 px-3 whitespace-nowrap">{formatCurrency(cluster.max_drawdown_median)}</td>
+								<td className="py-2 px-3 whitespace-nowrap">{formatCurrency(cluster.final_pnl_median)}</td>
+								<td className="py-2 px-3 text-gray-11 max-w-xs truncate" title={cluster.description}>{cluster.description}</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</div>
+
+			{/* Pagination controls */}
+			{showPagination && totalPages > 1 && (
+				<div className="flex items-center justify-center gap-2">
+					<Button 
+						variant="soft" 
+						size="1"
+						disabled={currentPage === 1}
+						onClick={() => setCurrentPage(1)}
+					>
+						««
+					</Button>
+					<Button 
+						variant="soft" 
+						size="1"
+						disabled={currentPage === 1}
+						onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+					>
+						«
+					</Button>
+					<Text size="2" className="px-3">
+						Page {currentPage} of {totalPages}
+					</Text>
+					<Button 
+						variant="soft" 
+						size="1"
+						disabled={currentPage === totalPages}
+						onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+					>
+						»
+					</Button>
+					<Button 
+						variant="soft" 
+						size="1"
+						disabled={currentPage === totalPages}
+						onClick={() => setCurrentPage(totalPages)}
+					>
+						»»
+					</Button>
+				</div>
+			)}
 		</div>
 	);
 }
