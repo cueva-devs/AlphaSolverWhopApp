@@ -81,6 +81,10 @@ export interface SimulationResult {
 	expectedCostToPayout?: number;
 	expectedGrossPayout?: number;
 	expectedROI?: number;
+	// Confidence intervals
+	passRateCiLower?: number;
+	passRateCiUpper?: number;
+	timeoutRate?: number;
 	// Trade distributions
 	tradesPerDayDistribution?: number[];
 	tradePnlDistribution?: number[];
