@@ -14,7 +14,7 @@ import type {
 	AccountConfig,
 	CsvFormat,
 } from "./types";
-import { CSV_TEMPLATES, getCsvTemplateList } from "./config/propFirmConfig";
+import { CSV_TEMPLATES, getCsvTemplateList, getAccountConfig } from "./config/propFirmConfig";
 import type { PlanId, PlanConfig } from "./config/planConfig";
 
 interface AlphaSolverAppProps {
@@ -51,7 +51,39 @@ export default function AlphaSolverApp({
 		params: BootstrappedParams,
 		trades: ParsedTrade[],
 	) => {
-		await run("bootstrapped", params, trades);
+		// Get base account config and merge with overrides
+		const baseConfig = getAccountConfig(accountConfig.propFirm, accountConfig.challenge);
+		
+		const mergedRules: Record<string, number> = baseConfig ? { ...baseConfig.rules } : {};
+		const mergedFees: Record<string, number> = baseConfig ? { ...baseConfig.fees } : {};
+		
+		// Apply rule overrides
+		if (accountConfig.ruleOverrides) {
+			Object.entries(accountConfig.ruleOverrides).forEach(([key, value]) => {
+				if (value !== undefined) {
+					mergedRules[key] = value;
+				}
+			});
+		}
+		
+		// Apply fee overrides
+		if (accountConfig.feeOverrides) {
+			Object.entries(accountConfig.feeOverrides).forEach(([key, value]) => {
+				if (value !== undefined) {
+					mergedFees[key] = value;
+				}
+			});
+		}
+		
+		// Add account config to params
+		const paramsWithAccount: BootstrappedParams = {
+			...params,
+			accountRules: mergedRules,
+			accountFees: mergedFees,
+			gameType: accountConfig.gameType,
+		};
+		
+		await run("bootstrapped", paramsWithAccount, trades);
 	};
 
 	const handleFileSelect = () => {

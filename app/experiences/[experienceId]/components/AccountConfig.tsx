@@ -2,8 +2,47 @@
 
 import { useState, useEffect } from "react";
 import { RadioGroup, Select, Text, Button } from "@whop/react/components";
-import type { AccountConfig, GameType, PropFirm, ChallengeSize } from "../types";
+import type { AccountConfig, GameType, PropFirm, ChallengeSize, AccountRuleOverrides, AccountFeeOverrides } from "../types";
 import { PROP_FIRMS, getPropFirmList, getChallengeList, getAccountConfig } from "../config/propFirmConfig";
+
+interface RuleInputProps {
+	label: string;
+	ruleKey: string;
+	defaultValue: number;
+	overrideValue?: number;
+	onChange: (key: string, value: number) => void;
+	prefix?: string;
+	suffix?: string;
+	step?: number;
+}
+
+function RuleInput({ label, ruleKey, defaultValue, overrideValue, onChange, prefix, suffix, step = 100 }: RuleInputProps) {
+	const currentValue = overrideValue !== undefined ? overrideValue : defaultValue;
+	const isOverridden = overrideValue !== undefined;
+
+	return (
+		<div className="flex items-center justify-between gap-2">
+			<Text size="1" color="gray" className="flex-shrink-0">
+				{label}
+			</Text>
+			<div className="flex items-center gap-1">
+				{prefix && <Text size="1" color="gray">{prefix}</Text>}
+				<input
+					type="number"
+					value={currentValue}
+					onChange={(e) => onChange(ruleKey, parseFloat(e.target.value) || 0)}
+					step={step}
+					className={`w-20 px-2 py-1 text-xs text-right rounded border ${
+						isOverridden 
+							? 'border-violet-500 bg-violet-500/10' 
+							: 'border-gray-a5 bg-gray-a2'
+					}`}
+				/>
+				{suffix && <Text size="1" color="gray">{suffix}</Text>}
+			</div>
+		</div>
+	);
+}
 
 interface AccountConfigProps {
 	config: AccountConfig;
@@ -15,6 +54,29 @@ export default function AccountConfigPanel({
 	onChange,
 }: AccountConfigProps) {
 	const [showAccountRules, setShowAccountRules] = useState(false);
+
+	// Check if any overrides are set
+	const hasOverrides = Boolean(
+		(config.ruleOverrides && Object.keys(config.ruleOverrides).length > 0) ||
+		(config.feeOverrides && Object.keys(config.feeOverrides).length > 0)
+	);
+
+	// Handle rule override changes
+	const handleRuleChange = (key: string, value: number) => {
+		const newOverrides = { ...config.ruleOverrides, [key]: value };
+		onChange({ ...config, ruleOverrides: newOverrides as AccountRuleOverrides });
+	};
+
+	// Handle fee override changes
+	const handleFeeChange = (key: string, value: number) => {
+		const newOverrides = { ...config.feeOverrides, [key]: value };
+		onChange({ ...config, feeOverrides: newOverrides as AccountFeeOverrides });
+	};
+
+	// Reset all overrides
+	const handleResetOverrides = () => {
+		onChange({ ...config, ruleOverrides: undefined, feeOverrides: undefined });
+	};
 	
 	const propFirmList = getPropFirmList();
 	const challengeList = getChallengeList(config.propFirm);
@@ -115,7 +177,7 @@ export default function AccountConfigPanel({
 				</Select.Root>
 			</div>
 
-			{/* Account Rules (Expandable) */}
+			{/* Account Rules (Expandable & Editable) */}
 			<div>
 				<Button
 					type="button"
@@ -129,52 +191,125 @@ export default function AccountConfigPanel({
 					</Text>
 				</Button>
 				{showAccountRules && accountRules && (
-					<div className="mt-2 p-3 bg-gray-a2 border border-gray-a5 rounded-md">
-						<Text size="1" weight="medium" className="mb-2 block">
-							{config.propFirm} {config.challenge} Rules:
+					<div className="mt-2 p-3 bg-gray-a2 border border-gray-a5 rounded-md space-y-3">
+						<div className="flex items-center justify-between">
+							<Text size="1" weight="medium">
+								{config.propFirm} {config.challenge} Rules
+							</Text>
+							{hasOverrides && (
+								<Button
+									type="button"
+									variant="ghost"
+									size="1"
+									onClick={handleResetOverrides}
+								>
+									<Text size="1" color="red">Reset</Text>
+								</Button>
+							)}
+						</div>
+						<Text size="1" color="gray" className="block">
+							Edit any value to override the default.
 						</Text>
-						<ul className="list-disc list-inside space-y-1">
-							<li>
-								<Text size="1" color="gray">
-									Initial Balance: {formatCurrency(accountRules.rules['Initial Balance (Eval)'])}
-								</Text>
-							</li>
-							<li>
-								<Text size="1" color="gray">
-									Max Loss (Eval): {formatCurrency(accountRules.rules['Max Loss (Eval)'])}
-								</Text>
-							</li>
-							<li>
-								<Text size="1" color="gray">
-									Max Daily Loss: {formatCurrency(accountRules.rules['Maximum Daily Loss'])}
-								</Text>
-							</li>
-							<li>
-								<Text size="1" color="gray">
-									Max Daily Win: {formatCurrency(accountRules.rules['Maximum Daily Win'])}
-								</Text>
-							</li>
-							<li>
-								<Text size="1" color="gray">
-									Funding Target: {formatCurrency(accountRules.rules['Funding Target Balance'])}
-								</Text>
-							</li>
-							<li>
-								<Text size="1" color="gray">
-									Profit Share: {(accountRules.rules['Profit Share Fraction'] * 100).toFixed(0)}%
-								</Text>
-							</li>
-							<li>
-								<Text size="1" color="gray">
-									Min Winning Days: {accountRules.rules['Minimum Winning Days for Payout']}
-								</Text>
-							</li>
-							<li>
-								<Text size="1" color="gray">
-									Eval Cost: {formatCurrency(accountRules.fees['Eval Acct Cost'])}/month
-								</Text>
-							</li>
-						</ul>
+						
+						{/* Rules */}
+						<div className="space-y-2">
+							<RuleInput
+								label="Initial Balance (Eval)"
+								ruleKey="Initial Balance (Eval)"
+								defaultValue={accountRules.rules['Initial Balance (Eval)']}
+								overrideValue={config.ruleOverrides?.['Initial Balance (Eval)']}
+								onChange={handleRuleChange}
+								prefix="$"
+							/>
+							<RuleInput
+								label="Max Loss (Eval)"
+								ruleKey="Max Loss (Eval)"
+								defaultValue={accountRules.rules['Max Loss (Eval)']}
+								overrideValue={config.ruleOverrides?.['Max Loss (Eval)']}
+								onChange={handleRuleChange}
+								prefix="$"
+							/>
+							<RuleInput
+								label="Max Daily Loss"
+								ruleKey="Maximum Daily Loss"
+								defaultValue={accountRules.rules['Maximum Daily Loss']}
+								overrideValue={config.ruleOverrides?.['Maximum Daily Loss']}
+								onChange={handleRuleChange}
+								prefix="$"
+							/>
+							<RuleInput
+								label="Max Daily Win"
+								ruleKey="Maximum Daily Win"
+								defaultValue={accountRules.rules['Maximum Daily Win']}
+								overrideValue={config.ruleOverrides?.['Maximum Daily Win']}
+								onChange={handleRuleChange}
+								prefix="$"
+							/>
+							<RuleInput
+								label="Funding Target"
+								ruleKey="Funding Target Balance"
+								defaultValue={accountRules.rules['Funding Target Balance']}
+								overrideValue={config.ruleOverrides?.['Funding Target Balance']}
+								onChange={handleRuleChange}
+								prefix="$"
+							/>
+							<RuleInput
+								label="Profit Share %"
+								ruleKey="Profit Share Fraction"
+								defaultValue={accountRules.rules['Profit Share Fraction'] * 100}
+								overrideValue={config.ruleOverrides?.['Profit Share Fraction'] !== undefined ? config.ruleOverrides['Profit Share Fraction'] * 100 : undefined}
+								onChange={(key, val) => handleRuleChange(key, val / 100)}
+								suffix="%"
+								step={1}
+							/>
+							<RuleInput
+								label="Min Winning Days"
+								ruleKey="Minimum Winning Days for Payout"
+								defaultValue={accountRules.rules['Minimum Winning Days for Payout']}
+								overrideValue={config.ruleOverrides?.['Minimum Winning Days for Payout']}
+								onChange={handleRuleChange}
+								step={1}
+							/>
+							<RuleInput
+								label="Winning Day Min P&L"
+								ruleKey="Winning Day PnL Minimum"
+								defaultValue={accountRules.rules['Winning Day PnL Minimum']}
+								overrideValue={config.ruleOverrides?.['Winning Day PnL Minimum']}
+								onChange={handleRuleChange}
+								prefix="$"
+							/>
+						</div>
+
+						{/* Fees */}
+						<Text size="1" weight="medium" className="block pt-2 border-t border-gray-a5">
+							Fees
+						</Text>
+						<div className="space-y-2">
+							<RuleInput
+								label="Eval Account Cost"
+								ruleKey="Eval Acct Cost"
+								defaultValue={accountRules.fees['Eval Acct Cost']}
+								overrideValue={config.feeOverrides?.['Eval Acct Cost']}
+								onChange={handleFeeChange}
+								prefix="$"
+							/>
+							<RuleInput
+								label="Monthly Eval Cost"
+								ruleKey="Monthly Eval Cost"
+								defaultValue={accountRules.fees['Monthly Eval Cost']}
+								overrideValue={config.feeOverrides?.['Monthly Eval Cost']}
+								onChange={handleFeeChange}
+								prefix="$"
+							/>
+							<RuleInput
+								label="Funded Setup Cost"
+								ruleKey="Funded Acct Setup Cost"
+								defaultValue={accountRules.fees['Funded Acct Setup Cost']}
+								overrideValue={config.feeOverrides?.['Funded Acct Setup Cost']}
+								onChange={handleFeeChange}
+								prefix="$"
+							/>
+						</div>
 					</div>
 				)}
 			</div>

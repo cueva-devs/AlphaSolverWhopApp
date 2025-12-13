@@ -24,6 +24,10 @@ export interface BootstrappedParams {
 	pnlColumn?: string;
 	dateColumn?: string;
 	mfeColumn?: string;
+	// Account configuration
+	accountRules?: Record<string, number>;
+	accountFees?: Record<string, number>;
+	gameType?: GameType;
 }
 
 export interface ParsedTrade {
@@ -40,10 +44,33 @@ export type GameType = "combine" | "funded" | "combine_only" | "funded_only";
 export type PropFirm = "Topstep" | "Take Profit Trader" | "Funded Futures Network" | "Tradeify" | "Custom";
 export type ChallengeSize = string; // Dynamic based on prop firm
 
+export interface AccountRuleOverrides {
+	'Initial Balance (Eval)'?: number;
+	'Initial Balance (Funded)'?: number;
+	'Max Loss (Eval)'?: number;
+	'Max Loss (Funded)'?: number;
+	'Funding Target Balance'?: number;
+	'Unshared Winning Balance (Funded)'?: number;
+	'Profit Share Fraction'?: number;
+	'Winning Day PnL Minimum'?: number;
+	'Maximum Daily Loss'?: number;
+	'Maximum Daily Win'?: number;
+	'Minimum Winning Days for Payout'?: number;
+	'Minimum Winning Balance'?: number;
+}
+
+export interface AccountFeeOverrides {
+	'Eval Acct Cost'?: number;
+	'Monthly Eval Cost'?: number;
+	'Funded Acct Setup Cost'?: number;
+}
+
 export interface AccountConfig {
 	gameType: GameType;
 	propFirm: PropFirm;
 	challenge: ChallengeSize;
+	ruleOverrides?: AccountRuleOverrides;
+	feeOverrides?: AccountFeeOverrides;
 }
 
 export interface SimulationResult {

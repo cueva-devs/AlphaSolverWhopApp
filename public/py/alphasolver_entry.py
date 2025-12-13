@@ -530,6 +530,24 @@ def _create_histogram(data: List[float], bins: int = 10) -> List[int]:
     return histogram
 
 
+def _get_trades_per_day_distribution(sim: Simulation) -> List[int]:
+    """Extract trades per day distribution from bootstrapped strategy."""
+    if hasattr(sim.strategy, 'trades_per_day_distribution') and sim.strategy.trades_per_day_distribution is not None:
+        tpd = sim.strategy.trades_per_day_distribution
+        if len(tpd) > 0:
+            return _create_histogram(tpd.tolist(), bins=min(10, int(max(tpd)) + 1))
+    return []
+
+
+def _get_trade_pnl_distribution(sim: Simulation) -> List[int]:
+    """Extract trade P&L distribution from bootstrapped strategy."""
+    if hasattr(sim.strategy, 'pnl_pool') and sim.strategy.pnl_pool is not None:
+        pnl_pool = sim.strategy.pnl_pool
+        if len(pnl_pool) > 0:
+            return _create_histogram(pnl_pool.tolist(), bins=20)
+    return []
+
+
 def _extract_results_enhanced(sim: Simulation, num_paths: int, params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Extract enhanced results from simulation using full PropAlphaEvalSolver features.
@@ -667,6 +685,12 @@ def _extract_results_enhanced(sim: Simulation, num_paths: int, params: Dict[str,
         'passRateCiLower': enhanced.get('pass_rate_ci_lower', 0),
         'passRateCiUpper': enhanced.get('pass_rate_ci_upper', 0),
         'timeoutRate': enhanced.get('timeout_rate', 0),
+        
+        # Trade distributions - extract from bootstrapped strategy
+        'tradesPerDayDistribution': _get_trades_per_day_distribution(sim),
+        'tradePnlDistribution': _get_trade_pnl_distribution(sim),
+        'avgTradesPerDay': float(sim.strategy.avg_trades_per_day) if hasattr(sim.strategy, 'avg_trades_per_day') else 0,
+        'avgTradePnl': float(sim.strategy.avg_pnl) if hasattr(sim.strategy, 'avg_pnl') else 0,
         
         # Outcome scenarios
         'mostProbableOutcomes': outcome_scenarios,

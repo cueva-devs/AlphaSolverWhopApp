@@ -281,226 +281,219 @@ export default function ResultsPanel({
 				{result && !isRunning && (
 					<>
 						{/* Outcome Probability */}
-						<Card size="2" variant="surface">
-							<Heading size="4" as="h3" className="mb-3">
+						<div className="space-y-3">
+							<Heading size="5" as="h3" className="text-cyan-400">
 								Outcome Probability
 							</Heading>
-							<div className="grid grid-cols-2 gap-4">
-								<div>
-									<Text size="1" color="gray" className="mb-1">
+							<div className="grid grid-cols-2 gap-3">
+								<div className="bg-gray-a3 rounded-lg p-4">
+									<Text size="1" color="gray" className="block mb-2">
 										Pass Rate
 									</Text>
-									<Heading size="7" color="green">
+									<Text size="7" weight="bold" className="block">
 										{result.passProbability.toFixed(1)}%
-									</Heading>
+									</Text>
 									{result.passRateCiLower !== undefined && result.passRateCiUpper !== undefined && (
-										<Text size="1" color="gray">
-											95% CI: [{result.passRateCiLower.toFixed(1)}%, {result.passRateCiUpper.toFixed(1)}%]
+										<Text size="1" className="text-green-500 block mt-1">
+											↑ 95% CI: [{result.passRateCiLower.toFixed(1)}%, {result.passRateCiUpper.toFixed(1)}%]
 										</Text>
 									)}
 								</div>
-								<div>
-									<Text size="1" color="gray" className="mb-1">
+								<div className="bg-gray-a3 rounded-lg p-4">
+									<Text size="1" color="gray" className="block mb-2">
 										Fail Rate
 									</Text>
-									<Heading size="7" color="red">
+									<Text size="7" weight="bold" className="block">
 										{(result.failProbability || 100 - result.passProbability).toFixed(1)}%
-									</Heading>
+									</Text>
 									{result.timeoutRate !== undefined && result.timeoutRate > 0 && (
-										<Text size="1" color="gray">
+										<Text size="1" color="gray" className="block mt-1">
 											Timeout: {result.timeoutRate.toFixed(1)}%
 										</Text>
 									)}
 								</div>
 							</div>
-						</Card>
+						</div>
 
 						{/* Expected Value */}
-						<Card size="2" variant="surface">
-							<Heading size="4" as="h3" className="mb-3">
+						<div className="space-y-3">
+							<Heading size="5" as="h3" className="text-cyan-400">
 								Expected Value
 							</Heading>
-							<div className="space-y-2">
-								<div>
-									<Text size="1" color="gray" className="mb-1">
-										Net P&L Per Attempt
+							<div className="grid grid-cols-2 gap-3">
+								<div className="bg-gray-a3 rounded-lg p-4">
+									<Text size="1" color="gray" className="block mb-2">
+										Net EV Per Attempt
 									</Text>
-									<Text size="5" weight="bold">
+									<Text size="7" weight="bold" className="block">
 										${(result.netPnlPerAttempt || result.expectedPayout).toLocaleString(undefined, {
 											minimumFractionDigits: 2,
 											maximumFractionDigits: 2,
 										})}
 									</Text>
 								</div>
-								<div>
-									<Text size="1" color="gray" className="mb-1">
+								<div className="bg-gray-a3 rounded-lg p-4">
+									<Text size="1" color="gray" className="block mb-2">
 										Expected Attempts to Pass
 									</Text>
-									<Text size="5" weight="bold">
+									<Text size="7" weight="bold" className="block">
 										{(result.expectedAttemptsToPass || 1.0).toFixed(1)}
 									</Text>
 								</div>
 							</div>
-						</Card>
+						</div>
 
 						{/* Timeline */}
-						<Card size="2" variant="surface">
-							<Heading size="4" as="h3" className="mb-3">
+						<div className="space-y-3">
+							<Heading size="5" as="h3" className="text-cyan-400">
 								Timeline (Winners)
 							</Heading>
 							<div className="grid grid-cols-3 gap-3">
-								<div>
-									<Text size="1" color="gray" className="mb-1 block">
+								<div className="bg-gray-a3 rounded-lg p-4">
+									<Text size="1" color="gray" className="block mb-2">
 										Avg Days in Eval
 									</Text>
-									<Text size="5" weight="bold">
+									<Text size="7" weight="bold" className="block">
 										{Math.round(result.avgDaysToPass || 0)}
 									</Text>
 									{(() => {
 										const evalMonths = (result.avgDaysToPass || 0) / 30;
 										const rebills = evalMonths >= 1 ? Math.max(0, Math.floor(evalMonths) - 1) : 0;
 										return (
-											<Text size="1" color={rebills > 0 ? "red" : "gray"}>
-												{rebills > 0 ? `~${rebills} rebill(s)` : "No rebill"}
+											<Text size="1" className={rebills > 0 ? "text-red-500" : "text-green-500"}>
+												↑ ~{rebills} rebill(s)
 											</Text>
 										);
 									})()}
 								</div>
-								<div>
-									<Text size="1" color="gray" className="mb-1 block">
+								<div className="bg-gray-a3 rounded-lg p-4">
+									<Text size="1" color="gray" className="block mb-2">
 										Avg Days in Funded
 									</Text>
-									<Text size="5" weight="bold">
+									<Text size="7" weight="bold" className="block">
 										{Math.round(result.avgDaysInFunded || 0)}
 									</Text>
 								</div>
-								<div>
-									<Text size="1" color="gray" className="mb-1 block">
+								<div className="bg-gray-a3 rounded-lg p-4">
+									<Text size="1" color="gray" className="block mb-2">
 										Total Days to Payout
 									</Text>
-									<Text size="5" weight="bold">
+									<Text size="7" weight="bold" className="block">
 										{Math.round(result.totalDaysToPayout || 0)}
 									</Text>
-									<Text size="1" color="gray">
-										~{((result.totalDaysToPayout || 0) / 21).toFixed(1)} months
+									<Text size="1" className="text-green-500">
+										↑ ~{((result.totalDaysToPayout || 0) / 21).toFixed(1)} months
 									</Text>
 								</div>
 							</div>
-						</Card>
+						</div>
 
 						{/* Cost Analysis */}
-						<Card size="2" variant="surface">
-							<Heading size="4" as="h3" className="mb-3">
+						<div className="space-y-3">
+							<Heading size="5" as="h3" className="text-cyan-400">
 								Cost Analysis
 							</Heading>
-							<div className="space-y-3">
-								<div className="grid grid-cols-3 gap-2">
-									<div>
-										<Text size="1" color="gray">Initial Purchase</Text>
-										<Text size="2" weight="bold">
-											${(result.initialPurchase || 149).toFixed(0)}
-										</Text>
-									</div>
-									<div>
-										<Text size="1" color="gray">Monthly Rebill</Text>
-										<Text size="2" weight="bold">
-											${(result.monthlyRebill || 149).toFixed(0)}
-										</Text>
-									</div>
-									<div>
-										<Text size="1" color="gray">Funded Setup</Text>
-										<Text size="2" weight="bold">
-											${(result.fundedSetup || 149).toFixed(0)}
-										</Text>
-									</div>
+							<div className="grid grid-cols-3 gap-3">
+								<div className="bg-gray-a3 rounded-lg p-4">
+									<Text size="1" color="gray" className="block mb-2">
+										Eval Purchase
+									</Text>
+									<Text size="6" weight="bold" className="block">
+										${(result.initialPurchase || 149).toFixed(0)}
+									</Text>
 								</div>
+								<div className="bg-gray-a3 rounded-lg p-4">
+									<Text size="1" color="gray" className="block mb-2">
+										Monthly Rebill
+									</Text>
+									<Text size="6" weight="bold" className="block">
+										${(result.monthlyRebill || 149).toFixed(0)}
+									</Text>
+								</div>
+								<div className="bg-gray-a3 rounded-lg p-4">
+									<Text size="1" color="gray" className="block mb-2">
+										Funded Setup
+									</Text>
+									<Text size="6" weight="bold" className="block">
+										${(result.fundedSetup || 149).toFixed(0)}
+									</Text>
+								</div>
+							</div>
 
-								<div className="pt-2 border-t border-gray-a5">
-									<Text size="1" weight="bold" className="mb-2 block">
+							<div className="grid grid-cols-2 gap-3">
+								<div className="bg-gray-a3 rounded-lg p-4">
+									<Text size="2" weight="bold" className="block mb-2">
 										If You Pass:
 									</Text>
 									<div className="space-y-1">
-										<div className="flex justify-between">
-											<Text size="1" color="gray">Avg Total Costs:</Text>
-											<Text size="1" weight="bold">
-												${(result.avgTotalCostsIfPass || 0).toFixed(0)}
-											</Text>
-										</div>
-										<div className="flex justify-between">
-											<Text size="1" color="gray">Avg Gross Payout:</Text>
-											<Text size="1" weight="bold">
-												${(result.avgGrossPayoutIfPass || 0).toFixed(0)}
-											</Text>
-										</div>
-										<div className="flex justify-between">
-											<Text size="1" color="gray">Avg Net Profit:</Text>
-											<Text size="1" weight="bold" color="green">
-												${(result.avgNetProfitIfPass || 0).toFixed(0)}
-											</Text>
-										</div>
+										<Text size="1" color="gray" className="block">
+											Avg Total Costs: <span className="font-bold text-white">${(result.avgTotalCostsIfPass || 0).toFixed(0)}</span>
+										</Text>
+										<Text size="1" color="gray" className="block">
+											Avg Gross Payout: <span className="font-bold text-white">${(result.avgGrossPayoutIfPass || 0).toFixed(0)}</span>
+										</Text>
+										<Text size="1" color="gray" className="block">
+											Avg Net Profit: <span className="font-bold text-green-500">${(result.avgNetProfitIfPass || 0).toFixed(0)}</span>
+										</Text>
 									</div>
 								</div>
-
-								<div className="pt-2 border-t border-gray-a5">
-									<Text size="1" weight="bold" className="mb-2 block">
+								<div className="bg-gray-a3 rounded-lg p-4">
+									<Text size="2" weight="bold" className="block mb-2">
 										If You Fail:
 									</Text>
 									<div className="space-y-1">
-										<div className="flex justify-between">
-											<Text size="1" color="gray">Avg Days Before Fail:</Text>
-											<Text size="1" weight="bold">
-												{Math.round(result.avgDaysBeforeFail || 0)}
-											</Text>
-										</div>
-										<div className="flex justify-between">
-											<Text size="1" color="gray">Avg Cost Lost:</Text>
-											<Text size="1" weight="bold" color="red">
-												${(result.avgCostLostIfFail || 0).toFixed(0)}
-											</Text>
-										</div>
-										<Text size="1" color="gray" className="mt-1">
-											Fail in Eval: {Math.round(result.failInEvalPercent || 0)}% | Fail in Funded: {Math.round(result.failInFundedPercent || 0)}%
+										<Text size="1" color="gray" className="block">
+											Avg Days Before Fail: <span className="font-bold text-white">{Math.round(result.avgDaysBeforeFail || 0)}</span>
+										</Text>
+										<Text size="1" color="gray" className="block">
+											Avg Cost Lost: <span className="font-bold text-red-500">${(result.avgCostLostIfFail || 0).toFixed(0)}</span>
+										</Text>
+										<Text size="1" color="gray" className="block">
+											Fail in Eval: {Math.round(result.failInEvalPercent || 0)}% | Funded: {Math.round(result.failInFundedPercent || 0)}%
 										</Text>
 									</div>
 								</div>
 							</div>
-						</Card>
+						</div>
 
 						{/* Investment Summary */}
-						<Card size="2" variant="surface">
-							<Heading size="4" as="h3" className="mb-3">
+						<div className="space-y-3">
+							<Heading size="5" as="h3" className="text-cyan-400">
 								Investment Summary
 							</Heading>
-							<div className="space-y-2">
-								<div>
-									<Text size="1" color="gray" className="mb-1">
+							<div className="grid grid-cols-3 gap-3">
+								<div className="bg-gray-a3 rounded-lg p-4">
+									<Text size="1" color="gray" className="block mb-2">
 										Expected Cost to Payout
 									</Text>
-									<Text size="5" weight="bold">
+									<Text size="6" weight="bold" className="block">
 										${(result.expectedCostToPayout || 0).toFixed(0)}
 									</Text>
 								</div>
-								<div>
-									<Text size="1" color="gray" className="mb-1">
+								<div className="bg-gray-a3 rounded-lg p-4">
+									<Text size="1" color="gray" className="block mb-2">
 										Expected Gross Payout
 									</Text>
-									<Text size="5" weight="bold">
+									<Text size="6" weight="bold" className="block">
 										${(result.expectedGrossPayout || result.expectedPayout).toLocaleString(undefined, {
 											minimumFractionDigits: 0,
 											maximumFractionDigits: 0,
 										})}
 									</Text>
 								</div>
-								<div>
-									<Text size="1" color="gray" className="mb-1">
+								<div className="bg-gray-a3 rounded-lg p-4">
+									<Text size="1" color="gray" className="block mb-2">
 										Expected ROI
 									</Text>
-									<Text size="5" weight="bold" color="green">
-										{result.expectedROI ? `+${result.expectedROI.toFixed(1)}%` : "N/A"}
+									<Text size="6" weight="bold" className={result.expectedROI && result.expectedROI > 0 ? "text-green-500" : "text-red-500"}>
+										{result.expectedROI ? `${result.expectedROI > 0 ? '+' : ''}${result.expectedROI.toFixed(1)}%` : "N/A"}
+									</Text>
+									<Text size="1" className={result.expectedROI && result.expectedROI > 0 ? "text-green-500" : "text-red-500"}>
+										{result.expectedROI && result.expectedROI > 0 ? "↑ Profitable" : "↓ Unprofitable"}
 									</Text>
 								</div>
 							</div>
-						</Card>
+						</div>
 
 						{/* Most Probable Outcomes */}
 						{result.mostProbableOutcomes && result.mostProbableOutcomes.length > 0 && (
