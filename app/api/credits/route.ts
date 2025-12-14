@@ -1,7 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { kv } from "@vercel/kv";
+import { createClient, type RedisClientType } from "redis";
 
 const DAILY_CREDITS = 3;
+
+// Redis client singleton
+let redis: RedisClientType | null = null;
+
+async function getRedisClient(): Promise<RedisClientType> {
+	if (!redis) {
+		redis = createClient({
+			url: process.env.KV_REDIS_URL,
+		});
+		redis.on("error", (err) => console.error("Redis Client Error:", err));
+		await redis.connect();
+	}
+	return redis;
+}
 
 /**
  * Gets today's date as YYYY-MM-DD string (UTC)
@@ -16,41 +30,47 @@ interface CreditsData {
 }
 
 /**
- * Get or initialize credits for a user from Vercel KV
+ * Get or initialize credits for a user from Redis
  */
 async function getUserCredits(userId: string): Promise<CreditsData> {
 	const today = getTodayString();
 	const key = `alphasolver:credits:${userId}`;
 	
 	try {
-		const stored = await kv.get<CreditsData>(key);
+		const client = await getRedisClient();
+		const stored = await client.get(key);
 		
-		// Reset if new day or no data
-		if (!stored || stored.lastReset !== today) {
-			const newData: CreditsData = { credits: DAILY_CREDITS, lastReset: today };
-			// Set with 48h expiry (auto-cleanup old entries)
-			await kv.set(key, newData, { ex: 172800 });
-			return newData;
+		if (stored) {
+			const data = JSON.parse(stored) as CreditsData;
+			// Reset if new day
+			if (data.lastReset === today) {
+				return data;
+			}
 		}
 		
-		return stored;
+		// New day or no data - reset credits
+		const newData: CreditsData = { credits: DAILY_CREDITS, lastReset: today };
+		// Set with 48h expiry (auto-cleanup old entries)
+		await client.setEx(key, 172800, JSON.stringify(newData));
+		return newData;
 	} catch (error) {
-		console.error("KV get error:", error);
+		console.error("Redis get error:", error);
 		// Fallback to fresh credits on error
 		return { credits: DAILY_CREDITS, lastReset: today };
 	}
 }
 
 /**
- * Save credits for a user to Vercel KV
+ * Save credits for a user to Redis
  */
 async function saveUserCredits(userId: string, data: CreditsData): Promise<void> {
 	const key = `alphasolver:credits:${userId}`;
 	try {
+		const client = await getRedisClient();
 		// Set with 48h expiry (auto-cleanup old entries)
-		await kv.set(key, data, { ex: 172800 });
+		await client.setEx(key, 172800, JSON.stringify(data));
 	} catch (error) {
-		console.error("KV set error:", error);
+		console.error("Redis set error:", error);
 	}
 }
 
