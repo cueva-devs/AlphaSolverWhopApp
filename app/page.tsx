@@ -5,29 +5,27 @@ const BYPASS_ACCESS = process.env.NEXT_PUBLIC_BYPASS_ACCESS === "true";
 
 export default function Page() {
 	return (
-		<div className="min-h-screen bg-[#080c14] text-white antialiased">
-			{/* Subtle gradient overlay */}
-			<div className="fixed inset-0 overflow-hidden pointer-events-none">
-				<div className="absolute top-0 right-0 w-[800px] h-[600px] bg-gradient-to-bl from-cyan-500/5 via-transparent to-transparent" />
-				<div className="absolute bottom-0 left-0 w-[600px] h-[400px] bg-gradient-to-tr from-teal-500/5 via-transparent to-transparent" />
-			</div>
+		<div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] antialiased overflow-x-hidden">
+			{/* Grid Background */}
+			<div className="fixed inset-0 grid-bg pointer-events-none" />
+			
+			{/* Gradient Accent */}
+			<div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[radial-gradient(ellipse_at_center,_var(--accent-dim)_0%,_transparent_70%)] pointer-events-none opacity-50" />
 
 			{/* Navigation */}
-			<nav className="relative z-20 max-w-7xl mx-auto px-6 py-4">
+			<nav className="relative z-20 max-w-6xl mx-auto px-6 py-6">
 				<div className="flex items-center justify-between">
-					<div className="flex items-center gap-3">
-						<div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center">
-							<span className="text-[#080c14] font-bold text-lg">α</span>
-						</div>
-						<span className="font-semibold text-lg text-white">AlphaSolver</span>
+					<div className="flex items-center gap-2">
+						<span className="text-[var(--accent)] text-xl">α</span>
+						<span className="text-sm tracking-wider">ALPHASOLVER</span>
 					</div>
-					<div className="flex items-center gap-6">
-						<Link href="/app" className="text-slate-300 hover:text-white transition-colors text-sm">
-							Sign In
+					<div className="flex items-center gap-8">
+						<Link href="/app" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors text-sm">
+							[sign in]
 						</Link>
 						<a href={WHOP_CHECKOUT_URL}>
-							<button className="px-4 py-2 text-sm font-medium bg-teal-500 hover:bg-teal-400 text-[#080c14] rounded-lg transition-all">
-								Get Started
+							<button className="px-4 py-2 text-sm bg-[var(--accent)] hover:bg-amber-400 text-black font-medium transition-all">
+								GET ACCESS
 							</button>
 						</a>
 					</div>
@@ -35,299 +33,394 @@ export default function Page() {
 			</nav>
 
 			{/* Hero Section */}
-			<section className="relative z-10 max-w-7xl mx-auto px-6 pt-20 pb-24">
-				<div className="text-center space-y-6">
-					{/* Badge */}
-					<div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#0f1520] border border-[#1e293b]">
-						<span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
-						<span className="text-sm text-slate-300">Monte Carlo Simulation for Prop Traders</span>
-					</div>
-					
-					{/* Main headline */}
-					<h1 className="text-4xl md:text-6xl font-bold leading-tight tracking-tight">
-						<span className="text-white">Know Your </span>
-						<span className="text-teal-400">True Odds</span>
-						<br />
-						<span className="text-slate-400">Before You Pay</span>
-					</h1>
-					
-					{/* Subheadline */}
-					<p className="text-lg text-slate-400 max-w-xl mx-auto leading-relaxed">
-						Upload your trade log. See your real probability of passing any prop firm challenge.
-					</p>
-					
-					{/* CTA Buttons */}
-					<div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
-						{BYPASS_ACCESS ? (
+			<section className="relative z-10 max-w-6xl mx-auto px-6 pt-24 pb-32">
+				<div className="grid lg:grid-cols-2 gap-16 items-center">
+					{/* Left: Copy */}
+					<div className="space-y-8">
+						<div className="animate-fade-up" style={{ animationDelay: '0ms' }}>
+							<p className="text-[var(--text-muted)] text-sm mb-4 tracking-wider">
+								MONTE CARLO SIMULATION ENGINE
+							</p>
+							<h1 className="text-5xl md:text-6xl lg:text-7xl leading-[1.1] tracking-tight">
+								<span className="font-['Instrument_Serif',_serif] italic text-[var(--text-primary)]">Know your</span>
+								<br />
+								<span className="font-['Instrument_Serif',_serif] italic text-[var(--accent)]">true odds</span>
+							</h1>
+						</div>
+						
+						<p className="animate-fade-up text-[var(--text-secondary)] text-lg max-w-md leading-relaxed" style={{ animationDelay: '100ms' }}>
+							Upload your trade log. Run 10,000 simulations. See your real probability of passing any prop firm challenge—before you pay.
+						</p>
+						
+						<div className="animate-fade-up flex flex-wrap gap-4" style={{ animationDelay: '200ms' }}>
+							{BYPASS_ACCESS ? (
+								<Link href="/app">
+									<button className="group px-6 py-3 bg-[var(--accent)] hover:bg-amber-400 text-black font-semibold transition-all flex items-center gap-2">
+										LAUNCH APP
+										<span className="group-hover:translate-x-1 transition-transform">→</span>
+									</button>
+								</Link>
+							) : (
+								<a href={WHOP_CHECKOUT_URL}>
+									<button className="group px-6 py-3 bg-[var(--accent)] hover:bg-amber-400 text-black font-semibold transition-all flex items-center gap-2">
+										START FREE
+										<span className="group-hover:translate-x-1 transition-transform">→</span>
+									</button>
+								</a>
+							)}
 							<Link href="/app">
-								<button className="px-6 py-3 font-semibold rounded-lg bg-teal-500 hover:bg-teal-400 text-black transition-all">
-									Launch App
+								<button className="px-6 py-3 border border-[var(--border)] hover:border-[var(--text-muted)] text-[var(--text-primary)] transition-all">
+									I HAVE ACCESS
 								</button>
 							</Link>
-						) : (
-							<a href={WHOP_CHECKOUT_URL}>
-								<button className="px-6 py-3 font-semibold rounded-lg bg-teal-500 hover:bg-teal-400 text-black transition-all">
-									Start Free →
-								</button>
-							</a>
-						)}
-						<Link href="/app">
-							<button className="px-6 py-3 font-semibold rounded-lg bg-slate-700 border border-slate-600 hover:bg-slate-600 transition-all text-white">
-								I Have Access
-							</button>
-						</Link>
+						</div>
+						
+						<div className="animate-fade-up pt-4 flex items-center gap-8 text-sm text-[var(--text-muted)]" style={{ animationDelay: '300ms' }}>
+							<span>✓ No credit card</span>
+							<span>✓ 3 runs/day free</span>
+							<span>✓ Runs locally</span>
+						</div>
 					</div>
 					
-					{/* Trust indicators */}
-					<div className="flex flex-wrap items-center justify-center gap-6 pt-4 text-sm text-slate-400">
-						<span className="flex items-center gap-2">
-							<svg className="w-4 h-4 text-teal-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-							No credit card required
-						</span>
-						<span className="flex items-center gap-2">
-							<svg className="w-4 h-4 text-teal-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-							3 free runs daily
-						</span>
-						<span className="flex items-center gap-2">
-							<svg className="w-4 h-4 text-teal-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-							Runs in browser
-						</span>
+					{/* Right: Live Simulation Preview */}
+					<div className="animate-fade-up relative" style={{ animationDelay: '400ms' }}>
+						<div className="bg-[var(--bg-secondary)] border border-[var(--border)] p-1">
+							{/* Terminal Header */}
+							<div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border)] bg-[var(--bg-tertiary)]">
+								<span className="w-3 h-3 rounded-full bg-[var(--negative)] opacity-80" />
+								<span className="w-3 h-3 rounded-full bg-[var(--accent)] opacity-80" />
+								<span className="w-3 h-3 rounded-full bg-[var(--positive)] opacity-80" />
+								<span className="ml-4 text-xs text-[var(--text-muted)]">simulation_output.log</span>
+							</div>
+							
+							{/* Terminal Content */}
+							<div className="p-4 space-y-4 font-mono text-sm">
+								<div className="text-[var(--text-muted)]">
+									<span className="text-[var(--accent)]">$</span> alphasolver run --paths 10000
+								</div>
+								
+								<div className="space-y-1 text-xs">
+									<div className="text-[var(--text-muted)]">[████████████████████] 100% | 10,000 paths</div>
+								</div>
+								
+								{/* Results */}
+								<div className="pt-2 border-t border-[var(--border)] space-y-3">
+									<div className="flex justify-between items-baseline">
+										<span className="text-[var(--text-muted)]">PASS_RATE</span>
+										<span className="text-2xl text-[var(--accent)] font-semibold">67.2%</span>
+									</div>
+									<div className="flex justify-between items-baseline">
+										<span className="text-[var(--text-muted)]">EXPECTED_VALUE</span>
+										<span className="text-2xl text-[var(--positive)] font-semibold">+$1,847</span>
+									</div>
+									<div className="flex justify-between items-baseline">
+										<span className="text-[var(--text-muted)]">AVG_ATTEMPTS</span>
+										<span className="text-2xl text-[var(--text-primary)] font-semibold">1.5</span>
+									</div>
+									<div className="flex justify-between items-baseline">
+										<span className="text-[var(--text-muted)]">ROI</span>
+										<span className="text-2xl text-[var(--positive)] font-semibold">+412%</span>
+									</div>
+								</div>
+								
+								{/* Verdict */}
+								<div className="pt-3 border-t border-[var(--border)]">
+									<div className="flex items-center gap-2">
+										<span className="text-[var(--positive)]">●</span>
+										<span className="text-[var(--positive)] text-xs">VERDICT: +EV STRATEGY</span>
+									</div>
+								</div>
+								
+								<div className="text-[var(--text-muted)] flex items-center">
+									<span className="text-[var(--accent)]">$</span>
+									<span className="ml-1 cursor-blink">_</span>
+								</div>
+							</div>
+						</div>
+						
+						{/* Decorative Corner */}
+						<div className="absolute -bottom-3 -right-3 w-24 h-24 border-r border-b border-[var(--accent)] opacity-30" />
 					</div>
 				</div>
 			</section>
 
-			{/* Example Output Section */}
-			<section className="relative z-10 py-20 px-6">
+			{/* Equity Curve Visualization */}
+			<section className="relative z-10 py-20 px-6 border-y border-[var(--border)]">
 				<div className="max-w-6xl mx-auto">
-					<div className="text-center mb-12">
-						<p className="text-sm text-teal-400 uppercase tracking-wider mb-2">Live Preview</p>
-						<h2 className="text-3xl md:text-4xl font-bold text-white">
-							See What You'll Get
-						</h2>
-					</div>
-					
-					{/* Results Card - Dashboard Style */}
-					<div className="bg-[#0f1520] border border-[#1e293b] rounded-2xl p-6 md:p-8">
-						{/* Header */}
-						<div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-[#1e293b]">
-							<div className="flex items-center gap-3">
-								<div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center">
-									<span className="text-[#080c14] font-bold">TS</span>
-								</div>
-								<div>
-									<p className="font-semibold text-white">Topstep 50k Evaluation</p>
-									<p className="text-sm text-slate-500">10,000 Monte Carlo paths</p>
-								</div>
-							</div>
-							<div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/30">
-								<span className="w-2 h-2 rounded-full bg-teal-400" />
-								<span className="text-sm text-teal-400 font-medium">+EV Strategy</span>
-							</div>
+					<div className="grid lg:grid-cols-3 gap-8">
+						<div className="lg:col-span-1 space-y-4">
+							<p className="text-xs text-[var(--text-muted)] tracking-wider">SIMULATION OUTPUT</p>
+							<h2 className="text-3xl font-['Instrument_Serif',_serif] italic">
+								10,000 possible futures
+							</h2>
+							<p className="text-[var(--text-secondary)] text-sm leading-relaxed">
+								Every line is a potential equity curve. Green paths pass. Red paths fail. Your statistics drive the simulation.
+							</p>
 						</div>
 						
-						{/* Metrics Grid - Like Dashboard Cards */}
-						<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-							<div className="bg-[#0a0e16] border border-[#1e293b] rounded-xl p-4">
-								<p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Pass Rate</p>
-								<p className="text-3xl font-bold text-teal-400">67.2%</p>
-							</div>
-							<div className="bg-[#0a0e16] border border-[#1e293b] rounded-xl p-4">
-								<p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Net EV</p>
-								<p className="text-3xl font-bold text-green-400">$1,847</p>
-							</div>
-							<div className="bg-[#0a0e16] border border-[#1e293b] rounded-xl p-4">
-								<p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Attempts</p>
-								<p className="text-3xl font-bold text-white">1.5</p>
-							</div>
-							<div className="bg-[#0a0e16] border border-[#1e293b] rounded-xl p-4">
-								<p className="text-xs text-slate-500 uppercase tracking-wider mb-1">ROI</p>
-								<p className="text-3xl font-bold text-green-400">+412%</p>
-							</div>
-						</div>
-						
-						{/* Chart Area */}
-						<div className="bg-[#0a0e16] border border-[#1e293b] rounded-xl p-4">
-							<div className="flex items-center justify-between mb-3">
-								<p className="text-sm font-medium text-white">Simulation Paths</p>
-								<div className="flex items-center gap-4 text-xs">
-									<span className="flex items-center gap-1.5">
-										<span className="w-2 h-2 rounded-full bg-teal-400" />
-										<span className="text-slate-400">Winners</span>
+						<div className="lg:col-span-2 bg-[var(--bg-secondary)] border border-[var(--border)] p-6">
+							<div className="flex items-center justify-between mb-4 text-xs">
+								<span className="text-[var(--text-muted)]">TOPSTEP 50K EVALUATION</span>
+								<div className="flex items-center gap-4">
+									<span className="flex items-center gap-2">
+										<span className="w-3 h-[2px] bg-[var(--positive)]" />
+										<span className="text-[var(--text-muted)]">Pass (67.2%)</span>
 									</span>
-									<span className="flex items-center gap-1.5">
-										<span className="w-2 h-2 rounded-full bg-rose-400" />
-										<span className="text-slate-400">Losers</span>
+									<span className="flex items-center gap-2">
+										<span className="w-3 h-[2px] bg-[var(--negative)]" />
+										<span className="text-[var(--text-muted)]">Fail (32.8%)</span>
 									</span>
 								</div>
 							</div>
-							<div className="h-40 relative">
-								<svg className="w-full h-full" viewBox="0 0 400 160" preserveAspectRatio="none">
-									<path d="M0,120 Q50,110 100,90 T200,55 T300,28 T400,12" fill="none" stroke="#2dd4bf" strokeWidth="2"/>
-									<path d="M0,120 Q60,115 120,100 T220,75 T320,45 T400,20" fill="none" stroke="#2dd4bf" strokeWidth="1.5" strokeOpacity="0.5"/>
-									<path d="M0,120 Q40,105 80,80 T180,48 T280,24 T400,8" fill="none" stroke="#2dd4bf" strokeWidth="1.5" strokeOpacity="0.4"/>
-									<path d="M0,120 Q30,128 60,140 T120,152" fill="none" stroke="#fb7185" strokeWidth="2"/>
-									<path d="M0,120 Q40,132 80,148 T140,155" fill="none" stroke="#fb7185" strokeWidth="1.5" strokeOpacity="0.5"/>
-									<line x1="0" y1="120" x2="400" y2="120" stroke="#1e293b" strokeWidth="1" strokeDasharray="4,4"/>
+							
+							{/* SVG Chart */}
+							<div className="h-48 relative">
+								<svg className="w-full h-full" viewBox="0 0 500 180" preserveAspectRatio="none">
+									{/* Zero line */}
+									<line x1="0" y1="120" x2="500" y2="120" stroke="var(--border)" strokeWidth="1" strokeDasharray="4,4" />
+									
+									{/* Profit target */}
+									<line x1="0" y1="30" x2="500" y2="30" stroke="var(--positive)" strokeWidth="1" strokeDasharray="2,4" opacity="0.3" />
+									<text x="505" y="34" fill="var(--text-muted)" fontSize="10">$3,000</text>
+									
+									{/* Drawdown limit */}
+									<line x1="0" y1="160" x2="500" y2="160" stroke="var(--negative)" strokeWidth="1" strokeDasharray="2,4" opacity="0.3" />
+									<text x="505" y="164" fill="var(--text-muted)" fontSize="10">-$2,000</text>
+									
+									{/* Winning paths */}
+									<path d="M0,120 Q60,115 120,95 T240,60 T360,35 T500,25" fill="none" stroke="var(--positive)" strokeWidth="1.5" className="path-animate" opacity="0.8" />
+									<path d="M0,120 Q80,110 140,85 T280,55 T400,30 T500,18" fill="none" stroke="var(--positive)" strokeWidth="1" opacity="0.4" />
+									<path d="M0,120 Q50,118 100,100 T200,70 T300,45 T400,28 T500,22" fill="none" stroke="var(--positive)" strokeWidth="1" opacity="0.3" />
+									<path d="M0,120 Q70,112 130,90 T260,58 T380,32 T500,20" fill="none" stroke="var(--positive)" strokeWidth="1" opacity="0.5" />
+									<path d="M0,120 Q90,105 150,78 T290,48 T420,25 T500,15" fill="none" stroke="var(--positive)" strokeWidth="1" opacity="0.25" />
+									
+									{/* Losing paths */}
+									<path d="M0,120 Q40,128 80,140 T160,158" fill="none" stroke="var(--negative)" strokeWidth="1.5" opacity="0.8" />
+									<path d="M0,120 Q50,132 100,148 T180,162" fill="none" stroke="var(--negative)" strokeWidth="1" opacity="0.4" />
+									<path d="M0,120 Q30,125 70,138 T130,155 T200,165" fill="none" stroke="var(--negative)" strokeWidth="1" opacity="0.3" />
 								</svg>
-							</div>
-						</div>
-					</div>
-				</div>
-			</section>
-
-			{/* How It Works */}
-			<section className="relative z-10 py-20 px-6">
-				<div className="max-w-6xl mx-auto">
-					<div className="text-center mb-12">
-						<p className="text-sm text-teal-400 uppercase tracking-wider mb-2">Simple Process</p>
-						<h2 className="text-3xl md:text-4xl font-bold text-white">
-							How It Works
-						</h2>
-					</div>
-					
-					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-						<div className="bg-[#0f1520] border border-[#1e293b] rounded-xl p-6 hover:border-[#334155] transition-all">
-							<div className="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center mb-4">
-								<span className="text-lg font-bold text-cyan-400">1</span>
-							</div>
-							<h3 className="text-lg font-semibold text-white mb-2">Upload Trade Log</h3>
-							<p className="text-sm text-slate-400 leading-relaxed">
-								Export from NinjaTrader, TradingView, Tradovate, Rithmic, or any platform as CSV
-							</p>
-						</div>
-						
-						<div className="bg-[#0f1520] border border-[#1e293b] rounded-xl p-6 hover:border-[#334155] transition-all">
-							<div className="w-10 h-10 rounded-lg bg-violet-500/10 border border-violet-500/30 flex items-center justify-center mb-4">
-								<span className="text-lg font-bold text-violet-400">2</span>
-							</div>
-							<h3 className="text-lg font-semibold text-white mb-2">Select Prop Firm</h3>
-							<p className="text-sm text-slate-400 leading-relaxed">
-								Choose from Topstep, Take Profit Trader, Tradeify, FFN, or create custom rules
-							</p>
-						</div>
-						
-						<div className="bg-[#0f1520] border border-[#1e293b] rounded-xl p-6 hover:border-[#334155] transition-all">
-							<div className="w-10 h-10 rounded-lg bg-teal-500/10 border border-teal-500/30 flex items-center justify-center mb-4">
-								<span className="text-lg font-bold text-teal-400">3</span>
-							</div>
-							<h3 className="text-lg font-semibold text-white mb-2">Get Results</h3>
-							<p className="text-sm text-slate-400 leading-relaxed">
-								See pass probability, expected costs, timeline, and personalized trading plan
-							</p>
-						</div>
-					</div>
-				</div>
-			</section>
-
-			{/* Features Grid */}
-			<section className="relative z-10 py-20 px-6">
-				<div className="max-w-6xl mx-auto">
-					<div className="text-center mb-12">
-						<p className="text-sm text-teal-400 uppercase tracking-wider mb-2">Features</p>
-						<h2 className="text-3xl md:text-4xl font-bold text-white">
-							Everything You Need
-						</h2>
-					</div>
-					
-					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-						{[
-							{ icon: "📊", title: "Monte Carlo Simulation", desc: "10,000+ simulated paths using your actual trade statistics" },
-							{ icon: "🎯", title: "Outcome Clustering", desc: "AI-powered clustering identifies the most probable scenarios" },
-							{ icon: "💰", title: "Cost Analysis", desc: "Full breakdown of expected costs including rebills and resets" },
-							{ icon: "📈", title: "ROI Calculator", desc: "Expected return on investment accounting for all costs" },
-							{ icon: "📋", title: "Trading Plan", desc: "Personalized daily profit targets and risk limits" },
-							{ icon: "🏢", title: "All Major Prop Firms", desc: "Topstep, TPT, Tradeify, FFN, and custom rules" },
-						].map((feature, i) => (
-							<div key={i} className="bg-[#0f1520] border border-[#1e293b] rounded-xl p-5 hover:border-[#334155] transition-all">
-								<span className="text-2xl block mb-3">{feature.icon}</span>
-								<h3 className="text-base font-semibold text-white mb-1">{feature.title}</h3>
-								<p className="text-sm text-slate-400 leading-relaxed">{feature.desc}</p>
-							</div>
-						))}
-					</div>
-				</div>
-			</section>
-
-			{/* Pricing */}
-			<section className="relative z-10 py-20 px-6">
-				<div className="max-w-4xl mx-auto">
-					<div className="text-center mb-12">
-						<p className="text-sm text-teal-400 uppercase tracking-wider mb-2">Pricing</p>
-						<h2 className="text-3xl md:text-4xl font-bold text-white">
-							Simple, Transparent Pricing
-						</h2>
-					</div>
-					
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-						{/* Free Plan */}
-						<div className="bg-[#0f1520] border border-[#1e293b] rounded-xl p-6 hover:border-[#334155] transition-all">
-							<div className="mb-6">
-								<h3 className="text-xl font-semibold text-white mb-1">Free</h3>
-								<div className="flex items-baseline gap-1">
-									<span className="text-4xl font-bold text-white">$0</span>
-									<span className="text-slate-500">/month</span>
+								
+								{/* Y-axis label */}
+								<div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full pr-2 text-xs text-[var(--text-muted)] [writing-mode:vertical-rl] rotate-180">
+									P&L ($)
 								</div>
 							</div>
 							
-							<ul className="space-y-3 mb-6">
+							<div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--border)] text-xs text-[var(--text-muted)]">
+								<span>Day 0</span>
+								<span>Day 15</span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			{/* How It Works - Minimal */}
+			<section className="relative z-10 py-24 px-6">
+				<div className="max-w-6xl mx-auto">
+					<div className="text-center mb-16">
+						<p className="text-xs text-[var(--text-muted)] tracking-wider mb-4">THE PROCESS</p>
+						<h2 className="text-4xl font-['Instrument_Serif',_serif] italic">
+							Three inputs. Infinite clarity.
+						</h2>
+					</div>
+					
+					<div className="grid md:grid-cols-3 gap-px bg-[var(--border)]">
+						<div className="bg-[var(--bg-primary)] p-8 space-y-4">
+							<div className="text-5xl font-['Instrument_Serif',_serif] text-[var(--accent)]">01</div>
+							<h3 className="text-lg">Upload trade log</h3>
+							<p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+								CSV export from NinjaTrader, TradingView, Tradovate, Rithmic, or manual entry. We extract your win rate, average win/loss, and trade frequency.
+							</p>
+						</div>
+						
+						<div className="bg-[var(--bg-primary)] p-8 space-y-4">
+							<div className="text-5xl font-['Instrument_Serif',_serif] text-[var(--accent)]">02</div>
+							<h3 className="text-lg">Select prop firm</h3>
+							<p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+								Topstep, Take Profit Trader, Apex, Tradeify, or custom rules. We know every profit target, drawdown limit, and fee structure.
+							</p>
+						</div>
+						
+						<div className="bg-[var(--bg-primary)] p-8 space-y-4">
+							<div className="text-5xl font-['Instrument_Serif',_serif] text-[var(--accent)]">03</div>
+							<h3 className="text-lg">Get your odds</h3>
+							<p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+								Pass probability, expected cost, optimal attempt strategy, and a personalized trading plan with daily targets.
+							</p>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			{/* What You Get */}
+			<section className="relative z-10 py-24 px-6 border-t border-[var(--border)]">
+				<div className="max-w-6xl mx-auto">
+					<div className="grid lg:grid-cols-2 gap-16">
+						<div>
+							<p className="text-xs text-[var(--text-muted)] tracking-wider mb-4">OUTPUT</p>
+							<h2 className="text-4xl font-['Instrument_Serif',_serif] italic mb-8">
+								Everything you need to decide
+							</h2>
+							
+							<div className="space-y-6">
 								{[
-									"3 simulation runs per day",
-									"All prop firms supported",
-									"Trading plan generation",
-									"Full results & visualizations",
+									{ label: "Pass Probability", desc: "Monte Carlo derived pass rate across 10,000+ simulated evaluations" },
+									{ label: "Expected Value", desc: "Net profit expectation accounting for fees, rebills, and payout probability" },
+									{ label: "Cost Analysis", desc: "Total expected cost including multiple attempts and reset scenarios" },
+									{ label: "Optimal Strategy", desc: "Best approach: aggressive, conservative, or somewhere between" },
+									{ label: "Trading Plan", desc: "Daily profit targets and max loss limits tuned to your statistics" },
+									{ label: "Attempt Forecast", desc: "How many evaluations until you statistically pass" },
 								].map((item, i) => (
-									<li key={i} className="flex items-center gap-2 text-sm">
-										<svg className="w-4 h-4 text-teal-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-										<span className="text-slate-300">{item}</span>
-									</li>
+									<div key={i} className="flex gap-4 pb-6 border-b border-[var(--border)]">
+										<span className="text-[var(--accent)] text-sm">0{i + 1}</span>
+										<div>
+											<h4 className="text-[var(--text-primary)] mb-1">{item.label}</h4>
+											<p className="text-sm text-[var(--text-secondary)]">{item.desc}</p>
+										</div>
+									</div>
 								))}
-								<li className="flex items-center gap-2 text-sm">
-									<svg className="w-4 h-4 text-slate-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-									<span className="text-slate-500">Export/Import runs</span>
-								</li>
-							</ul>
+							</div>
+						</div>
+						
+						<div className="flex items-center">
+							<div className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] p-6 space-y-4">
+								<div className="text-xs text-[var(--text-muted)] tracking-wider pb-4 border-b border-[var(--border)]">
+									SAMPLE TRADING PLAN
+								</div>
+								
+								<div className="space-y-3 font-mono text-sm">
+									<div className="flex justify-between">
+										<span className="text-[var(--text-muted)]">account_size</span>
+										<span>$50,000</span>
+									</div>
+									<div className="flex justify-between">
+										<span className="text-[var(--text-muted)]">profit_target</span>
+										<span>$3,000</span>
+									</div>
+									<div className="flex justify-between">
+										<span className="text-[var(--text-muted)]">max_drawdown</span>
+										<span className="text-[var(--negative)]">-$2,000</span>
+									</div>
+									<div className="flex justify-between">
+										<span className="text-[var(--text-muted)]">daily_loss_limit</span>
+										<span className="text-[var(--negative)]">-$1,000</span>
+									</div>
+									<div className="pt-4 border-t border-[var(--border)]" />
+									<div className="flex justify-between">
+										<span className="text-[var(--text-muted)]">recommended_daily_target</span>
+										<span className="text-[var(--positive)]">+$187</span>
+									</div>
+									<div className="flex justify-between">
+										<span className="text-[var(--text-muted)]">recommended_daily_stop</span>
+										<span className="text-[var(--negative)]">-$125</span>
+									</div>
+									<div className="flex justify-between">
+										<span className="text-[var(--text-muted)]">optimal_trades_per_day</span>
+										<span>3-4</span>
+									</div>
+									<div className="flex justify-between">
+										<span className="text-[var(--text-muted)]">expected_days_to_pass</span>
+										<span className="text-[var(--accent)]">12</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			{/* Pricing - Stark */}
+			<section className="relative z-10 py-24 px-6 border-t border-[var(--border)]">
+				<div className="max-w-4xl mx-auto">
+					<div className="text-center mb-16">
+						<p className="text-xs text-[var(--text-muted)] tracking-wider mb-4">PRICING</p>
+						<h2 className="text-4xl font-['Instrument_Serif',_serif] italic">
+							Simple. No surprises.
+						</h2>
+					</div>
+					
+					<div className="grid md:grid-cols-2 gap-px bg-[var(--border)]">
+						{/* Free */}
+						<div className="bg-[var(--bg-primary)] p-8">
+							<div className="mb-8">
+								<p className="text-sm text-[var(--text-muted)] mb-2">FREE</p>
+								<div className="flex items-baseline gap-1">
+									<span className="text-5xl font-['Instrument_Serif',_serif]">$0</span>
+									<span className="text-[var(--text-muted)]">/mo</span>
+								</div>
+							</div>
+							
+							<div className="space-y-3 mb-8 text-sm">
+								<div className="flex items-center gap-3">
+									<span className="text-[var(--positive)]">✓</span>
+									<span>3 simulations per day</span>
+								</div>
+								<div className="flex items-center gap-3">
+									<span className="text-[var(--positive)]">✓</span>
+									<span>All prop firms supported</span>
+								</div>
+								<div className="flex items-center gap-3">
+									<span className="text-[var(--positive)]">✓</span>
+									<span>Full results & analysis</span>
+								</div>
+								<div className="flex items-center gap-3">
+									<span className="text-[var(--positive)]">✓</span>
+									<span>Trading plan generation</span>
+								</div>
+								<div className="flex items-center gap-3">
+									<span className="text-[var(--text-muted)]">—</span>
+									<span className="text-[var(--text-muted)]">Export/import runs</span>
+								</div>
+							</div>
 							
 							<a href={WHOP_CHECKOUT_URL} className="block">
-								<button className="w-full py-3 px-4 rounded-lg bg-slate-700 border border-slate-600 font-semibold text-white hover:bg-slate-600 transition-all">
-									Get Started Free
+								<button className="w-full py-3 border border-[var(--border)] hover:border-[var(--text-muted)] text-sm transition-all">
+									GET STARTED
 								</button>
 							</a>
 						</div>
 						
-						{/* Unlimited Plan */}
-						<div className="bg-[#0f1520] border-2 border-teal-500/50 rounded-xl p-6 relative">
-							<div className="absolute -top-3 left-1/2 -translate-x-1/2">
-								<span className="px-3 py-1 rounded-full bg-teal-500 text-black text-xs font-bold uppercase">
-									Popular
-								</span>
+						{/* Unlimited */}
+						<div className="bg-[var(--bg-secondary)] p-8 relative">
+							<div className="absolute top-4 right-4 px-2 py-1 bg-[var(--accent)] text-black text-xs font-medium">
+								POPULAR
 							</div>
 							
-							<div className="mb-6 pt-2">
-								<h3 className="text-xl font-semibold text-white mb-1">Unlimited</h3>
+							<div className="mb-8">
+								<p className="text-sm text-[var(--text-muted)] mb-2">UNLIMITED</p>
 								<div className="flex items-baseline gap-1">
-									<span className="text-4xl font-bold text-teal-400">$9</span>
-									<span className="text-slate-500">/month</span>
+									<span className="text-5xl font-['Instrument_Serif',_serif] text-[var(--accent)]">$9</span>
+									<span className="text-[var(--text-muted)]">/mo</span>
 								</div>
 							</div>
 							
-							<ul className="space-y-3 mb-6">
-								{[
-									"Unlimited simulation runs",
-									"All prop firms supported",
-									"Trading plan generation",
-									"Full results & visualizations",
-									"Export/Import runs",
-								].map((item, i) => (
-									<li key={i} className="flex items-center gap-2 text-sm">
-										<svg className="w-4 h-4 text-teal-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-										<span className="text-slate-300">{item}</span>
-									</li>
-								))}
-							</ul>
+							<div className="space-y-3 mb-8 text-sm">
+								<div className="flex items-center gap-3">
+									<span className="text-[var(--positive)]">✓</span>
+									<span>Unlimited simulations</span>
+								</div>
+								<div className="flex items-center gap-3">
+									<span className="text-[var(--positive)]">✓</span>
+									<span>All prop firms supported</span>
+								</div>
+								<div className="flex items-center gap-3">
+									<span className="text-[var(--positive)]">✓</span>
+									<span>Full results & analysis</span>
+								</div>
+								<div className="flex items-center gap-3">
+									<span className="text-[var(--positive)]">✓</span>
+									<span>Trading plan generation</span>
+								</div>
+								<div className="flex items-center gap-3">
+									<span className="text-[var(--positive)]">✓</span>
+									<span>Export/import runs</span>
+								</div>
+							</div>
 							
 							<a href={WHOP_CHECKOUT_URL} className="block">
-								<button className="w-full py-3 px-4 rounded-lg bg-teal-500 hover:bg-teal-400 font-bold text-black transition-all">
-									Upgrade to Unlimited
+								<button className="w-full py-3 bg-[var(--accent)] hover:bg-amber-400 text-black text-sm font-medium transition-all">
+									UPGRADE NOW
 								</button>
 							</a>
 						</div>
@@ -336,25 +429,28 @@ export default function Page() {
 			</section>
 
 			{/* Final CTA */}
-			<section className="relative z-10 py-20 px-6">
-				<div className="max-w-2xl mx-auto text-center">
-					<h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
-						Ready to Know Your <span className="text-teal-400">True Odds</span>?
+			<section className="relative z-10 py-32 px-6 border-t border-[var(--border)]">
+				<div className="max-w-3xl mx-auto text-center">
+					<h2 className="text-4xl md:text-5xl font-['Instrument_Serif',_serif] italic mb-6">
+						Stop guessing.<br />
+						<span className="text-[var(--accent)]">Start knowing.</span>
 					</h2>
-					<p className="text-slate-400 mb-8">
-						Stop guessing. Start simulating. Make data-driven decisions.
+					<p className="text-[var(--text-secondary)] mb-8 max-w-lg mx-auto">
+						Your next prop firm attempt doesn't have to be a gamble. Run the numbers first.
 					</p>
-					<div className="flex flex-col sm:flex-row gap-3 justify-center">
+					<div className="flex flex-wrap gap-4 justify-center">
 						{BYPASS_ACCESS ? (
 							<Link href="/app">
-								<button className="px-6 py-3 font-semibold rounded-lg bg-teal-500 hover:bg-teal-400 text-black transition-all">
-									Launch App →
+								<button className="group px-8 py-4 bg-[var(--accent)] hover:bg-amber-400 text-black font-semibold transition-all flex items-center gap-2">
+									LAUNCH APP
+									<span className="group-hover:translate-x-1 transition-transform">→</span>
 								</button>
 							</Link>
 						) : (
 							<a href={WHOP_CHECKOUT_URL}>
-								<button className="px-6 py-3 font-semibold rounded-lg bg-teal-500 hover:bg-teal-400 text-black transition-all">
-									Start Free Today →
+								<button className="group px-8 py-4 bg-[var(--accent)] hover:bg-amber-400 text-black font-semibold transition-all flex items-center gap-2">
+									START FREE TODAY
+									<span className="group-hover:translate-x-1 transition-transform">→</span>
 								</button>
 							</a>
 						)}
@@ -362,24 +458,20 @@ export default function Page() {
 				</div>
 			</section>
 
-			{/* Footer */}
-			<footer className="relative z-10 py-8 px-6 border-t border-[#1e293b]">
+			{/* Footer - Minimal */}
+			<footer className="relative z-10 py-8 px-6 border-t border-[var(--border)]">
 				<div className="max-w-6xl mx-auto">
-					<div className="flex flex-col md:flex-row justify-between items-center gap-4">
+					<div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-[var(--text-muted)]">
 						<div className="flex items-center gap-2">
-							<div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center">
-								<span className="text-[#080c14] font-bold text-sm">α</span>
-							</div>
-							<span className="font-medium text-white">AlphaSolver</span>
+							<span className="text-[var(--accent)]">α</span>
+							<span className="tracking-wider">ALPHASOLVER</span>
 						</div>
-						<div className="flex items-center gap-6 text-sm text-slate-500">
-							<a href="#" className="hover:text-white transition-colors">Terms</a>
-							<a href="#" className="hover:text-white transition-colors">Privacy</a>
-							<a href="#" className="hover:text-white transition-colors">Contact</a>
+						<div className="flex items-center gap-6">
+							<a href="#" className="hover:text-[var(--text-primary)] transition-colors">Terms</a>
+							<a href="#" className="hover:text-[var(--text-primary)] transition-colors">Privacy</a>
+							<a href="#" className="hover:text-[var(--text-primary)] transition-colors">Contact</a>
 						</div>
-						<p className="text-sm text-slate-600">
-							© 2024 AlphaSolver
-						</p>
+						<p>© 2024</p>
 					</div>
 				</div>
 			</footer>

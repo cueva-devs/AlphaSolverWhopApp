@@ -8,8 +8,115 @@
 /* biome-ignore lint/suspicious/noUnknownAtRules: this rule is imported from whop */
 @config '../tailwind.config.ts';
 
+:root {
+	--font-mono: 'JetBrains Mono', ui-monospace, monospace;
+	--font-serif: 'Instrument Serif', Georgia, serif;
+	--bg-primary: #0a0a0a;
+	--bg-secondary: #111111;
+	--bg-tertiary: #1a1a1a;
+	--text-primary: #fafafa;
+	--text-secondary: #a1a1a1;
+	--text-muted: #525252;
+	--accent: #f59e0b;
+	--accent-dim: rgba(245, 158, 11, 0.15);
+	--border: #262626;
+	--positive: #22c55e;
+	--negative: #ef4444;
+}
+
 body {
-	background: var(--background);
-	color: var(--foreground);
-	font-family: Arial, Helvetica, sans-serif;
+	background: var(--bg-primary);
+	color: var(--text-primary);
+	font-family: var(--font-mono);
+}
+
+/* Animated grid background */
+@keyframes gridPulse {
+	0%, 100% { opacity: 0.03; }
+	50% { opacity: 0.06; }
+}
+
+.grid-bg {
+	background-image: 
+		linear-gradient(var(--border) 1px, transparent 1px),
+		linear-gradient(90deg, var(--border) 1px, transparent 1px);
+	background-size: 60px 60px;
+	animation: gridPulse 8s ease-in-out infinite;
+}
+
+/* Scanline effect */
+@keyframes scanline {
+	0% { transform: translateY(-100%); }
+	100% { transform: translateY(100vh); }
+}
+
+.scanline::after {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 2px;
+	background: linear-gradient(90deg, transparent, var(--accent), transparent);
+	opacity: 0.1;
+	animation: scanline 8s linear infinite;
+}
+
+/* Staggered fade-in animation */
+@keyframes fadeUp {
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.animate-fade-up {
+	animation: fadeUp 0.6s ease-out forwards;
+	opacity: 0;
+}
+
+/* Number ticker animation */
+@keyframes countUp {
+	from { opacity: 0; transform: translateY(10px); }
+	to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-count {
+	animation: countUp 0.4s ease-out forwards;
+}
+
+/* Blinking cursor */
+@keyframes blink {
+	0%, 50% { opacity: 1; }
+	51%, 100% { opacity: 0; }
+}
+
+.cursor-blink {
+	animation: blink 1s step-end infinite;
+}
+
+/* Path drawing animation */
+@keyframes drawPath {
+	to { stroke-dashoffset: 0; }
+}
+
+.path-animate {
+	stroke-dasharray: 1000;
+	stroke-dashoffset: 1000;
+	animation: drawPath 2s ease-out forwards;
+}
+
+/* Glow effect */
+.glow-amber {
+	box-shadow: 0 0 20px rgba(245, 158, 11, 0.3), 0 0 40px rgba(245, 158, 11, 0.1);
+}
+
+/* Selection color */
+::selection {
+	background: var(--accent);
+	color: var(--bg-primary);
 }
