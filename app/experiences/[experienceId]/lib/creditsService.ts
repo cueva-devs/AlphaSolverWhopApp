@@ -36,7 +36,10 @@ export async function checkCreditsServer(userId?: string, experienceId?: string)
 		
 		const response = await fetch(`/api/credits?${params.toString()}`);
 		
-		if (!response.ok) return null;
+		if (!response.ok) {
+			console.error("Credits API error:", response.status);
+			return null;
+		}
 		
 		const data = await response.json();
 		return {
@@ -45,7 +48,8 @@ export async function checkCreditsServer(userId?: string, experienceId?: string)
 			lastResetDate: data.lastReset || getTodayString(),
 			isUnlimited: data.isUnlimited || false,
 		};
-	} catch {
+	} catch (error) {
+		console.error("Failed to fetch credits:", error);
 		return null;
 	}
 }
@@ -79,19 +83,10 @@ export async function useCreditServer(userId?: string, experienceId?: string): P
 			credits: data.credits,
 			maxCredits: data.maxCredits,
 		};
-	} catch {
+	} catch (error) {
+		console.error("Failed to use credit:", error);
 		return null;
 	}
-}
-
-/**
- * Check if user has credits (server-side check)
- */
-export async function hasCreditsServer(userId?: string, experienceId?: string): Promise<boolean> {
-	const state = await checkCreditsServer(userId, experienceId);
-	if (!state) return false;
-	if (state.isUnlimited) return true;
-	return state.creditsRemaining > 0;
 }
 
 /**
