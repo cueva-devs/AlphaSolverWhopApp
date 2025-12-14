@@ -18,12 +18,9 @@ import { CSV_TEMPLATES, getCsvTemplateList, getAccountConfig } from "./config/pr
 import type { PlanId, PlanConfig } from "./config/planConfig";
 import { createSavedRun, exportRun, importRun, estimateFileSize } from "./lib/saveRunUtils";
 import { 
-	useCredit, 
-	getCreditsDisplay, 
-	hasCredits, 
 	useCreditServer, 
 	checkCreditsServer,
-	syncCreditsFromServer,
+	getCreditsDisplayFromState,
 	type CreditsState 
 } from "./lib/creditsService";
 import type { SavedRun } from "./types";
@@ -65,31 +62,39 @@ export default function AlphaSolverApp({
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const importInputRef = useRef<HTMLInputElement>(null);
 	const [lastParams, setLastParams] = useState<BootstrappedParams | null>(null);
-	const [creditsDisplay, setCreditsDisplay] = useState<string>(getCreditsDisplay(planConfig));
-	const [creditsRemaining, setCreditsRemaining] = useState<number>(planConfig.dailyCredits);
-	const [maxCredits, setMaxCredits] = useState<number>(planConfig.dailyCredits);
+	const [creditsState, setCreditsState] = useState<CreditsState | null>(null);
+	const [isLoadingCredits, setIsLoadingCredits] = useState(true);
 	
 	// Confirmation dialog state
 	const [showRunConfirm, setShowRunConfirm] = useState(false);
 	const [pendingRun, setPendingRun] = useState<{ params: BootstrappedParams; trades: ParsedTrade[] } | null>(null);
 
-	// Fetch credits from server on mount
+	// Computed values from credits state
+	const creditsDisplay = planConfig.dailyCredits === -1 
+		? "Unlimited" 
+		: getCreditsDisplayFromState(creditsState, planConfig.dailyCredits);
+	const creditsRemaining = creditsState?.creditsRemaining ?? planConfig.dailyCredits;
+	const noCreditsRemaining = planConfig.dailyCredits !== -1 && creditsRemaining <= 0;
+
+	// Fetch credits from Vercel KV on mount
 	useEffect(() => {
 		const fetchCredits = async () => {
-			if (planConfig.dailyCredits === -1) return; // Skip for unlimited plans
-			if (!userId) return; // Need userId for server credits
+			if (planConfig.dailyCredits === -1) {
+				setIsLoadingCredits(false);
+				return;
+			}
+			if (!userId) {
+				setIsLoadingCredits(false);
+				return;
+			}
 			
 			try {
 				const serverCredits = await checkCreditsServer(userId, experienceId !== "direct" ? experienceId : undefined);
-				if (serverCredits) {
-					syncCreditsFromServer(serverCredits, planConfig);
-					setCreditsDisplay(`${serverCredits.creditsRemaining} / ${serverCredits.maxCredits}`);
-					setCreditsRemaining(serverCredits.creditsRemaining);
-					setMaxCredits(serverCredits.maxCredits);
-				}
+				setCreditsState(serverCredits);
 			} catch (e) {
-				// Fallback to localStorage
-				console.error("Failed to fetch server credits:", e);
+				console.error("Failed to fetch credits:", e);
+			} finally {
+				setIsLoadingCredits(false);
 			}
 		};
 		
@@ -117,37 +122,34 @@ export default function AlphaSolverApp({
 		const { params, trades } = pendingRun;
 		setPendingRun(null);
 		
-		// Try server-side credit first (requires userId)
-		if (planConfig.dailyCredits !== -1 && userId) {
+		// Use server-side credit via Vercel KV
+		if (planConfig.dailyCredits !== -1) {
+			if (!userId) {
+				setCsvError("Unable to verify user. Please refresh the page.");
+				return;
+			}
+			
 			try {
 				const result = await useCreditServer(userId, experienceId !== "direct" ? experienceId : undefined);
-				if (result) {
-					if (!result.success) {
-						setCsvError(result.error || "No credits remaining. Credits reset daily at midnight.");
-						return;
-					}
-					setCreditsDisplay(`${result.credits} / ${result.maxCredits}`);
-					setCreditsRemaining(result.credits);
-					setMaxCredits(result.maxCredits);
-				} else {
-					// Fallback to localStorage
-					if (!hasCredits(planConfig)) {
-						setCsvError("No credits remaining. Credits reset daily at midnight.");
-						return;
-					}
-					if (!useCredit(planConfig)) {
-						setCsvError("Failed to use credit. Please try again.");
-						return;
-					}
-					setCreditsDisplay(getCreditsDisplay(planConfig));
-				}
-			} catch (e) {
-				// Fallback to localStorage
-				if (!useCredit(planConfig)) {
-					setCsvError("Failed to use credit. Please try again.");
+				if (!result) {
+					setCsvError("Failed to connect to server. Please try again.");
 					return;
 				}
-				setCreditsDisplay(getCreditsDisplay(planConfig));
+				if (!result.success) {
+					setCsvError(result.error || "No credits remaining. Credits reset daily at midnight UTC.");
+					return;
+				}
+				// Update credits state with new values from server
+				setCreditsState({
+					creditsRemaining: result.credits,
+					maxCredits: result.maxCredits,
+					lastResetDate: new Date().toISOString().split("T")[0],
+					isUnlimited: false,
+				});
+			} catch (e) {
+				console.error("Credit use error:", e);
+				setCsvError("Failed to use credit. Please try again.");
+				return;
 			}
 		}
 		
@@ -294,8 +296,6 @@ export default function AlphaSolverApp({
 		await parseCsvFile(file, csvFormat);
 	};
 
-	const noCreditsRemaining = planConfig.dailyCredits !== -1 && creditsRemaining <= 0;
-
 	return (
 		<div className="min-h-screen bg-gray-1 flex flex-col">
 			{/* Run Confirmation Dialog */}
@@ -354,9 +354,13 @@ export default function AlphaSolverApp({
 								<Text size="1" color="gray" className="block">
 									Daily Runs
 								</Text>
-								<Text size="3" weight="bold" className={planConfig.dailyCredits === -1 ? "text-green-500" : noCreditsRemaining ? "text-red-500" : ""}>
-									{creditsDisplay}
-								</Text>
+								{isLoadingCredits ? (
+									<Spinner size="2" />
+								) : (
+									<Text size="3" weight="bold" className={planConfig.dailyCredits === -1 ? "text-green-500" : noCreditsRemaining ? "text-red-500" : ""}>
+										{creditsDisplay}
+									</Text>
+								)}
 							</div>
 						</div>
 						{planConfig.dailyCredits !== -1 && (

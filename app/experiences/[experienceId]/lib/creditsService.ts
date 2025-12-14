@@ -16,8 +16,6 @@ export interface UseCreditResult {
 	error?: string;
 }
 
-const STORAGE_KEY = "alphasolver_credits";
-
 /**
  * Gets today's date as YYYY-MM-DD string
  */
@@ -26,7 +24,7 @@ function getTodayString(): string {
 }
 
 /**
- * Server-side credit check - calls Vercel KV via API
+ * Fetch credits from Vercel KV via API
  */
 export async function checkCreditsServer(userId?: string, experienceId?: string): Promise<CreditsState | null> {
 	if (!userId) return null;
@@ -53,7 +51,7 @@ export async function checkCreditsServer(userId?: string, experienceId?: string)
 }
 
 /**
- * Server-side credit use - calls Vercel KV via API
+ * Use one credit via Vercel KV API
  */
 export async function useCreditServer(userId?: string, experienceId?: string): Promise<UseCreditResult | null> {
 	if (!userId) return null;
@@ -86,142 +84,21 @@ export async function useCreditServer(userId?: string, experienceId?: string): P
 	}
 }
 
-// ==========================================
-// LOCAL STORAGE FALLBACK (for client-side only)
-// ==========================================
-
 /**
- * Gets the current credits state from localStorage (client-side fallback)
- * Used when server-side credits aren't available
+ * Check if user has credits (server-side check)
  */
-export function getCreditsState(planConfig: PlanConfig): CreditsState {
-	// Unlimited plans don't need credits tracking
-	if (planConfig.dailyCredits === -1) {
-		return {
-			creditsRemaining: -1,
-			maxCredits: -1,
-			lastResetDate: getTodayString(),
-			isUnlimited: true,
-		};
-	}
-
-	// Try to get from localStorage
-	if (typeof window !== "undefined") {
-		try {
-			const stored = localStorage.getItem(STORAGE_KEY);
-			if (stored) {
-				const state = JSON.parse(stored) as CreditsState;
-				
-				// Check if we need to reset (new day)
-				const today = getTodayString();
-				if (state.lastResetDate !== today) {
-					// Reset credits for new day
-					const newState: CreditsState = {
-						creditsRemaining: planConfig.dailyCredits,
-						maxCredits: planConfig.dailyCredits,
-						lastResetDate: today,
-						isUnlimited: false,
-					};
-					localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-					return newState;
-				}
-				
-				return {
-					...state,
-					maxCredits: state.maxCredits || planConfig.dailyCredits,
-				};
-			}
-		} catch (e) {
-			// Ignore localStorage errors
-		}
-	}
-
-	// Default: full credits for today
-	const defaultState: CreditsState = {
-		creditsRemaining: planConfig.dailyCredits,
-		maxCredits: planConfig.dailyCredits,
-		lastResetDate: getTodayString(),
-		isUnlimited: false,
-	};
-	
-	if (typeof window !== "undefined") {
-		try {
-			localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultState));
-		} catch (e) {
-			// Ignore localStorage errors
-		}
-	}
-	
-	return defaultState;
-}
-
-/**
- * Uses one credit (localStorage version). Returns true if successful.
- */
-export function useCredit(planConfig: PlanConfig): boolean {
-	// Unlimited plans always succeed
-	if (planConfig.dailyCredits === -1) {
-		return true;
-	}
-
-	const state = getCreditsState(planConfig);
-	
-	if (state.creditsRemaining <= 0) {
-		return false;
-	}
-
-	// Decrement credits
-	const newState: CreditsState = {
-		...state,
-		creditsRemaining: state.creditsRemaining - 1,
-	};
-
-	if (typeof window !== "undefined") {
-		try {
-			localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-		} catch (e) {
-			// Ignore localStorage errors
-		}
-	}
-
-	return true;
-}
-
-/**
- * Checks if user has credits available (localStorage version)
- */
-export function hasCredits(planConfig: PlanConfig): boolean {
-	if (planConfig.dailyCredits === -1) {
-		return true;
-	}
-	
-	const state = getCreditsState(planConfig);
+export async function hasCreditsServer(userId?: string, experienceId?: string): Promise<boolean> {
+	const state = await checkCreditsServer(userId, experienceId);
+	if (!state) return false;
+	if (state.isUnlimited) return true;
 	return state.creditsRemaining > 0;
 }
 
 /**
- * Gets the display string for credits
+ * Get credits display string from server state
  */
-export function getCreditsDisplay(planConfig: PlanConfig): string {
-	if (planConfig.dailyCredits === -1) {
-		return "Unlimited";
-	}
-	
-	const state = getCreditsState(planConfig);
+export function getCreditsDisplayFromState(state: CreditsState | null, fallbackMax: number = 3): string {
+	if (!state) return `? / ${fallbackMax}`;
+	if (state.isUnlimited) return "Unlimited";
 	return `${state.creditsRemaining} / ${state.maxCredits}`;
-}
-
-/**
- * Sync local storage with server state
- */
-export function syncCreditsFromServer(serverState: CreditsState, planConfig: PlanConfig): void {
-	if (planConfig.dailyCredits === -1) return;
-	
-	if (typeof window !== "undefined") {
-		try {
-			localStorage.setItem(STORAGE_KEY, JSON.stringify(serverState));
-		} catch (e) {
-			// Ignore localStorage errors
-		}
-	}
 }
