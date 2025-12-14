@@ -111,6 +111,9 @@ export default async function ExperiencePage({
 		const planConfig = getEffectivePlanConfig(planId);
 
 		// User has access - render AlphaSolverApp
+		// Get upgrade URL - prioritize environment variable, then try to construct from products
+		let upgradeUrl: string | undefined = process.env.NEXT_PUBLIC_WHOP_UPGRADE_URL;
+		
 		// Get upgrade URL - prefer unlimited product, fallback to first product, then experience
 		const unlimitedProduct = experience.products?.find(p => 
 			p.title?.toLowerCase().includes("unlimited") || 
@@ -118,9 +121,44 @@ export default async function ExperiencePage({
 			p.title?.toLowerCase().includes("premium")
 		);
 		const upgradeProduct = unlimitedProduct || experience.products?.[0];
-		const upgradeUrl = upgradeProduct?.id
-			? `https://whop.com/products/${upgradeProduct.id}`
-			: `https://whop.com/experiences/${experienceId}`;
+		
+		if (!upgradeUrl) {
+			// Construct upgrade URL - try multiple formats
+			if (upgradeProduct) {
+				// Try to get purchase URL from product if available
+				const product = upgradeProduct as any;
+				if (product.purchase_url) {
+					upgradeUrl = product.purchase_url;
+				} else if (product.slug) {
+					// Use product slug format: https://whop.com/[product-slug]/
+					// This is the format Whop uses for product pages (e.g., api-app-5d-kxlba-gg-qh-fa-u-unlimited-access)
+					upgradeUrl = `https://whop.com/${product.slug}/`;
+				} else if (product.id) {
+					// Fallback to product ID format
+					upgradeUrl = `https://whop.com/products/${product.id}`;
+				}
+			}
+			
+			// Final fallback to experience URL
+			if (!upgradeUrl) {
+				upgradeUrl = `https://whop.com/experiences/${experienceId}`;
+			}
+		}
+		
+		// Debug logging
+		if (process.env.NODE_ENV === "development") {
+			console.log("Upgrade URL construction:", {
+				fromEnvVar: !!process.env.NEXT_PUBLIC_WHOP_UPGRADE_URL,
+				upgradeProduct: upgradeProduct ? {
+					id: upgradeProduct.id,
+					title: upgradeProduct.title,
+					slug: (upgradeProduct as any).slug,
+					purchase_url: (upgradeProduct as any).purchase_url,
+				} : null,
+				companyId: experience.company?.id,
+				finalUpgradeUrl: upgradeUrl,
+			});
+		}
 
 		return (
 			<AlphaSolverApp
