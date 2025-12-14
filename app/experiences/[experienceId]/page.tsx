@@ -47,11 +47,20 @@ export default async function ExperiencePage({
 			whopsdk.users.checkAccess(experienceId, { id: userId }),
 		]);
 
+		// Debug logging (only in development)
+		if (process.env.NODE_ENV === "development") {
+			console.log("Access check result:", JSON.stringify(access, null, 2));
+			console.log("Experience products:", experience.products?.map(p => ({ id: p.id, title: p.title })));
+		}
+
 		// Check if user has access (allow bypass when explicitly enabled)
 		const bypassAccess = process.env.NEXT_PUBLIC_BYPASS_ACCESS === "true";
+		// The API returns has_access (with underscore), not hasAccess
 		const hasAccess = bypassAccess
 			? true // allow bypass when env var is set (use with care)
-			: (access as { hasAccess?: boolean }).hasAccess ?? false;
+			: (access as { has_access?: boolean; hasAccess?: boolean }).has_access ?? 
+			  (access as { has_access?: boolean; hasAccess?: boolean }).hasAccess ?? 
+			  false;
 
 		// If user doesn't have access, show upgrade message
 		if (!hasAccess) {
@@ -61,21 +70,33 @@ export default async function ExperiencePage({
 				? `https://whop.com/products/${firstProduct.id}`
 				: `https://whop.com/experiences/${experienceId}`;
 
+			// Check if there are no products - this might indicate the app isn't properly configured
+			const hasNoProducts = !experience.products || experience.products.length === 0;
+			const accessLevel = (access as { access_level?: string }).access_level;
+
 			return (
 				<div className="min-h-screen bg-gray-1 flex items-center justify-center p-6">
 					<Card size="3" variant="surface" className="max-w-md w-full text-center">
 						<Heading size="6" className="mb-4">
-							Upgrade Required
+							{hasNoProducts ? "App Configuration Required" : "Upgrade Required"}
 						</Heading>
 						<Text size="3" color="gray" className="mb-6">
-							You need access to this product to use AlphaSolver. Please upgrade
-							to continue.
+							{hasNoProducts 
+								? "This experience doesn't have any products configured. Please add a product to this experience in your Whop dashboard."
+								: "You need access to this product to use AlphaSolver. Please upgrade to continue."}
 						</Text>
-						<Link href={checkoutUrl} className="block">
-							<Button variant="solid" color="blue" className="w-full" size="3">
-								Upgrade Now
-							</Button>
-						</Link>
+						{!hasNoProducts && (
+							<Link href={checkoutUrl} className="block">
+								<Button variant="solid" color="blue" className="w-full" size="3">
+									Upgrade Now
+								</Button>
+							</Link>
+						)}
+						{process.env.NODE_ENV === "development" && (
+							<Text size="2" color="gray" className="mt-4 font-mono text-xs">
+								Debug: access_level={accessLevel || "none"}, products={experience.products?.length || 0}
+							</Text>
+						)}
 					</Card>
 				</div>
 			);
