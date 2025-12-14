@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
-import { whopsdk } from "@/lib/whop-sdk";
 
 const DAILY_CREDITS = 3;
 
@@ -57,17 +56,16 @@ async function saveUserCredits(userId: string, data: CreditsData): Promise<void>
 
 /**
  * GET /api/credits - Get current credits for user
+ * Query params: userId (required)
  */
 export async function GET(request: NextRequest) {
 	try {
-		// Verify user token from Whop
-		const result = await whopsdk.verifyUserToken(request.headers, { dontThrow: true });
+		const userId = request.nextUrl.searchParams.get("userId");
 		
-		if (!result || !result.userId) {
-			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+		if (!userId) {
+			return NextResponse.json({ error: "userId required" }, { status: 400 });
 		}
 
-		const { userId } = result;
 		const creditsData = await getUserCredits(userId);
 
 		return NextResponse.json({
@@ -84,17 +82,17 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/credits - Use one credit
+ * Body: { userId: string }
  */
 export async function POST(request: NextRequest) {
 	try {
-		// Verify user token from Whop
-		const result = await whopsdk.verifyUserToken(request.headers, { dontThrow: true });
+		const body = await request.json().catch(() => ({}));
+		const userId = body.userId;
 		
-		if (!result || !result.userId) {
-			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+		if (!userId) {
+			return NextResponse.json({ error: "userId required" }, { status: 400 });
 		}
 
-		const { userId } = result;
 		const creditsData = await getUserCredits(userId);
 
 		// Check if credits available
@@ -110,6 +108,8 @@ export async function POST(request: NextRequest) {
 		// Decrement credit
 		creditsData.credits -= 1;
 		await saveUserCredits(userId, creditsData);
+
+		console.log(`Credit used: userId=${userId}, remaining=${creditsData.credits}`);
 
 		return NextResponse.json({
 			success: true,

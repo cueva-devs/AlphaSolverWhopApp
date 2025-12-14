@@ -131,6 +131,7 @@ export default async function ExperiencePage({
 			<AlphaSolverApp
 				experienceId={experienceId}
 				companyId={experience.company?.id}
+				userId={userId}
 				planId={planId}
 				planConfig={planConfig}
 				upgradeUrl={upgradeUrl}

@@ -26,17 +26,17 @@ function getTodayString(): string {
 }
 
 /**
- * Server-side credit check
+ * Server-side credit check - calls Vercel KV via API
  */
-export async function checkCreditsServer(experienceId?: string): Promise<CreditsState | null> {
+export async function checkCreditsServer(userId?: string, experienceId?: string): Promise<CreditsState | null> {
+	if (!userId) return null;
+	
 	try {
-		const url = experienceId 
-			? `/api/credits?experienceId=${encodeURIComponent(experienceId)}`
-			: "/api/credits";
+		const params = new URLSearchParams();
+		params.set("userId", userId);
+		if (experienceId) params.set("experienceId", experienceId);
 		
-		const response = await fetch(url, {
-			credentials: "include",
-		});
+		const response = await fetch(`/api/credits?${params.toString()}`);
 		
 		if (!response.ok) return null;
 		
@@ -53,15 +53,16 @@ export async function checkCreditsServer(experienceId?: string): Promise<Credits
 }
 
 /**
- * Server-side credit use - returns new credits count or null on error
+ * Server-side credit use - calls Vercel KV via API
  */
-export async function useCreditServer(experienceId?: string): Promise<UseCreditResult | null> {
+export async function useCreditServer(userId?: string, experienceId?: string): Promise<UseCreditResult | null> {
+	if (!userId) return null;
+	
 	try {
 		const response = await fetch("/api/credits", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			credentials: "include",
-			body: JSON.stringify({ experienceId }),
+			body: JSON.stringify({ userId, experienceId }),
 		});
 		
 		const data = await response.json();

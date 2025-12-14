@@ -31,6 +31,7 @@ import type { SavedRun } from "./types";
 interface AlphaSolverAppProps {
 	experienceId: string;
 	companyId?: string;
+	userId?: string;
 	planId: PlanId;
 	planConfig: PlanConfig;
 	upgradeUrl?: string;
@@ -42,6 +43,7 @@ type TabType = "simulation" | "trading_plan";
 export default function AlphaSolverApp({
 	experienceId,
 	companyId,
+	userId,
 	planId,
 	planConfig,
 	upgradeUrl,
@@ -75,9 +77,10 @@ export default function AlphaSolverApp({
 	useEffect(() => {
 		const fetchCredits = async () => {
 			if (planConfig.dailyCredits === -1) return; // Skip for unlimited plans
+			if (!userId) return; // Need userId for server credits
 			
 			try {
-				const serverCredits = await checkCreditsServer(experienceId !== "direct" ? experienceId : undefined);
+				const serverCredits = await checkCreditsServer(userId, experienceId !== "direct" ? experienceId : undefined);
 				if (serverCredits) {
 					syncCreditsFromServer(serverCredits, planConfig);
 					setCreditsDisplay(`${serverCredits.creditsRemaining} / ${serverCredits.maxCredits}`);
@@ -91,7 +94,7 @@ export default function AlphaSolverApp({
 		};
 		
 		fetchCredits();
-	}, [experienceId, planConfig]);
+	}, [userId, experienceId, planConfig]);
 
 	// Show confirmation dialog before running
 	const handleRequestRun = (params: BootstrappedParams, trades: ParsedTrade[]) => {
@@ -114,10 +117,10 @@ export default function AlphaSolverApp({
 		const { params, trades } = pendingRun;
 		setPendingRun(null);
 		
-		// Try server-side credit first
-		if (planConfig.dailyCredits !== -1) {
+		// Try server-side credit first (requires userId)
+		if (planConfig.dailyCredits !== -1 && userId) {
 			try {
-				const result = await useCreditServer(experienceId !== "direct" ? experienceId : undefined);
+				const result = await useCreditServer(userId, experienceId !== "direct" ? experienceId : undefined);
 				if (result) {
 					if (!result.success) {
 						setCsvError(result.error || "No credits remaining. Credits reset daily at midnight.");
