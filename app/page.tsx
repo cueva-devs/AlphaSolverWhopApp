@@ -16,23 +16,23 @@ const fadeUpVariants = {
 	visible: (i: number) => ({
 		opacity: 1,
 		y: 0,
-		transition: { duration: 0.6, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }
+		transition: { duration: 0.6, delay: i * 0.1 }
 	})
 };
 
 const fadeLeftVariants = {
 	hidden: { opacity: 0, x: -30 },
-	visible: { opacity: 1, x: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
+	visible: { opacity: 1, x: 0, transition: { duration: 0.6 } }
 };
 
 const fadeRightVariants = {
 	hidden: { opacity: 0, x: 30 },
-	visible: { opacity: 1, x: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
+	visible: { opacity: 1, x: 0, transition: { duration: 0.6 } }
 };
 
 const scaleInVariants = {
 	hidden: { opacity: 0, scale: 0.95 },
-	visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } }
+	visible: { opacity: 1, scale: 1, transition: { duration: 0.5 } }
 };
 
 const staggerContainer = {
