@@ -4,6 +4,7 @@ import type { PlanConfig } from "../config/planConfig";
 
 export interface CreditsState {
 	creditsRemaining: number;
+	maxCredits: number;
 	lastResetDate: string;
 	isUnlimited: boolean;
 }
@@ -18,14 +19,70 @@ function getTodayString(): string {
 }
 
 /**
+ * Server-side credit check
+ */
+export async function checkCreditsServer(experienceId?: string): Promise<CreditsState | null> {
+	try {
+		const url = experienceId 
+			? `/api/credits?experienceId=${encodeURIComponent(experienceId)}`
+			: "/api/credits";
+		
+		const response = await fetch(url, {
+			credentials: "include",
+		});
+		
+		if (!response.ok) return null;
+		
+		const data = await response.json();
+		return {
+			creditsRemaining: data.credits,
+			maxCredits: data.maxCredits || 3,
+			lastResetDate: data.lastReset || getTodayString(),
+			isUnlimited: data.isUnlimited || false,
+		};
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * Server-side credit use - returns new credits count or null on error
+ */
+export async function useCreditServer(experienceId?: string): Promise<{ success: boolean; credits: number; error?: string } | null> {
+	try {
+		const response = await fetch("/api/credits", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			credentials: "include",
+			body: JSON.stringify({ experienceId }),
+		});
+		
+		const data = await response.json();
+		
+		if (!response.ok) {
+			return { success: false, credits: data.credits || 0, error: data.error };
+		}
+		
+		return { success: data.success, credits: data.credits };
+	} catch {
+		return null;
+	}
+}
+
+// ==========================================
+// LOCAL STORAGE FALLBACK (for client-side only)
+// ==========================================
+
+/**
  * Gets the current credits state from localStorage (client-side fallback)
- * In production, this should be replaced with Whop membership metadata
+ * Used when server-side credits aren't available
  */
 export function getCreditsState(planConfig: PlanConfig): CreditsState {
 	// Unlimited plans don't need credits tracking
 	if (planConfig.dailyCredits === -1) {
 		return {
 			creditsRemaining: -1,
+			maxCredits: -1,
 			lastResetDate: getTodayString(),
 			isUnlimited: true,
 		};
@@ -44,6 +101,7 @@ export function getCreditsState(planConfig: PlanConfig): CreditsState {
 					// Reset credits for new day
 					const newState: CreditsState = {
 						creditsRemaining: planConfig.dailyCredits,
+						maxCredits: planConfig.dailyCredits,
 						lastResetDate: today,
 						isUnlimited: false,
 					};
@@ -51,7 +109,10 @@ export function getCreditsState(planConfig: PlanConfig): CreditsState {
 					return newState;
 				}
 				
-				return state;
+				return {
+					...state,
+					maxCredits: planConfig.dailyCredits,
+				};
 			}
 		} catch (e) {
 			// Ignore localStorage errors
@@ -61,6 +122,7 @@ export function getCreditsState(planConfig: PlanConfig): CreditsState {
 	// Default: full credits for today
 	const defaultState: CreditsState = {
 		creditsRemaining: planConfig.dailyCredits,
+		maxCredits: planConfig.dailyCredits,
 		lastResetDate: getTodayString(),
 		isUnlimited: false,
 	};
@@ -77,7 +139,7 @@ export function getCreditsState(planConfig: PlanConfig): CreditsState {
 }
 
 /**
- * Uses one credit. Returns true if successful, false if no credits remaining.
+ * Uses one credit (localStorage version). Returns true if successful.
  */
 export function useCredit(planConfig: PlanConfig): boolean {
 	// Unlimited plans always succeed
@@ -109,7 +171,7 @@ export function useCredit(planConfig: PlanConfig): boolean {
 }
 
 /**
- * Checks if user has credits available
+ * Checks if user has credits available (localStorage version)
  */
 export function hasCredits(planConfig: PlanConfig): boolean {
 	if (planConfig.dailyCredits === -1) {
@@ -129,5 +191,20 @@ export function getCreditsDisplay(planConfig: PlanConfig): string {
 	}
 	
 	const state = getCreditsState(planConfig);
-	return `${state.creditsRemaining} / ${planConfig.dailyCredits}`;
+	return `${state.creditsRemaining} / ${state.maxCredits}`;
+}
+
+/**
+ * Sync local storage with server state
+ */
+export function syncCreditsFromServer(serverState: CreditsState, planConfig: PlanConfig): void {
+	if (planConfig.dailyCredits === -1) return;
+	
+	if (typeof window !== "undefined") {
+		try {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(serverState));
+		} catch (e) {
+			// Ignore localStorage errors
+		}
+	}
 }

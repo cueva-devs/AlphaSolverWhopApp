@@ -17,6 +17,7 @@ interface StrategyPanelProps {
 	planConfig: PlanConfig;
 	parsedTrades?: ParsedTrade[] | null;
 	csvFormat?: CsvFormat;
+	isRunning?: boolean;
 }
 
 export default function StrategyPanel({
@@ -24,6 +25,7 @@ export default function StrategyPanel({
 	planConfig,
 	parsedTrades,
 	csvFormat = "NinjaTrader",
+	isRunning = false,
 }: StrategyPanelProps) {
 	const [showAdvanced, setShowAdvanced] = useState(false);
 	// Default to 10000 runs, but cap at plan limit
@@ -109,9 +111,9 @@ export default function StrategyPanel({
 				color="blue"
 				className="w-full"
 				onClick={handleRunSimulation}
-				disabled={!parsedTrades || parsedTrades.length === 0}
+				disabled={!parsedTrades || parsedTrades.length === 0 || isRunning}
 			>
-				Run Simulation
+				{isRunning ? "Running..." : "Run Simulation"}
 			</Button>
 			{(!parsedTrades || parsedTrades.length === 0) && (
 				<Callout.Root color="amber">

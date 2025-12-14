@@ -16,7 +16,7 @@ export const PLAN_CONFIGS: Record<PlanId, PlanConfig> = {
 		maxPaths: 100000, // No real limit - runs on user's CPU
 		maxDays: 365,
 		allowCsv: true,
-		dailyCredits: 10, // 10 runs per day
+		dailyCredits: 3, // 3 runs per day
 		allowExport: false,
 		allowTradingPlan: true,
 	},

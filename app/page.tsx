@@ -1,12 +1,6 @@
 import Link from "next/link";
 
-// For landing page checkout URL
-// Priority: NEXT_PUBLIC_WHOP_EXPERIENCE_URL > NEXT_PUBLIC_WHOP_CHECKOUT_URL > default
-// Use experience URL to ensure users land where the app is installed
-const WHOP_CHECKOUT_URL = 
-	process.env.NEXT_PUBLIC_WHOP_EXPERIENCE_URL || 
-	process.env.NEXT_PUBLIC_WHOP_CHECKOUT_URL || 
-	"https://whop.com/alphasolver";
+const WHOP_CHECKOUT_URL = process.env.NEXT_PUBLIC_WHOP_CHECKOUT_URL || "https://whop.com/alphasolver";
 const BYPASS_ACCESS = process.env.NEXT_PUBLIC_BYPASS_ACCESS === "true";
 
 export default function Page() {
@@ -92,7 +86,7 @@ export default function Page() {
 						</span>
 						<span className="flex items-center gap-2">
 							<svg className="w-4 h-4 text-teal-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-							10 free runs daily
+							3 free runs daily
 						</span>
 						<span className="flex items-center gap-2">
 							<svg className="w-4 h-4 text-teal-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
@@ -277,7 +271,7 @@ export default function Page() {
 							
 							<ul className="space-y-3 mb-6">
 								{[
-									"10 simulation runs per day",
+									"3 simulation runs per day",
 									"All prop firms supported",
 									"Trading plan generation",
 									"Full results & visualizations",

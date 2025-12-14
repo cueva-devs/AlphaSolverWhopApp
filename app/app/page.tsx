@@ -20,6 +20,8 @@ export default async function DirectAppPage() {
 				experienceId="direct"
 				planId={planId}
 				planConfig={planConfig}
+				upgradeUrl={process.env.NEXT_PUBLIC_WHOP_CHECKOUT_URL || "https://whop.com/alphasolver"}
+				isWhopIframe={false}
 			/>
 		);
 	}
@@ -71,6 +73,8 @@ export default async function DirectAppPage() {
 			experienceId="direct"
 			planId={access.planId}
 			planConfig={planConfig}
+			upgradeUrl={process.env.NEXT_PUBLIC_WHOP_CHECKOUT_URL || "https://whop.com/alphasolver"}
+			isWhopIframe={false}
 		/>
 	);
 }

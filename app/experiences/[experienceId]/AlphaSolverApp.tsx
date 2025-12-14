@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, Tabs, Select, Button, Text, Heading, Callout, Spinner } from "@whop/react/components";
 import StrategyPanel from "./components/StrategyPanel";
 import ResultsPanel from "./components/ResultsPanel";
@@ -17,7 +17,15 @@ import type {
 import { CSV_TEMPLATES, getCsvTemplateList, getAccountConfig } from "./config/propFirmConfig";
 import type { PlanId, PlanConfig } from "./config/planConfig";
 import { createSavedRun, exportRun, importRun, estimateFileSize } from "./lib/saveRunUtils";
-import { useCredit, getCreditsDisplay, hasCredits } from "./lib/creditsService";
+import { 
+	useCredit, 
+	getCreditsDisplay, 
+	hasCredits, 
+	useCreditServer, 
+	checkCreditsServer,
+	syncCreditsFromServer,
+	type CreditsState 
+} from "./lib/creditsService";
 import type { SavedRun } from "./types";
 
 interface AlphaSolverAppProps {
@@ -26,7 +34,7 @@ interface AlphaSolverAppProps {
 	planId: PlanId;
 	planConfig: PlanConfig;
 	upgradeUrl?: string;
-	hasUnlimitedProduct?: boolean;
+	isWhopIframe?: boolean;
 }
 
 type TabType = "simulation" | "trading_plan";
@@ -37,7 +45,7 @@ export default function AlphaSolverApp({
 	planId,
 	planConfig,
 	upgradeUrl,
-	hasUnlimitedProduct = false,
+	isWhopIframe = true, // Default to iframe context
 }: AlphaSolverAppProps) {
 	const { run, result, isRunning, error, isEngineLoading } =
 		useSimulationEngine();
@@ -56,29 +64,86 @@ export default function AlphaSolverApp({
 	const importInputRef = useRef<HTMLInputElement>(null);
 	const [lastParams, setLastParams] = useState<BootstrappedParams | null>(null);
 	const [creditsDisplay, setCreditsDisplay] = useState<string>(getCreditsDisplay(planConfig));
+	const [creditsRemaining, setCreditsRemaining] = useState<number>(planConfig.dailyCredits);
+	
+	// Confirmation dialog state
+	const [showRunConfirm, setShowRunConfirm] = useState(false);
+	const [pendingRun, setPendingRun] = useState<{ params: BootstrappedParams; trades: ParsedTrade[] } | null>(null);
 
-	const handleRunSimulation = async (
-		params: BootstrappedParams,
-		trades: ParsedTrade[],
-	) => {
-		// Check credits before running
-		if (!hasCredits(planConfig)) {
-			setCsvError(
-				hasUnlimitedProduct 
-					? "No credits remaining. Credits reset daily or upgrade to Unlimited for unlimited runs."
-					: "No credits remaining. Credits reset daily at midnight."
-			);
+	// Fetch credits from server on mount
+	useEffect(() => {
+		const fetchCredits = async () => {
+			if (planConfig.dailyCredits === -1) return; // Skip for unlimited plans
+			
+			try {
+				const serverCredits = await checkCreditsServer(experienceId !== "direct" ? experienceId : undefined);
+				if (serverCredits) {
+					syncCreditsFromServer(serverCredits, planConfig);
+					setCreditsDisplay(`${serverCredits.creditsRemaining} / ${serverCredits.maxCredits}`);
+					setCreditsRemaining(serverCredits.creditsRemaining);
+				}
+			} catch (e) {
+				// Fallback to localStorage
+				console.error("Failed to fetch server credits:", e);
+			}
+		};
+		
+		fetchCredits();
+	}, [experienceId, planConfig]);
+
+	// Show confirmation dialog before running
+	const handleRequestRun = (params: BootstrappedParams, trades: ParsedTrade[]) => {
+		// Check credits first
+		if (planConfig.dailyCredits !== -1 && creditsRemaining <= 0) {
+			setCsvError("No credits remaining. Credits reset daily at midnight.");
 			return;
 		}
 		
-		// Use a credit
-		if (!useCredit(planConfig)) {
-			setCsvError("Failed to use credit. Please try again.");
-			return;
-		}
+		setPendingRun({ params, trades });
+		setShowRunConfirm(true);
+	};
+
+	// Actually run the simulation after confirmation
+	const handleConfirmRun = async () => {
+		setShowRunConfirm(false);
 		
-		// Update credits display
-		setCreditsDisplay(getCreditsDisplay(planConfig));
+		if (!pendingRun) return;
+		
+		const { params, trades } = pendingRun;
+		setPendingRun(null);
+		
+		// Try server-side credit first
+		if (planConfig.dailyCredits !== -1) {
+			try {
+				const result = await useCreditServer(experienceId !== "direct" ? experienceId : undefined);
+				if (result) {
+					if (!result.success) {
+						setCsvError(result.error || "No credits remaining. Credits reset daily at midnight.");
+						return;
+					}
+					setCreditsDisplay(`${result.credits} / ${planConfig.dailyCredits}`);
+					setCreditsRemaining(result.credits);
+				} else {
+					// Fallback to localStorage
+					if (!hasCredits(planConfig)) {
+						setCsvError("No credits remaining. Credits reset daily at midnight.");
+						return;
+					}
+					if (!useCredit(planConfig)) {
+						setCsvError("Failed to use credit. Please try again.");
+						return;
+					}
+					setCreditsDisplay(getCreditsDisplay(planConfig));
+				}
+			} catch (e) {
+				// Fallback to localStorage
+				if (!useCredit(planConfig)) {
+					setCsvError("Failed to use credit. Please try again.");
+					return;
+				}
+				setCreditsDisplay(getCreditsDisplay(planConfig));
+			}
+		}
 		
 		// Get base account config and merge with overrides
 		const baseConfig = getAccountConfig(accountConfig.propFirm, accountConfig.challenge);
@@ -113,7 +178,13 @@ export default function AlphaSolverApp({
 		};
 		
 		setLastParams(paramsWithAccount);
+		setCsvError(null);
 		await run("bootstrapped", paramsWithAccount, trades);
+	};
+
+	const handleCancelRun = () => {
+		setShowRunConfirm(false);
+		setPendingRun(null);
 	};
 
 	const handleFileSelect = () => {
@@ -217,8 +288,44 @@ export default function AlphaSolverApp({
 		await parseCsvFile(file, csvFormat);
 	};
 
+	const noCreditsRemaining = planConfig.dailyCredits !== -1 && creditsRemaining <= 0;
+
 	return (
 		<div className="min-h-screen bg-gray-1 flex flex-col">
+			{/* Run Confirmation Dialog */}
+			{showRunConfirm && (
+				<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+					<Card size="3" variant="surface" className="max-w-sm w-full">
+						<Heading size="5" className="mb-3">
+							Confirm Simulation
+						</Heading>
+						<Text size="2" color="gray" className="mb-4 block">
+							This will use 1 of your {creditsDisplay} daily credits. 
+							{planConfig.dailyCredits !== -1 && ` You'll have ${Math.max(0, creditsRemaining - 1)} left.`}
+						</Text>
+						<div className="flex gap-2">
+							<Button 
+								variant="soft" 
+								size="2" 
+								onClick={handleCancelRun}
+								className="flex-1"
+							>
+								Cancel
+							</Button>
+							<Button 
+								variant="solid" 
+								color="blue" 
+								size="2" 
+								onClick={handleConfirmRun}
+								className="flex-1"
+							>
+								Run Simulation
+							</Button>
+						</div>
+					</Card>
+				</div>
+			)}
+
 			{/* Hidden import input */}
 			<input
 				ref={importInputRef}
@@ -241,7 +348,7 @@ export default function AlphaSolverApp({
 								<Text size="1" color="gray" className="block">
 									Daily Runs
 								</Text>
-								<Text size="3" weight="bold" className={planConfig.dailyCredits === -1 ? "text-green-500" : ""}>
+								<Text size="3" weight="bold" className={planConfig.dailyCredits === -1 ? "text-green-500" : noCreditsRemaining ? "text-red-500" : ""}>
 									{creditsDisplay}
 								</Text>
 							</div>
@@ -250,14 +357,20 @@ export default function AlphaSolverApp({
 							<div className="space-y-2">
 								<Text size="1" color="gray" className="block">
 									Credits reset daily at midnight.
-									{hasUnlimitedProduct && " Upgrade to Unlimited for unlimited runs."}
 								</Text>
-								{!hasCredits(planConfig) && upgradeUrl && (
+								{noCreditsRemaining && !isWhopIframe && upgradeUrl && (
 									<a href={upgradeUrl} target="_blank" rel="noopener noreferrer">
-										<Button variant="solid" color="blue" size="2" className="w-full">
+										<Button variant="solid" color="blue" size="2" className="w-full mt-2">
 											Upgrade to Unlimited
 										</Button>
 									</a>
+								)}
+								{noCreditsRemaining && isWhopIframe && (
+									<Callout.Root color="amber" className="mt-2">
+										<Callout.Text size="1">
+											Contact your community admin to upgrade your plan, or come back tomorrow.
+										</Callout.Text>
+									</Callout.Root>
 								)}
 							</div>
 						)}
@@ -428,10 +541,11 @@ export default function AlphaSolverApp({
 							Simulation
 						</Heading>
 						<StrategyPanel
-							onRunSimulation={handleRunSimulation}
+							onRunSimulation={handleRequestRun}
 							planConfig={planConfig}
 							parsedTrades={parsedTrades}
 							csvFormat={csvFormat}
+							isRunning={isRunning || isEngineLoading}
 						/>
 					</Card>
 				</aside>
@@ -470,4 +584,3 @@ export default function AlphaSolverApp({
 		</div>
 	);
 }
-
