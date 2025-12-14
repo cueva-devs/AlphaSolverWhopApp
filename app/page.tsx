@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 
 const WHOP_CHECKOUT_URL = process.env.NEXT_PUBLIC_WHOP_CHECKOUT_URL || "https://whop.com/alphasolver";
@@ -386,9 +386,6 @@ const platforms = [
 // ============================================
 export default function Page() {
 	const [scrolled, setScrolled] = useState(false);
-	const { scrollYProgress } = useScroll();
-	const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
-	const heroScale = useTransform(scrollYProgress, [0, 0.2], [1, 0.95]);
 
 	useEffect(() => {
 		const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -924,11 +921,14 @@ export default function Page() {
 							</h2>
 						</motion.div>
 						
-						<div className="grid md:grid-cols-2 gap-6">
+						<motion.div 
+							variants={staggerContainer}
+							className="grid md:grid-cols-2 gap-6"
+						>
 							{testimonials.map((testimonial, i) => (
 								<TestimonialCard key={i} testimonial={testimonial} index={i} />
 							))}
-						</div>
+						</motion.div>
 						
 						<motion.div variants={fadeUpVariants} custom={5} className="mt-12 text-center">
 							<p className="text-sm text-[var(--text-muted)]">
