@@ -25,6 +25,8 @@ interface AlphaSolverAppProps {
 	companyId?: string;
 	planId: PlanId;
 	planConfig: PlanConfig;
+	upgradeUrl?: string;
+	hasUnlimitedProduct?: boolean;
 }
 
 type TabType = "simulation" | "trading_plan";
@@ -34,6 +36,8 @@ export default function AlphaSolverApp({
 	companyId,
 	planId,
 	planConfig,
+	upgradeUrl,
+	hasUnlimitedProduct = false,
 }: AlphaSolverAppProps) {
 	const { run, result, isRunning, error, isEngineLoading } =
 		useSimulationEngine();
@@ -59,7 +63,11 @@ export default function AlphaSolverApp({
 	) => {
 		// Check credits before running
 		if (!hasCredits(planConfig)) {
-			setCsvError("No credits remaining. Credits reset daily or upgrade to Unlimited for unlimited runs.");
+			setCsvError(
+				hasUnlimitedProduct 
+					? "No credits remaining. Credits reset daily or upgrade to Unlimited for unlimited runs."
+					: "No credits remaining. Credits reset daily at midnight."
+			);
 			return;
 		}
 		
@@ -239,9 +247,19 @@ export default function AlphaSolverApp({
 							</div>
 						</div>
 						{planConfig.dailyCredits !== -1 && (
-							<Text size="1" color="gray" className="block">
-								Credits reset daily at midnight. Upgrade to Unlimited for unlimited runs.
-							</Text>
+							<div className="space-y-2">
+								<Text size="1" color="gray" className="block">
+									Credits reset daily at midnight.
+									{hasUnlimitedProduct && " Upgrade to Unlimited for unlimited runs."}
+								</Text>
+								{!hasCredits(planConfig) && upgradeUrl && (
+									<a href={upgradeUrl} target="_blank" rel="noopener noreferrer">
+										<Button variant="solid" color="blue" size="2" className="w-full">
+											Upgrade to Unlimited
+										</Button>
+									</a>
+								)}
+							</div>
 						)}
 					</Card>
 

@@ -111,12 +111,25 @@ export default async function ExperiencePage({
 		const planConfig = getEffectivePlanConfig(planId);
 
 		// User has access - render AlphaSolverApp
+		// Get upgrade URL - prefer unlimited product, fallback to first product, then experience
+		const unlimitedProduct = experience.products?.find(p => 
+			p.title?.toLowerCase().includes("unlimited") || 
+			p.title?.toLowerCase().includes("pro") ||
+			p.title?.toLowerCase().includes("premium")
+		);
+		const upgradeProduct = unlimitedProduct || experience.products?.[0];
+		const upgradeUrl = upgradeProduct?.id
+			? `https://whop.com/products/${upgradeProduct.id}`
+			: `https://whop.com/experiences/${experienceId}`;
+
 		return (
 			<AlphaSolverApp
 				experienceId={experienceId}
 				companyId={experience.company?.id}
 				planId={planId}
 				planConfig={planConfig}
+				upgradeUrl={upgradeUrl}
+				hasUnlimitedProduct={!!unlimitedProduct}
 			/>
 		);
 	} catch (error) {

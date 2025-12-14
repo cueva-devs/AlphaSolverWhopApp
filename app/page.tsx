@@ -1,6 +1,12 @@
 import Link from "next/link";
 
-const WHOP_CHECKOUT_URL = process.env.NEXT_PUBLIC_WHOP_CHECKOUT_URL || "https://whop.com/alphasolver";
+// For landing page checkout URL
+// Priority: NEXT_PUBLIC_WHOP_EXPERIENCE_URL > NEXT_PUBLIC_WHOP_CHECKOUT_URL > default
+// Use experience URL to ensure users land where the app is installed
+const WHOP_CHECKOUT_URL = 
+	process.env.NEXT_PUBLIC_WHOP_EXPERIENCE_URL || 
+	process.env.NEXT_PUBLIC_WHOP_CHECKOUT_URL || 
+	"https://whop.com/alphasolver";
 const BYPASS_ACCESS = process.env.NEXT_PUBLIC_BYPASS_ACCESS === "true";
 
 export default function Page() {
