@@ -65,6 +65,7 @@ export default function AlphaSolverApp({
 	const [lastParams, setLastParams] = useState<BootstrappedParams | null>(null);
 	const [creditsDisplay, setCreditsDisplay] = useState<string>(getCreditsDisplay(planConfig));
 	const [creditsRemaining, setCreditsRemaining] = useState<number>(planConfig.dailyCredits);
+	const [maxCredits, setMaxCredits] = useState<number>(planConfig.dailyCredits);
 	
 	// Confirmation dialog state
 	const [showRunConfirm, setShowRunConfirm] = useState(false);
@@ -81,6 +82,7 @@ export default function AlphaSolverApp({
 					syncCreditsFromServer(serverCredits, planConfig);
 					setCreditsDisplay(`${serverCredits.creditsRemaining} / ${serverCredits.maxCredits}`);
 					setCreditsRemaining(serverCredits.creditsRemaining);
+					setMaxCredits(serverCredits.maxCredits);
 				}
 			} catch (e) {
 				// Fallback to localStorage
@@ -121,8 +123,9 @@ export default function AlphaSolverApp({
 						setCsvError(result.error || "No credits remaining. Credits reset daily at midnight.");
 						return;
 					}
-					setCreditsDisplay(`${result.credits} / ${planConfig.dailyCredits}`);
+					setCreditsDisplay(`${result.credits} / ${result.maxCredits}`);
 					setCreditsRemaining(result.credits);
+					setMaxCredits(result.maxCredits);
 				} else {
 					// Fallback to localStorage
 					if (!hasCredits(planConfig)) {

@@ -9,6 +9,13 @@ export interface CreditsState {
 	isUnlimited: boolean;
 }
 
+export interface UseCreditResult {
+	success: boolean;
+	credits: number;
+	maxCredits: number;
+	error?: string;
+}
+
 const STORAGE_KEY = "alphasolver_credits";
 
 /**
@@ -36,7 +43,7 @@ export async function checkCreditsServer(experienceId?: string): Promise<Credits
 		const data = await response.json();
 		return {
 			creditsRemaining: data.credits,
-			maxCredits: data.maxCredits || 3,
+			maxCredits: data.maxCredits,
 			lastResetDate: data.lastReset || getTodayString(),
 			isUnlimited: data.isUnlimited || false,
 		};
@@ -48,7 +55,7 @@ export async function checkCreditsServer(experienceId?: string): Promise<Credits
 /**
  * Server-side credit use - returns new credits count or null on error
  */
-export async function useCreditServer(experienceId?: string): Promise<{ success: boolean; credits: number; error?: string } | null> {
+export async function useCreditServer(experienceId?: string): Promise<UseCreditResult | null> {
 	try {
 		const response = await fetch("/api/credits", {
 			method: "POST",
@@ -60,10 +67,19 @@ export async function useCreditServer(experienceId?: string): Promise<{ success:
 		const data = await response.json();
 		
 		if (!response.ok) {
-			return { success: false, credits: data.credits || 0, error: data.error };
+			return { 
+				success: false, 
+				credits: data.credits || 0, 
+				maxCredits: data.maxCredits || 3,
+				error: data.error 
+			};
 		}
 		
-		return { success: data.success, credits: data.credits };
+		return { 
+			success: data.success, 
+			credits: data.credits,
+			maxCredits: data.maxCredits,
+		};
 	} catch {
 		return null;
 	}
@@ -111,7 +127,7 @@ export function getCreditsState(planConfig: PlanConfig): CreditsState {
 				
 				return {
 					...state,
-					maxCredits: planConfig.dailyCredits,
+					maxCredits: state.maxCredits || planConfig.dailyCredits,
 				};
 			}
 		} catch (e) {
