@@ -14,7 +14,31 @@ export default async function ExperiencePage({
 	const reqHeaders = await headers();
 	try {
 		// Ensure the user is logged in on whop.
-		const { userId } = await whopsdk.verifyUserToken(reqHeaders);
+		// Use dontThrow to handle cases where token might be missing (e.g., direct access)
+		const result = await whopsdk.verifyUserToken(reqHeaders, { dontThrow: true });
+		
+		if (!result || !result.userId) {
+			return (
+				<div className="min-h-screen bg-gray-1 flex items-center justify-center p-6">
+					<Card size="3" variant="surface" className="max-w-md w-full text-center">
+						<Heading size="6" className="mb-4">
+							Authentication Required
+						</Heading>
+						<Text size="3" color="gray" className="mb-6">
+							This app must be accessed through Whop. Please open it from your Whop experience.
+						</Text>
+						<Text size="2" color="gray">
+							If you're seeing this error, ensure:
+							<br />• The Base URL is set correctly in your Whop app settings
+							<br />• The App Path is configured as /experiences/[experienceId]
+							<br />• You're accessing the app through Whop, not directly
+						</Text>
+					</Card>
+				</div>
+			);
+		}
+		
+		const { userId } = result;
 
 		// Fetch the necessary data we want from whop.
 		const [experience, user, access] = await Promise.all([
@@ -77,16 +101,27 @@ export default async function ExperiencePage({
 	} catch (error) {
 		// Show a user-friendly error instead of a 500 so Whop can render the page
 		console.error("ExperiencePage error", error);
+		
+		// Provide more specific error information
+		const errorMessage = error instanceof Error ? error.message : "Unknown error";
+		const isAuthError = errorMessage.includes("token") || errorMessage.includes("authentication") || errorMessage.includes("Unauthorized");
+		
 		return (
 			<div className="min-h-screen bg-gray-1 flex items-center justify-center p-6">
 				<Card size="3" variant="surface" className="max-w-md w-full text-center">
 					<Heading size="6" className="mb-4">
-						AlphaSolver is unavailable
+						{isAuthError ? "Authentication Error" : "AlphaSolver is unavailable"}
 					</Heading>
-					<Text size="3" color="gray">
-						Something went wrong loading this experience. Please confirm your
-						access or try again in a moment.
+					<Text size="3" color="gray" className="mb-4">
+						{isAuthError 
+							? "Unable to authenticate with Whop. Please ensure you're accessing this app through Whop and that your app configuration is correct."
+							: "Something went wrong loading this experience. Please confirm your access or try again in a moment."}
 					</Text>
+					{process.env.NODE_ENV === "development" && (
+						<Text size="2" color="gray" className="mt-4 font-mono text-xs">
+							Error: {errorMessage}
+						</Text>
+					)}
 				</Card>
 			</div>
 		);

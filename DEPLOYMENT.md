@@ -66,7 +66,10 @@ In your Vercel project settings, add the following environment variables:
 NEXT_PUBLIC_WHOP_APP_ID=your_production_app_id
 WHOP_API_KEY=your_production_api_key
 WHOP_WEBHOOK_SECRET=your_production_webhook_secret
+NEXT_PUBLIC_APP_URL=https://alphasolver.vercel.app
 ```
+
+**Critical:** `NEXT_PUBLIC_APP_URL` must be set to your exact Vercel deployment URL (no trailing slash). This is used for OAuth redirect URIs.
 
 #### Optional Variables
 
