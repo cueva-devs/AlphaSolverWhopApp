@@ -1634,8 +1634,8 @@ export default function Page() {
 						</div>
 						
 						<div className="flex items-center gap-6 text-sm text-[var(--text-muted)]">
-							<a href="https://www.termsfeed.com/live/aaf23510-988e-405c-8016-f626cda211fe" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--text-primary)] transition-colors">Terms</a>
-							<a href="https://www.termsfeed.com/live/e86c7aa8-bbb2-4ac0-98c8-eb9087fe5419" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--text-primary)] transition-colors">Privacy</a>
+							<Link href="/terms" className="hover:text-[var(--text-primary)] transition-colors">Terms</Link>
+							<Link href="/privacy" className="hover:text-[var(--text-primary)] transition-colors">Privacy</Link>
 							<a href="mailto:support@cuevalabs.com" className="hover:text-[var(--text-primary)] transition-colors">Contact</a>
 						</div>
 
