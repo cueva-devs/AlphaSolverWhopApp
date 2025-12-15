@@ -12,7 +12,7 @@
 
 import Link from "next/link";
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { motion, AnimatePresence, useAnimation } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import {
 	LineChart,
@@ -38,17 +38,82 @@ const BYPASS_ACCESS = process.env.NEXT_PUBLIC_BYPASS_ACCESS === "true";
 // ============================================
 
 // Generate equity paths data - simulating 10,000 Monte Carlo paths summarized
+// Shows realistic variance with some paths hitting targets, others busting
 const generateEquityPaths = () => {
-	const paths: { day: number; pass1: number; pass2: number; pass3: number; fail1: number; fail2: number; median: number }[] = [];
+	const paths: { 
+		day: number; 
+		fastPass: number; 
+		steadyPass: number; 
+		slowPass: number; 
+		earlyBust: number; 
+		lateBust: number;
+		breakeven: number;
+		median: number 
+	}[] = [];
+	
+	// Seed values for consistent but varied paths
+	let fastPassEquity = 0;
+	let steadyPassEquity = 0;
+	let slowPassEquity = 0;
+	let earlyBustEquity = 0;
+	let lateBustEquity = 0;
+	let breakevenEquity = 0;
+	
 	for (let day = 0; day <= 20; day++) {
+		// Fast pass - aggressive strategy, reaches target by day 8
+		if (fastPassEquity < 3000 && fastPassEquity > -2000) {
+			fastPassEquity += 320 + Math.sin(day * 1.2) * 150 + (Math.random() - 0.3) * 100;
+			fastPassEquity = Math.min(3200, fastPassEquity);
+		}
+		
+		// Steady pass - conservative strategy, reaches target by day 14
+		if (steadyPassEquity < 3000 && steadyPassEquity > -2000) {
+			steadyPassEquity += 200 + Math.cos(day * 0.8) * 80 + (Math.random() - 0.35) * 60;
+			steadyPassEquity = Math.min(3100, steadyPassEquity);
+		}
+		
+		// Slow pass - very conservative, barely makes it by day 20
+		if (slowPassEquity < 3000 && slowPassEquity > -2000) {
+			slowPassEquity += 140 + Math.sin(day * 0.5) * 100 + (Math.random() - 0.4) * 80;
+			slowPassEquity = Math.min(3050, slowPassEquity);
+		}
+		
+		// Early bust - aggressive but unlucky, busts by day 6
+		if (earlyBustEquity > -2000) {
+			if (day < 3) {
+				earlyBustEquity += 150 + (Math.random() - 0.5) * 100;
+			} else {
+				earlyBustEquity -= 350 + Math.random() * 150;
+			}
+			earlyBustEquity = Math.max(-2100, earlyBustEquity);
+		}
+		
+		// Late bust - looks good then collapses
+		if (lateBustEquity > -2000) {
+			if (day < 10) {
+				lateBustEquity += 120 + Math.sin(day * 0.7) * 60 + (Math.random() - 0.4) * 50;
+			} else {
+				lateBustEquity -= 200 + Math.random() * 100;
+			}
+			lateBustEquity = Math.max(-2100, lateBustEquity);
+		}
+		
+		// Breakeven path - hovers around zero
+		breakevenEquity += (Math.random() - 0.5) * 150 + Math.sin(day * 0.9) * 50;
+		breakevenEquity = Math.max(-1500, Math.min(1500, breakevenEquity));
+		
+		// Median path
+		const median = day * 95 + Math.sin(day * 0.4) * 40;
+		
 		paths.push({
 			day,
-			pass1: Math.min(3000, 50000 + day * 180 + Math.sin(day * 0.8) * 200 + Math.random() * 100) - 50000,
-			pass2: Math.min(3000, 50000 + day * 160 + Math.cos(day * 0.6) * 150 + Math.random() * 80) - 50000,
-			pass3: Math.min(3000, 50000 + day * 140 + Math.sin(day * 0.5) * 180 + Math.random() * 120) - 50000,
-			fail1: Math.max(-2000, -day * 150 - Math.random() * 100 + Math.sin(day * 0.7) * 80),
-			fail2: Math.max(-2000, -day * 100 - Math.random() * 80 + Math.cos(day * 0.5) * 60),
-			median: day * 100 + Math.sin(day * 0.3) * 50,
+			fastPass: Math.round(fastPassEquity),
+			steadyPass: Math.round(steadyPassEquity),
+			slowPass: Math.round(slowPassEquity),
+			earlyBust: Math.round(earlyBustEquity),
+			lateBust: Math.round(lateBustEquity),
+			breakeven: Math.round(breakevenEquity),
+			median: Math.round(median),
 		});
 	}
 	return paths;
@@ -242,6 +307,22 @@ function MetricCard({
 }
 
 // ============================================
+// SIMULATION SCENARIOS - Realistic random outcomes
+// ============================================
+const simulationScenarios = [
+	{ passRate: 76.9, ev: 2431, roi: 541, verdict: "pass", message: "Strong +EV strategy" },
+	{ passRate: 82.4, ev: 3120, roi: 693, verdict: "pass", message: "Excellent edge detected" },
+	{ passRate: 64.2, ev: 1087, roi: 242, verdict: "pass", message: "Moderate +EV opportunity" },
+	{ passRate: 71.8, ev: 1845, roi: 410, verdict: "pass", message: "Solid pass probability" },
+	{ passRate: 58.3, ev: 412, roi: 92, verdict: "marginal", message: "Marginal edge - optimize first" },
+	{ passRate: 45.6, ev: -203, roi: -45, verdict: "fail", message: "Strategy needs work" },
+	{ passRate: 38.2, ev: -587, roi: -130, verdict: "fail", message: "High bust risk detected" },
+	{ passRate: 52.1, ev: 156, roi: 35, verdict: "marginal", message: "Breakeven - tweak parameters" },
+	{ passRate: 89.1, ev: 4250, roi: 944, verdict: "pass", message: "Exceptional strategy!" },
+	{ passRate: 31.4, ev: -892, roi: -198, verdict: "fail", message: "Do not proceed" },
+];
+
+// ============================================
 // SIMULATION PREVIEW COMPONENT
 // ============================================
 function SimulationPreview() {
@@ -249,6 +330,7 @@ function SimulationPreview() {
 	const [progress, setProgress] = useState(0);
 	const [showResults, setShowResults] = useState(false);
 	const [pathCount, setPathCount] = useState(0);
+	const [result, setResult] = useState(simulationScenarios[0]);
 
 	const runSimulation = useCallback(() => {
 		if (isRunning) return;
@@ -256,6 +338,10 @@ function SimulationPreview() {
 		setShowResults(false);
 		setProgress(0);
 		setPathCount(0);
+
+		// Pick a random scenario
+		const randomScenario = simulationScenarios[Math.floor(Math.random() * simulationScenarios.length)];
+		setResult(randomScenario);
 
 		const duration = 2500;
 		const steps = 100;
@@ -274,6 +360,23 @@ function SimulationPreview() {
 		}, duration / steps);
 	}, [isRunning]);
 
+	const getVerdictColor = (verdict: string) => {
+		if (verdict === "pass") return "text-[var(--positive)]";
+		if (verdict === "fail") return "text-[var(--negative)]";
+		return "text-[var(--warning)]";
+	};
+
+	const getValueColor = (value: number, isPassRate = false) => {
+		if (isPassRate) {
+			if (value >= 60) return "text-[var(--positive)]";
+			if (value >= 50) return "text-[var(--warning)]";
+			return "text-[var(--negative)]";
+		}
+		if (value > 0) return "text-[var(--positive)]";
+		if (value < 0) return "text-[var(--negative)]";
+		return "text-[var(--text-primary)]";
+	};
+
 	return (
 		<motion.div 
 			className="sim-preview p-5"
@@ -284,8 +387,8 @@ function SimulationPreview() {
 			<div className="relative z-10">
 				<div className="flex items-center justify-between mb-4">
 					<div>
-						<h3 className="text-sm font-semibold text-[var(--text-primary)]">Preview Simulation</h3>
-						<p className="text-xs text-[var(--text-muted)]">See the engine in action</p>
+						<h3 className="text-sm font-semibold text-[var(--text-primary)]">Try It Now</h3>
+						<p className="text-xs text-[var(--text-muted)]">See what your results could look like</p>
 					</div>
 					<motion.button
 						onClick={runSimulation}
@@ -294,7 +397,7 @@ function SimulationPreview() {
 						whileHover={!isRunning ? { scale: 1.05 } : {}}
 						whileTap={!isRunning ? { scale: 0.98 } : {}}
 					>
-						{isRunning ? 'Running...' : showResults ? 'Run Again' : 'Run Preview'}
+						{isRunning ? 'Simulating...' : showResults ? 'Run Again' : 'Run Sample'}
 					</motion.button>
 				</div>
 
@@ -307,8 +410,8 @@ function SimulationPreview() {
 						{/* Progress Bar */}
 						<div className="space-y-1">
 							<div className="flex justify-between text-xs text-[var(--text-muted)]">
-								<span>Simulating paths...</span>
-								<span>{pathCount.toLocaleString()} / 10,000</span>
+								<span>Analyzing {pathCount.toLocaleString()} paths...</span>
+								<span>{Math.floor(progress)}%</span>
 							</div>
 							<div className="progress-bar">
 								<motion.div 
@@ -327,20 +430,38 @@ function SimulationPreview() {
 									initial={{ opacity: 0, y: 10 }}
 									animate={{ opacity: 1, y: 0 }}
 									exit={{ opacity: 0 }}
-									className="grid grid-cols-3 gap-2 pt-2"
+									className="space-y-3 pt-2"
 								>
-									<div className="text-center p-2 bg-[var(--bg-tertiary)] rounded-lg">
-										<div className="text-lg font-semibold text-[var(--positive)]">76.9%</div>
-										<div className="text-[10px] text-[var(--text-muted)]">Pass Rate</div>
+									<div className="grid grid-cols-3 gap-2">
+										<div className="text-center p-2 bg-[var(--bg-tertiary)] rounded-lg">
+											<div className={`text-lg font-semibold ${getValueColor(result.passRate, true)}`}>
+												{result.passRate}%
+											</div>
+											<div className="text-[10px] text-[var(--text-muted)]">Pass Rate</div>
+										</div>
+										<div className="text-center p-2 bg-[var(--bg-tertiary)] rounded-lg">
+											<div className={`text-lg font-semibold ${getValueColor(result.ev)}`}>
+												{result.ev >= 0 ? '+' : ''}${Math.abs(result.ev).toLocaleString()}
+											</div>
+											<div className="text-[10px] text-[var(--text-muted)]">Expected Value</div>
+										</div>
+										<div className="text-center p-2 bg-[var(--bg-tertiary)] rounded-lg">
+											<div className={`text-lg font-semibold ${getValueColor(result.roi)}`}>
+												{result.roi >= 0 ? '+' : ''}{result.roi}%
+											</div>
+											<div className="text-[10px] text-[var(--text-muted)]">ROI</div>
+										</div>
 									</div>
-									<div className="text-center p-2 bg-[var(--bg-tertiary)] rounded-lg">
-										<div className="text-lg font-semibold text-[var(--positive)]">+$2,431</div>
-										<div className="text-[10px] text-[var(--text-muted)]">Expected Value</div>
+									<div className={`text-center text-xs py-2 px-3 rounded-lg ${
+										result.verdict === "pass" ? "bg-[var(--positive-dim)] border border-[rgba(34,197,94,0.2)]" :
+										result.verdict === "fail" ? "bg-[var(--negative-dim)] border border-[rgba(239,68,68,0.2)]" :
+										"bg-[var(--warning-dim)] border border-[rgba(245,158,11,0.2)]"
+									}`}>
+										<span className={getVerdictColor(result.verdict)}>{result.message}</span>
 									</div>
-									<div className="text-center p-2 bg-[var(--bg-tertiary)] rounded-lg">
-										<div className="text-lg font-semibold text-[var(--accent)]">+541%</div>
-										<div className="text-[10px] text-[var(--text-muted)]">ROI</div>
-									</div>
+									<p className="text-[10px] text-[var(--text-muted)] text-center">
+										Results vary based on your actual trade statistics
+									</p>
 								</motion.div>
 							)}
 						</AnimatePresence>
@@ -349,7 +470,8 @@ function SimulationPreview() {
 
 				{!isRunning && !showResults && (
 					<div className="text-xs text-[var(--text-muted)] text-center py-4 border border-dashed border-[var(--border)] rounded-lg">
-						Click "Run Preview" to see a sample Monte Carlo simulation
+						<span className="block mb-1">🎲 Each run generates different results</span>
+						Click to see sample Monte Carlo outcomes
 					</div>
 				)}
 			</div>
@@ -532,13 +654,6 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
 // ============================================
 function AnimatedEquityChart({ inView }: { inView: boolean }) {
 	const equityPaths = useMemo(() => generateEquityPaths(), []);
-	const controls = useAnimation();
-
-	useEffect(() => {
-		if (inView) {
-			controls.start({ opacity: 1, pathLength: 1 });
-		}
-	}, [inView, controls]);
 
 	return (
 		<div className="h-[300px] sm:h-[380px]">
@@ -552,6 +667,10 @@ function AnimatedEquityChart({ inView }: { inView: boolean }) {
 						<linearGradient id="redGradient" x1="0" y1="0" x2="1" y2="0">
 							<stop offset="0%" stopColor="#ef4444" stopOpacity={1} />
 							<stop offset="100%" stopColor="#f87171" stopOpacity={1} />
+						</linearGradient>
+						<linearGradient id="yellowGradient" x1="0" y1="0" x2="1" y2="0">
+							<stop offset="0%" stopColor="#f59e0b" stopOpacity={1} />
+							<stop offset="100%" stopColor="#fbbf24" stopOpacity={1} />
 						</linearGradient>
 						<filter id="glow">
 							<feGaussianBlur stdDeviation="2" result="coloredBlur"/>
@@ -582,27 +701,30 @@ function AnimatedEquityChart({ inView }: { inView: boolean }) {
 					<ReferenceLine y={-2000} stroke="var(--negative)" strokeDasharray="4 4" strokeOpacity={0.6} label={{ value: '-$2K Limit', fill: 'var(--negative)', fontSize: 10, position: 'right' }} />
 					<ReferenceLine y={0} stroke="var(--text-muted)" strokeOpacity={0.3} />
 					
-					{/* Passing paths with animation */}
+					{/* Passing paths - different strategies */}
 					<Line 
 						type="monotone" 
-						dataKey="pass1" 
+						dataKey="fastPass" 
 						stroke="url(#greenGradient)" 
 						strokeWidth={2.5} 
 						dot={false} 
-						name="Path A"
+						name="Fast Pass"
 						filter="url(#glow)"
-						strokeDasharray={inView ? "0" : "1000"}
+						strokeDasharray={inView ? "0" : "2000"}
 						style={{ 
-							strokeDashoffset: inView ? 0 : 1000,
+							strokeDashoffset: inView ? 0 : 2000,
 							transition: 'stroke-dashoffset 2s ease-out'
 						}}
 					/>
-					<Line type="monotone" dataKey="pass2" stroke="var(--positive)" strokeWidth={1.5} dot={false} opacity={0.5} name="Path B" />
-					<Line type="monotone" dataKey="pass3" stroke="var(--positive)" strokeWidth={1} dot={false} opacity={0.3} name="Path C" />
+					<Line type="monotone" dataKey="steadyPass" stroke="var(--positive)" strokeWidth={1.5} dot={false} opacity={0.6} name="Steady Pass" />
+					<Line type="monotone" dataKey="slowPass" stroke="var(--positive)" strokeWidth={1} dot={false} opacity={0.35} name="Slow Pass" />
+					
+					{/* Breakeven path */}
+					<Line type="monotone" dataKey="breakeven" stroke="url(#yellowGradient)" strokeWidth={1.5} dot={false} opacity={0.5} name="Breakeven" />
 					
 					{/* Failing paths */}
-					<Line type="monotone" dataKey="fail1" stroke="url(#redGradient)" strokeWidth={1.5} dot={false} opacity={0.6} name="Fail X" />
-					<Line type="monotone" dataKey="fail2" stroke="var(--negative)" strokeWidth={1} dot={false} opacity={0.3} name="Fail Y" />
+					<Line type="monotone" dataKey="earlyBust" stroke="url(#redGradient)" strokeWidth={2} dot={false} opacity={0.7} name="Early Bust" />
+					<Line type="monotone" dataKey="lateBust" stroke="var(--negative)" strokeWidth={1.5} dot={false} opacity={0.4} name="Late Bust" />
 					
 					{/* Median path */}
 					<Line type="monotone" dataKey="median" stroke="var(--accent)" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Median" />
@@ -742,7 +864,7 @@ export default function Page() {
 							{BYPASS_ACCESS ? (
 								<Link href="/app">
 									<motion.button 
-										className="btn-primary px-6 py-3 text-sm font-semibold flex items-center gap-2"
+										className="btn-primary px-8 py-3 text-sm font-semibold flex items-center gap-2"
 										whileHover={{ scale: 1.05 }}
 										whileTap={{ scale: 0.98 }}
 									>
@@ -755,7 +877,7 @@ export default function Page() {
 							) : (
 								<a href={WHOP_CHECKOUT_URL}>
 									<motion.button 
-										className="btn-primary px-6 py-3 text-sm font-semibold flex items-center gap-2"
+										className="btn-primary px-8 py-3 text-sm font-semibold flex items-center gap-2"
 										whileHover={{ scale: 1.05 }}
 										whileTap={{ scale: 0.98 }}
 									>
@@ -766,15 +888,6 @@ export default function Page() {
 									</motion.button>
 								</a>
 							)}
-							<Link href="/app">
-								<motion.button 
-									className="btn-secondary px-6 py-3 text-sm"
-									whileHover={{ scale: 1.02 }}
-									whileTap={{ scale: 0.98 }}
-								>
-									I Have Access
-								</motion.button>
-							</Link>
 						</motion.div>
 					</motion.div>
 
