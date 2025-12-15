@@ -1002,13 +1002,18 @@ export default function Page() {
 					</div>
 				</div>
 
-			{/* Platform integrations - Using Brandfetch logos */}
-			<div className="border-y border-[var(--border)] bg-[var(--bg-secondary)]">
-				<div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
-					<div className="grid sm:grid-cols-2 gap-6">
+			{/* Platform integrations - Card style matching sim-preview */}
+			<div className="max-w-7xl mx-auto px-4 sm:px-6 -mt-3 mb-6">
+				<motion.div 
+					className="sim-preview p-5"
+					initial={{ opacity: 0, y: 20 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.5, delay: 0.3 }}
+				>
+					<div className="relative z-10 grid sm:grid-cols-2 gap-6">
 						{/* Trading Platforms */}
-						<div className="flex flex-col sm:flex-row items-center gap-3">
-							<span className="text-xs text-[var(--text-muted)] uppercase tracking-wider whitespace-nowrap">Import from</span>
+						<div className="flex flex-col items-center gap-3">
+							<span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">Import from your platform</span>
 							<div className="flex flex-wrap items-center justify-center gap-2">
 								{tradingPlatforms.map((platform, i) => (
 									<PlatformLogo key={i} name={platform.name} domain={platform.domain} />
@@ -1016,8 +1021,8 @@ export default function Page() {
 							</div>
 						</div>
 						{/* Prop Firms */}
-						<div className="flex flex-col sm:flex-row items-center gap-3">
-							<span className="text-xs text-[var(--text-muted)] uppercase tracking-wider whitespace-nowrap">Supports</span>
+						<div className="flex flex-col items-center gap-3">
+							<span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">Simulate for any prop firm</span>
 							<div className="flex flex-wrap items-center justify-center gap-2">
 								{propFirms.map((firm, i) => (
 									<PlatformLogo key={i} name={firm.name} domain={firm.domain} />
@@ -1025,7 +1030,7 @@ export default function Page() {
 							</div>
 						</div>
 					</div>
-				</div>
+				</motion.div>
 			</div>
 			</section>
 
@@ -1501,13 +1506,9 @@ export default function Page() {
 							<motion.div 
 								variants={fadeUp} 
 								custom={2} 
-								className="pricing-card pricing-featured p-6 relative"
+								className="pricing-card pricing-featured p-6"
 								whileHover={{ scale: 1.02, y: -4 }}
 							>
-								<div className="absolute -top-3 left-1/2 -translate-x-1/2">
-									<span className="badge badge-accent text-[10px] px-3 py-1">MOST POPULAR</span>
-								</div>
-								
 								<div className="mb-6">
 									<p className="text-sm text-[var(--text-muted)] mb-1">UNLIMITED</p>
 									<div className="flex items-baseline gap-1">
@@ -1633,9 +1634,9 @@ export default function Page() {
 						</div>
 						
 						<div className="flex items-center gap-6 text-sm text-[var(--text-muted)]">
-							<a href="#" className="hover:text-[var(--text-primary)] transition-colors">Terms</a>
-							<a href="#" className="hover:text-[var(--text-primary)] transition-colors">Privacy</a>
-							<a href="#" className="hover:text-[var(--text-primary)] transition-colors">Contact</a>
+							<a href="https://www.termsfeed.com/live/aaf23510-988e-405c-8016-f626cda211fe" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--text-primary)] transition-colors">Terms</a>
+							<a href="https://www.termsfeed.com/live/e86c7aa8-bbb2-4ac0-98c8-eb9087fe5419" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--text-primary)] transition-colors">Privacy</a>
+							<a href="mailto:support@cuevalabs.com" className="hover:text-[var(--text-primary)] transition-colors">Contact</a>
 						</div>
 
 						<p className="text-xs text-[var(--text-muted)]">
