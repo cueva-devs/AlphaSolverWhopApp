@@ -468,61 +468,59 @@ function SimulationPreview() {
 					</motion.div>
 				)}
 
-				{!isRunning && !showResults && (
-					<div className="text-xs text-[var(--text-muted)] text-center py-4 border border-dashed border-[var(--border)] rounded-lg">
-						<span className="block mb-1">🎲 Each run generates different results</span>
-						Click to see sample Monte Carlo outcomes
-					</div>
-				)}
+			{!isRunning && !showResults && (
+				<div className="text-xs text-[var(--text-muted)] text-center py-4 border border-dashed border-[var(--border)] rounded-lg">
+					<span className="block mb-1">Each run generates different results</span>
+					Click to see sample Monte Carlo outcomes
+				</div>
+			)}
 			</div>
 		</motion.div>
 	);
 }
 
 // ============================================
-// PLATFORM LOGO COMPONENT
+// PLATFORM LOGO COMPONENT - Using Brandfetch CDN
 // ============================================
-function PlatformLogo({ name, icon }: { name: string; icon: React.ReactNode }) {
+const tradingPlatforms = [
+	{ name: "NinjaTrader", domain: "ninjatrader.com" },
+	{ name: "TradingView", domain: "tradingview.com" },
+	{ name: "Tradovate", domain: "tradovate.com" },
+	{ name: "Rithmic", domain: "rithmic.com" },
+];
+
+const propFirms = [
+	{ name: "Topstep", domain: "topstep.com" },
+	{ name: "Take Profit Trader", domain: "takeprofittrader.com" },
+	{ name: "Tradeify", domain: "tradeify.co" },
+	{ name: "Apex Trader", domain: "apextraderfunding.com" },
+];
+
+function PlatformLogo({ name, domain }: { name: string; domain: string }) {
+	const [imgError, setImgError] = useState(false);
+	
 	return (
 		<motion.div 
 			className="platform-logo"
 			whileHover={{ scale: 1.05, y: -2 }}
 			whileTap={{ scale: 0.98 }}
 		>
-			{icon}
+			{!imgError ? (
+				<img 
+					src={`https://cdn.brandfetch.io/${domain}/w/400/h/400?c=1id_OlBY6B4Dz-kpNXO`}
+					alt={name}
+					className="w-4 h-4 object-contain rounded-sm"
+					onError={() => setImgError(true)}
+				/>
+			) : (
+				<span className="w-4 h-4 flex items-center justify-center text-[10px] font-bold text-[var(--accent)] bg-[var(--accent-dim)] rounded">
+					{name.charAt(0)}
+				</span>
+			)}
 			<span>{name}</span>
 		</motion.div>
 	);
 }
-
-// Platform icons as simple SVGs
-const platformIcons: Record<string, React.ReactNode> = {
-	NinjaTrader: (
-		<svg viewBox="0 0 24 24" fill="currentColor">
-			<path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.18l6.9 3.45L12 11.09 5.1 7.63 12 4.18zM4 8.55l7 3.5v7.4l-7-3.5v-7.4zm9 10.9v-7.4l7-3.5v7.4l-7 3.5z"/>
-		</svg>
-	),
-	TradingView: (
-		<svg viewBox="0 0 24 24" fill="currentColor">
-			<path d="M4.5 3L2 12l2.5 9h15L22 12l-2.5-9h-15zM7 7h2l3 5 3-5h2l-4 6v4h-2v-4L7 7z"/>
-		</svg>
-	),
-	Tradovate: (
-		<svg viewBox="0 0 24 24" fill="currentColor">
-			<path d="M3 3h18v18H3V3zm2 2v14h14V5H5zm2 2h10v2H7V7zm0 4h10v2H7v-2zm0 4h6v2H7v-2z"/>
-		</svg>
-	),
-	Rithmic: (
-		<svg viewBox="0 0 24 24" fill="currentColor">
-			<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-		</svg>
-	),
-	"Sierra Chart": (
-		<svg viewBox="0 0 24 24" fill="currentColor">
-			<path d="M3 13h2v8H3v-8zm4-6h2v14H7V7zm4-4h2v18h-2V3zm4 8h2v10h-2V11zm4-4h2v14h-2V7z"/>
-		</svg>
-	),
-};
 
 // ============================================
 // MINI CHART COMPONENT
@@ -573,7 +571,7 @@ const faqs = [
 	},
 	{
 		question: "Which prop firms do you support?",
-		answer: "We support all major prop firms including Topstep, Take Profit Trader, Apex Trader Funding, Tradeify, and more. You can also create custom rules for any evaluation with specific profit targets, drawdown limits, and fee structures."
+		answer: "We support all major prop firms including Topstep, Take Profit Trader, Funded Futures Network, Tradeify, Apex Trader Funding, and more. You can also create custom rules for any evaluation with specific profit targets, drawdown limits, and fee structures."
 	},
 	{
 		question: "What's included in the free plan?",
@@ -983,19 +981,31 @@ export default function Page() {
 					</div>
 				</div>
 
-				{/* Platform integrations - Enhanced with icons */}
-				<div className="border-y border-[var(--border)] bg-[var(--bg-secondary)]">
-					<div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
-						<div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-							<span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">Import from your platform</span>
+			{/* Platform integrations - Using Brandfetch logos */}
+			<div className="border-y border-[var(--border)] bg-[var(--bg-secondary)]">
+				<div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
+					<div className="grid sm:grid-cols-2 gap-6">
+						{/* Trading Platforms */}
+						<div className="flex flex-col sm:flex-row items-center gap-3">
+							<span className="text-xs text-[var(--text-muted)] uppercase tracking-wider whitespace-nowrap">Import from</span>
 							<div className="flex flex-wrap items-center justify-center gap-2">
-								{Object.entries(platformIcons).map(([name, icon], i) => (
-									<PlatformLogo key={i} name={name} icon={icon} />
+								{tradingPlatforms.map((platform, i) => (
+									<PlatformLogo key={i} name={platform.name} domain={platform.domain} />
+								))}
+							</div>
+						</div>
+						{/* Prop Firms */}
+						<div className="flex flex-col sm:flex-row items-center gap-3">
+							<span className="text-xs text-[var(--text-muted)] uppercase tracking-wider whitespace-nowrap">Supports</span>
+							<div className="flex flex-wrap items-center justify-center gap-2">
+								{propFirms.map((firm, i) => (
+									<PlatformLogo key={i} name={firm.name} domain={firm.domain} />
 								))}
 							</div>
 						</div>
 					</div>
 				</div>
+			</div>
 			</section>
 
 			{/* Equity Paths Section - Enhanced */}
@@ -1387,8 +1397,8 @@ export default function Page() {
 					<h2 className="text-xl font-semibold text-center mb-8">Three Steps to Your Edge</h2>
 					<div className="grid sm:grid-cols-3 gap-4">
 						{[
-							{ num: "01", title: "Upload Trade Log", desc: "CSV from NinjaTrader, TradingView, Tradovate, or any platform. We extract your win rate, avg win/loss automatically." },
-							{ num: "02", title: "Select Prop Firm", desc: "Topstep, Take Profit Trader, Apex, Tradeify, or custom rules. We know every target, drawdown, and fee." },
+							{ num: "01", title: "Upload Trade Log", desc: "CSV from NinjaTrader, TradingView, Tradovate, Rithmic, or any platform. We extract your win rate, avg win/loss automatically." },
+							{ num: "02", title: "Select Prop Firm", desc: "Topstep, Take Profit Trader, Apex, Tradeify, FFN, or custom rules. We know every target, drawdown, and fee." },
 							{ num: "03", title: "Get Your Odds", desc: "Pass probability, expected value, cost analysis, and a personalized trading plan in seconds." },
 						].map((step, i) => (
 							<motion.div 
