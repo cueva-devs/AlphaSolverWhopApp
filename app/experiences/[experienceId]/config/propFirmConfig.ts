@@ -498,6 +498,18 @@ export const CSV_TEMPLATES = {
 		dateColumn: "Time",
 		mfeColumn: null
 	},
+	"MetaTrader 4 (MT4)": {
+		description: "MetaTrader 4 Account History export",
+		pnlColumn: "Profit",
+		dateColumn: "Time",
+		mfeColumn: null
+	},
+	"MetaTrader 5 (MT5)": {
+		description: "MetaTrader 5 Account History export",
+		pnlColumn: "Profit",
+		dateColumn: "Time",
+		mfeColumn: null
+	},
 	"Generic (Simple)": {
 		description: "Simple CSV with date, pnl, and optional mfe columns",
 		pnlColumn: "pnl",
