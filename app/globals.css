@@ -8,13 +8,14 @@
 /* biome-ignore lint/suspicious/noUnknownAtRules: this rule is imported from whop */
 @config '../tailwind.config.ts';
 
-/* Google Fonts - Inter for body, Instrument Serif for headlines */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap');
+/* Google Fonts - Inter for body, Instrument Serif for headlines, Space Grotesk for display */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 :root {
 	/* Typography */
 	--font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 	--font-serif: 'Instrument Serif', Georgia, serif;
+	--font-display: 'Space Grotesk', sans-serif;
 	--font-mono: 'JetBrains Mono', ui-monospace, monospace;
 	
 	/* Background colors - Deep dark slate */
@@ -35,13 +36,13 @@
 	--accent: #3b82f6;
 	--accent-bright: #60a5fa;
 	--accent-dim: rgba(59, 130, 246, 0.12);
-	--accent-glow: rgba(59, 130, 246, 0.25);
+	--accent-glow: rgba(59, 130, 246, 0.35);
 	
 	/* Positive/Negative */
 	--positive: #22c55e;
 	--positive-bright: #4ade80;
 	--positive-dim: rgba(34, 197, 94, 0.12);
-	--positive-glow: rgba(34, 197, 94, 0.2);
+	--positive-glow: rgba(34, 197, 94, 0.3);
 	
 	--negative: #ef4444;
 	--negative-bright: #f87171;
@@ -155,6 +156,34 @@ body {
 	animation: pulseGlow 3s ease-in-out infinite;
 }
 
+/* Green value pulse */
+@keyframes greenPulse {
+	0%, 100% { 
+		text-shadow: 0 0 0 transparent;
+	}
+	50% { 
+		text-shadow: 0 0 20px var(--positive-glow);
+	}
+}
+
+.green-pulse {
+	animation: greenPulse 2.5s ease-in-out infinite;
+}
+
+/* Blue glow pulse for accent cards */
+@keyframes blueGlow {
+	0%, 100% { 
+		box-shadow: 0 4px 20px var(--accent-dim), 0 0 0 1px var(--border);
+	}
+	50% { 
+		box-shadow: 0 4px 30px var(--accent-glow), 0 0 0 1px var(--accent);
+	}
+}
+
+.blue-glow {
+	animation: blueGlow 4s ease-in-out infinite;
+}
+
 /* Subtle float animation */
 @keyframes subtleFloat {
 	0%, 100% { transform: translateY(0); }
@@ -204,7 +233,7 @@ body {
 	animation: countPulse 0.3s ease-out;
 }
 
-/* Gradient shift */
+/* Gradient shift for hero headline */
 @keyframes gradientShift {
 	0% { background-position: 0% 50%; }
 	50% { background-position: 100% 50%; }
@@ -213,7 +242,7 @@ body {
 
 .gradient-animate {
 	background-size: 200% 200%;
-	animation: gradientShift 8s ease infinite;
+	animation: gradientShift 6s ease infinite;
 }
 
 /* Subtle border glow */
@@ -226,6 +255,30 @@ body {
 	animation: borderGlow 4s ease-in-out infinite;
 }
 
+/* Progress bar animation */
+@keyframes progressFill {
+	from { width: 0%; }
+	to { width: 100%; }
+}
+
+.progress-animate {
+	animation: progressFill 2.5s ease-out forwards;
+}
+
+/* Glow text animation */
+@keyframes glowText {
+	0%, 100% { 
+		filter: drop-shadow(0 0 8px var(--accent-glow));
+	}
+	50% { 
+		filter: drop-shadow(0 0 16px var(--accent-glow));
+	}
+}
+
+.glow-text {
+	animation: glowText 3s ease-in-out infinite;
+}
+
 /* ========================================
    COMPONENT STYLES
    ======================================== */
@@ -235,12 +288,13 @@ body {
 	background: var(--bg-card);
 	border: 1px solid var(--border);
 	border-radius: 8px;
-	transition: all 0.2s ease;
+	transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dash-card:hover {
 	background: var(--bg-card-hover);
 	border-color: var(--border-bright);
+	transform: translateY(-2px);
 }
 
 /* Metric card - featured stats */
@@ -248,24 +302,44 @@ body {
 	background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-elevated) 100%);
 	border: 1px solid var(--border);
 	border-radius: 12px;
-	transition: all 0.25s ease;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	position: relative;
+	overflow: hidden;
+}
+
+.metric-card::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: radial-gradient(circle at 50% 0%, var(--accent-dim) 0%, transparent 60%);
+	opacity: 0;
+	transition: opacity 0.3s ease;
+}
+
+.metric-card:hover::before {
+	opacity: 1;
 }
 
 .metric-card:hover {
 	border-color: var(--accent);
-	box-shadow: 0 0 30px var(--accent-dim);
-	transform: translateY(-2px);
+	box-shadow: 0 8px 40px var(--accent-dim), 0 0 0 1px var(--accent);
+	transform: translateY(-4px);
 }
 
-/* Positive metric highlight */
+/* Positive metric highlight with glow */
 .metric-positive {
-	background: linear-gradient(135deg, var(--positive-dim) 0%, transparent 100%);
-	border: 1px solid rgba(34, 197, 94, 0.2);
+	background: linear-gradient(135deg, var(--positive-dim) 0%, rgba(34, 197, 94, 0.05) 100%);
+	border: 1px solid rgba(34, 197, 94, 0.25);
+	box-shadow: 0 4px 20px var(--positive-dim);
+}
+
+.metric-positive::before {
+	background: radial-gradient(circle at 50% 0%, var(--positive-dim) 0%, transparent 60%);
 }
 
 .metric-positive:hover {
 	border-color: var(--positive);
-	box-shadow: 0 0 30px var(--positive-dim);
+	box-shadow: 0 8px 40px var(--positive-glow), 0 0 0 1px var(--positive);
 }
 
 /* Chart container */
@@ -274,6 +348,12 @@ body {
 	border: 1px solid var(--border);
 	border-radius: 12px;
 	overflow: hidden;
+	transition: all 0.3s ease;
+}
+
+.chart-container:hover {
+	border-color: var(--border-bright);
+	box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
 }
 
 /* Table styles */
@@ -299,6 +379,7 @@ body {
 	font-size: 13px;
 	border-bottom: 1px solid var(--border-subtle);
 	color: var(--text-secondary);
+	transition: background 0.2s ease;
 }
 
 .data-table tr:hover td {
@@ -324,27 +405,28 @@ body {
 
 /* Button styles */
 .btn-primary {
-	background: var(--accent);
+	background: linear-gradient(135deg, var(--accent) 0%, var(--accent-bright) 100%);
 	color: white;
 	font-weight: 600;
-	border-radius: 6px;
-	transition: all 0.2s ease;
+	border-radius: 8px;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 	position: relative;
 	overflow: hidden;
+	box-shadow: 0 4px 15px var(--accent-dim);
 }
 
 .btn-primary:hover {
-	background: var(--accent-bright);
-	box-shadow: 0 0 24px var(--accent-dim);
+	transform: translateY(-2px);
+	box-shadow: 0 8px 30px var(--accent-glow);
 }
 
 .btn-primary::after {
 	content: '';
 	position: absolute;
 	inset: 0;
-	background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+	background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
 	transform: translateX(-100%);
-	transition: transform 0.4s ease;
+	transition: transform 0.5s ease;
 }
 
 .btn-primary:hover::after {
@@ -355,13 +437,14 @@ body {
 	background: transparent;
 	color: var(--text-primary);
 	border: 1px solid var(--border);
-	border-radius: 6px;
-	transition: all 0.2s ease;
+	border-radius: 8px;
+	transition: all 0.3s ease;
 }
 
 .btn-secondary:hover {
 	background: var(--bg-card);
 	border-color: var(--border-bright);
+	transform: translateY(-1px);
 }
 
 /* Badge styles */
@@ -380,14 +463,24 @@ body {
 
 .badge-positive {
 	background: var(--positive-dim);
-	border-color: rgba(34, 197, 94, 0.2);
+	border-color: rgba(34, 197, 94, 0.25);
 	color: var(--positive);
 }
 
 .badge-accent {
 	background: var(--accent-dim);
-	border-color: rgba(59, 130, 246, 0.2);
+	border-color: rgba(59, 130, 246, 0.25);
 	color: var(--accent-bright);
+}
+
+/* Strategy run badge */
+.badge-run {
+	background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-card) 100%);
+	border: 1px solid var(--border-bright);
+	padding: 6px 12px;
+	font-family: var(--font-mono);
+	font-size: 10px;
+	letter-spacing: 0.05em;
 }
 
 /* Section divider */
@@ -412,6 +505,16 @@ body {
 	background-clip: text;
 }
 
+/* Hero headline gradient */
+.headline-gradient {
+	background: linear-gradient(135deg, var(--accent) 0%, #06b6d4 50%, var(--accent-bright) 100%);
+	background-size: 200% 200%;
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+	animation: gradientShift 6s ease infinite;
+}
+
 /* Recharts customization */
 .recharts-cartesian-grid-horizontal line,
 .recharts-cartesian-grid-vertical line {
@@ -429,42 +532,67 @@ body {
 	border: 1px solid var(--border) !important;
 	border-radius: 8px;
 	padding: 12px !important;
-	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
 }
 
-/* Hero gradient */
+/* Hero gradient with noise texture */
 .hero-gradient {
 	background: 
-		radial-gradient(ellipse 80% 60% at 50% 0%, var(--accent-dim) 0%, transparent 50%),
-		radial-gradient(ellipse 60% 40% at 70% 10%, var(--positive-dim) 0%, transparent 40%),
+		radial-gradient(ellipse 100% 80% at 50% -20%, var(--accent-glow) 0%, transparent 50%),
+		radial-gradient(ellipse 80% 60% at 80% 20%, var(--positive-dim) 0%, transparent 40%),
+		radial-gradient(ellipse 60% 40% at 20% 80%, var(--accent-dim) 0%, transparent 40%),
 		var(--bg-primary);
+	position: relative;
+}
+
+.hero-gradient::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+	opacity: 0.02;
+	pointer-events: none;
 }
 
 /* CTA gradient */
 .cta-gradient {
 	background: 
-		radial-gradient(ellipse 80% 50% at 50% 100%, var(--accent-dim) 0%, transparent 50%),
+		radial-gradient(ellipse 80% 50% at 50% 100%, var(--accent-glow) 0%, transparent 50%),
 		var(--bg-primary);
 }
 
-/* Platform logo placeholder */
+/* Platform logo with icon */
 .platform-logo {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: var(--bg-card);
+	gap: 8px;
+	background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-elevated) 100%);
 	border: 1px solid var(--border);
-	border-radius: 6px;
-	padding: 8px 16px;
+	border-radius: 8px;
+	padding: 10px 16px;
 	font-size: 12px;
 	font-weight: 600;
-	color: var(--text-muted);
-	transition: all 0.2s ease;
+	color: var(--text-secondary);
+	transition: all 0.3s ease;
 }
 
 .platform-logo:hover {
-	border-color: var(--border-bright);
-	color: var(--text-secondary);
+	border-color: var(--accent);
+	color: var(--text-primary);
+	box-shadow: 0 4px 20px var(--accent-dim);
+	transform: translateY(-2px);
+}
+
+.platform-logo svg {
+	width: 18px;
+	height: 18px;
+	opacity: 0.7;
+	transition: opacity 0.3s ease;
+}
+
+.platform-logo:hover svg {
+	opacity: 1;
 }
 
 /* Trust badge */
@@ -472,12 +600,18 @@ body {
 	display: inline-flex;
 	align-items: center;
 	gap: 8px;
-	padding: 6px 12px;
-	background: var(--bg-card);
+	padding: 6px 14px;
+	background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-elevated) 100%);
 	border: 1px solid var(--border);
 	border-radius: 100px;
 	font-size: 12px;
 	color: var(--text-secondary);
+	transition: all 0.3s ease;
+}
+
+.trust-badge:hover {
+	border-color: var(--border-bright);
+	background: var(--bg-elevated);
 }
 
 /* FAQ styles */
@@ -504,6 +638,7 @@ body {
 
 .pricing-card:hover {
 	border-color: var(--border-bright);
+	transform: translateY(-2px);
 }
 
 .pricing-featured {
@@ -514,10 +649,58 @@ body {
 
 .pricing-featured:hover {
 	border-color: var(--accent-bright);
-	box-shadow: 0 0 60px var(--accent-dim);
+	box-shadow: 0 0 60px var(--accent-glow);
 }
 
 /* Footer */
 .footer-gradient {
 	background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+}
+
+/* Simulation preview card */
+.sim-preview {
+	background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-elevated) 100%);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	position: relative;
+	overflow: hidden;
+}
+
+.sim-preview::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: radial-gradient(circle at 50% 0%, var(--accent-dim) 0%, transparent 50%);
+	opacity: 0.5;
+}
+
+/* Progress bar */
+.progress-bar {
+	height: 4px;
+	background: var(--bg-tertiary);
+	border-radius: 2px;
+	overflow: hidden;
+}
+
+.progress-bar-fill {
+	height: 100%;
+	background: linear-gradient(90deg, var(--accent) 0%, var(--positive) 100%);
+	border-radius: 2px;
+	transition: width 0.1s ease;
+}
+
+/* Animated line for equity chart */
+.equity-line-animated {
+	stroke-dasharray: 2000;
+	stroke-dashoffset: 2000;
+}
+
+.equity-line-animated.active {
+	animation: drawEquityPath 2s ease-out forwards;
+}
+
+@keyframes drawEquityPath {
+	to {
+		stroke-dashoffset: 0;
+	}
 }

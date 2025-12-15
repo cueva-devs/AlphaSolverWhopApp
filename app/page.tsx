@@ -1,18 +1,18 @@
 "use client";
 
 /**
- * AlphaSolver Landing Page - Quant Dashboard Design
+ * AlphaSolver Landing Page - Enhanced Quant Dashboard Design
  * 
  * Required dependencies:
- * npm i recharts framer-motion @heroicons/react
+ * npm i recharts framer-motion
  * 
  * Design: Dense, information-rich quant finance dashboard preview
- * Inspired by StrategyQuant, QuantConnect, BuildAlpha, TradingView backtester
+ * Enhanced with subtle animations, glows, and interactive elements
  */
 
 import Link from "next/link";
-import { useState, useEffect, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { motion, AnimatePresence, useAnimation } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import {
 	LineChart,
@@ -79,13 +79,13 @@ const tradesPerDay = [
 	{ trades: "6+", frequency: 7.6 },
 ];
 
-// Scenario outcomes table data
-const scenarioOutcomes = [
-	{ probability: "32.4%", days: 8, maxDD: "$487", netPnL: "+$3,240", outcome: "Fast Pass", highlight: true },
-	{ probability: "24.8%", days: 14, maxDD: "$1,124", netPnL: "+$3,067", outcome: "Steady Pass", highlight: true },
-	{ probability: "19.7%", days: 20, maxDD: "$1,687", netPnL: "+$3,012", outcome: "Slow Pass", highlight: true },
-	{ probability: "12.3%", days: 6, maxDD: "$2,000", netPnL: "-$450", outcome: "Early Bust", highlight: false },
-	{ probability: "10.8%", days: 15, maxDD: "$2,000", netPnL: "-$450", outcome: "Late Bust", highlight: false },
+// Strategy runs data - showing multiple strategy tests
+const strategyRuns = [
+	{ run: "Strategy #1", probability: "32.4%", days: 8, maxDD: "$487", netPnL: "+$3,240", outcome: "Fast Pass", highlight: true, strategy: "Aggressive" },
+	{ run: "Strategy #2", probability: "24.8%", days: 14, maxDD: "$1,124", netPnL: "+$3,067", outcome: "Steady Pass", highlight: true, strategy: "Conservative" },
+	{ run: "Strategy #3", probability: "19.7%", days: 20, maxDD: "$1,687", netPnL: "+$3,012", outcome: "Slow Pass", highlight: true, strategy: "Balanced" },
+	{ run: "Strategy #4", probability: "12.3%", days: 6, maxDD: "$2,000", netPnL: "-$450", outcome: "Early Bust", highlight: false, strategy: "High Risk" },
+	{ run: "Strategy #5", probability: "10.8%", days: 15, maxDD: "$2,000", netPnL: "-$450", outcome: "Late Bust", highlight: false, strategy: "Low Freq" },
 ];
 
 // ============================================
@@ -104,31 +104,50 @@ const staggerContainer = {
 	hidden: { opacity: 0 },
 	visible: {
 		opacity: 1,
-		transition: { staggerChildren: 0.06, delayChildren: 0.1 }
+		transition: { staggerChildren: 0.08, delayChildren: 0.1 }
+	}
+};
+
+const scaleUp = {
+	hidden: { opacity: 0, scale: 0.95 },
+	visible: { 
+		opacity: 1, 
+		scale: 1,
+		transition: { duration: 0.5, ease: [0.25, 0.4, 0.25, 1] as const }
+	}
+};
+
+const cardHover = {
+	rest: { scale: 1, y: 0 },
+	hover: { 
+		scale: 1.02, 
+		y: -4,
+		transition: { duration: 0.25, ease: "easeOut" }
 	}
 };
 
 // ============================================
-// ANIMATED COUNTER
+// ANIMATED COUNTER WITH FORMATTING
 // ============================================
 function AnimatedCounter({ 
 	value, 
 	suffix = "", 
 	prefix = "", 
-	decimals = 0 
+	decimals = 0,
+	duration = 2000
 }: { 
 	value: number; 
 	suffix?: string; 
 	prefix?: string;
 	decimals?: number;
+	duration?: number;
 }) {
 	const [count, setCount] = useState(0);
-	const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.5 });
+	const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.3 });
 
 	useEffect(() => {
 		if (inView) {
-			const duration = 1500;
-			const steps = 50;
+			const steps = 60;
 			const increment = value / steps;
 			let current = 0;
 			const timer = setInterval(() => {
@@ -142,52 +161,246 @@ function AnimatedCounter({
 			}, duration / steps);
 			return () => clearInterval(timer);
 		}
-	}, [inView, value]);
+	}, [inView, value, duration]);
 
 	return (
-		<span ref={ref}>
+		<motion.span 
+			ref={ref}
+			initial={{ opacity: 0, y: 10 }}
+			animate={inView ? { opacity: 1, y: 0 } : {}}
+			transition={{ duration: 0.4 }}
+		>
 			{prefix}{decimals > 0 ? count.toFixed(decimals) : Math.floor(count).toLocaleString()}{suffix}
-		</span>
+		</motion.span>
 	);
 }
 
 // ============================================
-// METRIC CARD COMPONENT
+// ENHANCED METRIC CARD WITH GLOW
 // ============================================
 function MetricCard({ 
 	label, 
 	value, 
+	numericValue,
 	change, 
 	positive,
-	icon,
 	large = false,
+	delay = 0,
 }: { 
 	label: string; 
-	value: string; 
+	value: string;
+	numericValue?: number;
 	change?: string;
 	positive?: boolean;
-	icon?: React.ReactNode;
 	large?: boolean;
+	delay?: number;
 }) {
+	const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.3 });
+	
 	return (
-		<div className={`metric-card p-4 ${large ? 'p-6' : ''} ${positive ? 'metric-positive' : ''}`}>
-			<div className="flex items-start justify-between mb-2">
-				<span className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
-					{label}
-				</span>
-				{icon && <span className="text-[var(--text-muted)]">{icon}</span>}
-			</div>
-			<div className={`font-semibold ${large ? 'text-3xl' : 'text-2xl'} ${positive ? 'text-[var(--positive)]' : 'text-[var(--text-primary)]'}`}>
-				{value}
-			</div>
-			{change && (
-				<div className={`text-xs mt-1 ${positive ? 'text-[var(--positive)]' : 'text-[var(--text-muted)]'}`}>
-					{change}
+		<motion.div 
+			ref={ref}
+			initial="rest"
+			whileHover="hover"
+			variants={cardHover}
+			className={`metric-card p-4 ${large ? 'p-6' : ''} ${positive ? 'metric-positive' : ''}`}
+		>
+			<div className="relative z-10">
+				<div className="flex items-start justify-between mb-2">
+					<span className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+						{label}
+					</span>
 				</div>
-			)}
-		</div>
+				<motion.div 
+					className={`font-semibold ${large ? 'text-3xl' : 'text-2xl'} ${positive ? 'text-[var(--positive)] green-pulse' : 'text-[var(--text-primary)]'}`}
+					initial={{ opacity: 0, scale: 0.9 }}
+					animate={inView ? { opacity: 1, scale: 1 } : {}}
+					transition={{ duration: 0.4, delay: delay * 0.1 }}
+				>
+					{numericValue !== undefined ? (
+						<AnimatedCounter 
+							value={numericValue} 
+							suffix={value.includes('%') ? '%' : ''} 
+							prefix={value.startsWith('+') ? '+' : value.startsWith('$') ? '$' : ''}
+							decimals={value.includes('.') ? 1 : 0}
+						/>
+					) : value}
+				</motion.div>
+				{change && (
+					<motion.div 
+						className={`text-xs mt-1 ${positive ? 'text-[var(--positive)]' : 'text-[var(--text-muted)]'}`}
+						initial={{ opacity: 0 }}
+						animate={inView ? { opacity: 1 } : {}}
+						transition={{ delay: 0.3 + delay * 0.1 }}
+					>
+						{change}
+					</motion.div>
+				)}
+			</div>
+		</motion.div>
 	);
 }
+
+// ============================================
+// SIMULATION PREVIEW COMPONENT
+// ============================================
+function SimulationPreview() {
+	const [isRunning, setIsRunning] = useState(false);
+	const [progress, setProgress] = useState(0);
+	const [showResults, setShowResults] = useState(false);
+	const [pathCount, setPathCount] = useState(0);
+
+	const runSimulation = useCallback(() => {
+		if (isRunning) return;
+		setIsRunning(true);
+		setShowResults(false);
+		setProgress(0);
+		setPathCount(0);
+
+		const duration = 2500;
+		const steps = 100;
+		let step = 0;
+
+		const timer = setInterval(() => {
+			step++;
+			setProgress((step / steps) * 100);
+			setPathCount(Math.floor((step / steps) * 10000));
+			
+			if (step >= steps) {
+				clearInterval(timer);
+				setIsRunning(false);
+				setShowResults(true);
+			}
+		}, duration / steps);
+	}, [isRunning]);
+
+	return (
+		<motion.div 
+			className="sim-preview p-5"
+			initial={{ opacity: 0, y: 20 }}
+			animate={{ opacity: 1, y: 0 }}
+			transition={{ duration: 0.5, delay: 0.2 }}
+		>
+			<div className="relative z-10">
+				<div className="flex items-center justify-between mb-4">
+					<div>
+						<h3 className="text-sm font-semibold text-[var(--text-primary)]">Preview Simulation</h3>
+						<p className="text-xs text-[var(--text-muted)]">See the engine in action</p>
+					</div>
+					<motion.button
+						onClick={runSimulation}
+						disabled={isRunning}
+						className={`btn-primary px-4 py-2 text-xs ${isRunning ? 'opacity-50 cursor-not-allowed' : ''}`}
+						whileHover={!isRunning ? { scale: 1.05 } : {}}
+						whileTap={!isRunning ? { scale: 0.98 } : {}}
+					>
+						{isRunning ? 'Running...' : showResults ? 'Run Again' : 'Run Preview'}
+					</motion.button>
+				</div>
+
+				{(isRunning || showResults) && (
+					<motion.div
+						initial={{ opacity: 0, height: 0 }}
+						animate={{ opacity: 1, height: 'auto' }}
+						className="space-y-3"
+					>
+						{/* Progress Bar */}
+						<div className="space-y-1">
+							<div className="flex justify-between text-xs text-[var(--text-muted)]">
+								<span>Simulating paths...</span>
+								<span>{pathCount.toLocaleString()} / 10,000</span>
+							</div>
+							<div className="progress-bar">
+								<motion.div 
+									className="progress-bar-fill"
+									initial={{ width: 0 }}
+									animate={{ width: `${progress}%` }}
+									transition={{ duration: 0.1 }}
+								/>
+							</div>
+						</div>
+
+						{/* Results */}
+						<AnimatePresence>
+							{showResults && (
+								<motion.div
+									initial={{ opacity: 0, y: 10 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0 }}
+									className="grid grid-cols-3 gap-2 pt-2"
+								>
+									<div className="text-center p-2 bg-[var(--bg-tertiary)] rounded-lg">
+										<div className="text-lg font-semibold text-[var(--positive)]">76.9%</div>
+										<div className="text-[10px] text-[var(--text-muted)]">Pass Rate</div>
+									</div>
+									<div className="text-center p-2 bg-[var(--bg-tertiary)] rounded-lg">
+										<div className="text-lg font-semibold text-[var(--positive)]">+$2,431</div>
+										<div className="text-[10px] text-[var(--text-muted)]">Expected Value</div>
+									</div>
+									<div className="text-center p-2 bg-[var(--bg-tertiary)] rounded-lg">
+										<div className="text-lg font-semibold text-[var(--accent)]">+541%</div>
+										<div className="text-[10px] text-[var(--text-muted)]">ROI</div>
+									</div>
+								</motion.div>
+							)}
+						</AnimatePresence>
+					</motion.div>
+				)}
+
+				{!isRunning && !showResults && (
+					<div className="text-xs text-[var(--text-muted)] text-center py-4 border border-dashed border-[var(--border)] rounded-lg">
+						Click "Run Preview" to see a sample Monte Carlo simulation
+					</div>
+				)}
+			</div>
+		</motion.div>
+	);
+}
+
+// ============================================
+// PLATFORM LOGO COMPONENT
+// ============================================
+function PlatformLogo({ name, icon }: { name: string; icon: React.ReactNode }) {
+	return (
+		<motion.div 
+			className="platform-logo"
+			whileHover={{ scale: 1.05, y: -2 }}
+			whileTap={{ scale: 0.98 }}
+		>
+			{icon}
+			<span>{name}</span>
+		</motion.div>
+	);
+}
+
+// Platform icons as simple SVGs
+const platformIcons: Record<string, React.ReactNode> = {
+	NinjaTrader: (
+		<svg viewBox="0 0 24 24" fill="currentColor">
+			<path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.18l6.9 3.45L12 11.09 5.1 7.63 12 4.18zM4 8.55l7 3.5v7.4l-7-3.5v-7.4zm9 10.9v-7.4l7-3.5v7.4l-7 3.5z"/>
+		</svg>
+	),
+	TradingView: (
+		<svg viewBox="0 0 24 24" fill="currentColor">
+			<path d="M4.5 3L2 12l2.5 9h15L22 12l-2.5-9h-15zM7 7h2l3 5 3-5h2l-4 6v4h-2v-4L7 7z"/>
+		</svg>
+	),
+	Tradovate: (
+		<svg viewBox="0 0 24 24" fill="currentColor">
+			<path d="M3 3h18v18H3V3zm2 2v14h14V5H5zm2 2h10v2H7V7zm0 4h10v2H7v-2zm0 4h6v2H7v-2z"/>
+		</svg>
+	),
+	Rithmic: (
+		<svg viewBox="0 0 24 24" fill="currentColor">
+			<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+		</svg>
+	),
+	"Sierra Chart": (
+		<svg viewBox="0 0 24 24" fill="currentColor">
+			<path d="M3 13h2v8H3v-8zm4-6h2v14H7V7zm4-4h2v18h-2V3zm4 8h2v10h-2V11zm4-4h2v14h-2V7z"/>
+		</svg>
+	),
+};
 
 // ============================================
 // MINI CHART COMPONENT
@@ -256,7 +469,14 @@ function FAQ() {
 	return (
 		<div className="space-y-0">
 			{faqs.map((faq, index) => (
-				<div key={index} className="faq-item">
+				<motion.div 
+					key={index} 
+					className="faq-item"
+					initial={{ opacity: 0, y: 10 }}
+					whileInView={{ opacity: 1, y: 0 }}
+					viewport={{ once: true }}
+					transition={{ delay: index * 0.1 }}
+				>
 					<button
 						onClick={() => setOpenIndex(openIndex === index ? null : index)}
 						className="w-full py-5 px-1 flex items-start justify-between text-left gap-4"
@@ -284,7 +504,7 @@ function FAQ() {
 							</motion.div>
 						)}
 					</AnimatePresence>
-				</div>
+				</motion.div>
 			))}
 		</div>
 	);
@@ -308,11 +528,95 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
 }
 
 // ============================================
+// ANIMATED EQUITY CHART
+// ============================================
+function AnimatedEquityChart({ data, inView }: { data: typeof strategyRuns extends (infer U)[] ? U : never[]; inView: boolean }) {
+	const equityPaths = useMemo(() => generateEquityPaths(), []);
+	const controls = useAnimation();
+
+	useEffect(() => {
+		if (inView) {
+			controls.start({ opacity: 1, pathLength: 1 });
+		}
+	}, [inView, controls]);
+
+	return (
+		<div className="h-[300px] sm:h-[380px]">
+			<ResponsiveContainer width="100%" height="100%">
+				<LineChart data={equityPaths} margin={{ top: 20, right: 20, left: 10, bottom: 30 }}>
+					<defs>
+						<linearGradient id="greenGradient" x1="0" y1="0" x2="1" y2="0">
+							<stop offset="0%" stopColor="#22c55e" stopOpacity={1} />
+							<stop offset="100%" stopColor="#4ade80" stopOpacity={1} />
+						</linearGradient>
+						<linearGradient id="redGradient" x1="0" y1="0" x2="1" y2="0">
+							<stop offset="0%" stopColor="#ef4444" stopOpacity={1} />
+							<stop offset="100%" stopColor="#f87171" stopOpacity={1} />
+						</linearGradient>
+						<filter id="glow">
+							<feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+							<feMerge>
+								<feMergeNode in="coloredBlur"/>
+								<feMergeNode in="SourceGraphic"/>
+							</feMerge>
+						</filter>
+					</defs>
+					<CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+					<XAxis 
+						dataKey="day" 
+						axisLine={false}
+						tickLine={false}
+						tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
+						label={{ value: 'Trading Days', position: 'bottom', offset: 10, fill: 'var(--text-muted)', fontSize: 11 }}
+					/>
+					<YAxis 
+						axisLine={false}
+						tickLine={false}
+						tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
+						tickFormatter={(value: number) => `$${value.toLocaleString()}`}
+						domain={[-2500, 3500]}
+						width={60}
+					/>
+					<Tooltip content={<ChartTooltip />} />
+					<ReferenceLine y={3000} stroke="var(--positive)" strokeDasharray="4 4" strokeOpacity={0.6} label={{ value: '+$3K Target', fill: 'var(--positive)', fontSize: 10, position: 'right' }} />
+					<ReferenceLine y={-2000} stroke="var(--negative)" strokeDasharray="4 4" strokeOpacity={0.6} label={{ value: '-$2K Limit', fill: 'var(--negative)', fontSize: 10, position: 'right' }} />
+					<ReferenceLine y={0} stroke="var(--text-muted)" strokeOpacity={0.3} />
+					
+					{/* Passing paths with animation */}
+					<Line 
+						type="monotone" 
+						dataKey="pass1" 
+						stroke="url(#greenGradient)" 
+						strokeWidth={2.5} 
+						dot={false} 
+						name="Path A"
+						filter="url(#glow)"
+						strokeDasharray={inView ? "0" : "1000"}
+						style={{ 
+							strokeDashoffset: inView ? 0 : 1000,
+							transition: 'stroke-dashoffset 2s ease-out'
+						}}
+					/>
+					<Line type="monotone" dataKey="pass2" stroke="var(--positive)" strokeWidth={1.5} dot={false} opacity={0.5} name="Path B" />
+					<Line type="monotone" dataKey="pass3" stroke="var(--positive)" strokeWidth={1} dot={false} opacity={0.3} name="Path C" />
+					
+					{/* Failing paths */}
+					<Line type="monotone" dataKey="fail1" stroke="url(#redGradient)" strokeWidth={1.5} dot={false} opacity={0.6} name="Fail X" />
+					<Line type="monotone" dataKey="fail2" stroke="var(--negative)" strokeWidth={1} dot={false} opacity={0.3} name="Fail Y" />
+					
+					{/* Median path */}
+					<Line type="monotone" dataKey="median" stroke="var(--accent)" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Median" />
+				</LineChart>
+			</ResponsiveContainer>
+		</div>
+	);
+}
+
+// ============================================
 // MAIN PAGE COMPONENT
 // ============================================
 export default function Page() {
 	const [scrolled, setScrolled] = useState(false);
-	const equityPaths = useMemo(() => generateEquityPaths(), []);
 
 	useEffect(() => {
 		const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -336,10 +640,15 @@ export default function Page() {
 			<nav className={`fixed top-0 left-0 right-0 z-50 nav-fixed ${scrolled ? 'scrolled' : ''}`}>
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
 					<div className="flex items-center justify-between">
-						<div className="flex items-center gap-2">
+						<motion.div 
+							className="flex items-center gap-2"
+							initial={{ opacity: 0, x: -20 }}
+							animate={{ opacity: 1, x: 0 }}
+							transition={{ duration: 0.5 }}
+						>
 							<span className="text-[var(--accent)] text-2xl font-bold">α</span>
 							<span className="text-sm font-semibold tracking-tight hidden sm:inline">ALPHASOLVER</span>
-						</div>
+						</motion.div>
 						
 						<div className="hidden md:flex items-center gap-6 text-sm text-[var(--text-secondary)]">
 							<a href="#results" className="hover:text-[var(--text-primary)] transition-colors">Results</a>
@@ -354,15 +663,23 @@ export default function Page() {
 							</Link>
 							{BYPASS_ACCESS ? (
 								<Link href="/app">
-									<button className="btn-primary px-4 py-2 text-sm">
+									<motion.button 
+										className="btn-primary px-4 py-2 text-sm"
+										whileHover={{ scale: 1.05 }}
+										whileTap={{ scale: 0.98 }}
+									>
 										Launch App
-									</button>
+									</motion.button>
 								</Link>
 							) : (
 								<a href={WHOP_CHECKOUT_URL}>
-									<button className="btn-primary px-4 py-2 text-sm">
+									<motion.button 
+										className="btn-primary px-4 py-2 text-sm"
+										whileHover={{ scale: 1.05 }}
+										whileTap={{ scale: 0.98 }}
+									>
 										Start Free
-									</button>
+									</motion.button>
 								</a>
 							)}
 						</div>
@@ -402,39 +719,61 @@ export default function Page() {
 							</span>
 						</motion.div>
 
-						<motion.h1 variants={fadeUp} custom={1} className="text-4xl sm:text-5xl lg:text-6xl font-['Instrument_Serif',_serif] italic mb-4">
-							<span className="text-[var(--text-primary)]">Know your </span>
-							<span className="text-[var(--accent)]">true odds</span>
+						{/* Eye-catching headline */}
+						<motion.h1 
+							variants={fadeUp} 
+							custom={1} 
+							className="text-4xl sm:text-5xl lg:text-6xl mb-4"
+						>
+							<span className="font-['Space_Grotesk',_sans-serif] font-bold text-[var(--text-primary)]">Know your </span>
+							<span className="font-['Space_Grotesk',_sans-serif] font-bold headline-gradient glow-text">true odds</span>
 						</motion.h1>
 						
-						<motion.p variants={fadeUp} custom={2} className="text-[var(--text-secondary)] text-base sm:text-lg max-w-2xl mx-auto mb-6">
-							Monte Carlo simulation engine for prop traders. Upload your trade log, run 10,000 simulations, see your real probability of passing—<span className="text-[var(--text-primary)]">before you pay.</span>
+						{/* Updated messaging for all trader levels */}
+						<motion.p variants={fadeUp} custom={2} className="text-[var(--text-secondary)] text-base sm:text-lg max-w-2xl mx-auto mb-4">
+							Whether you're taking your first prop challenge or optimizing your hundredth strategy—get the same Monte Carlo edge that professional quant funds use.
+						</motion.p>
+						
+						<motion.p variants={fadeUp} custom={2.5} className="text-[var(--text-muted)] text-sm max-w-xl mx-auto mb-6">
+							Upload your trade log • Run 10,000 simulations • See your real probability of passing—<span className="text-[var(--text-primary)]">before you pay.</span>
 						</motion.p>
 
 						<motion.div variants={fadeUp} custom={3} className="flex flex-wrap justify-center gap-3">
 							{BYPASS_ACCESS ? (
 								<Link href="/app">
-									<button className="btn-primary px-6 py-3 text-sm font-semibold flex items-center gap-2">
+									<motion.button 
+										className="btn-primary px-6 py-3 text-sm font-semibold flex items-center gap-2"
+										whileHover={{ scale: 1.05 }}
+										whileTap={{ scale: 0.98 }}
+									>
 										Launch App
 										<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
 										</svg>
-									</button>
+									</motion.button>
 								</Link>
 							) : (
 								<a href={WHOP_CHECKOUT_URL}>
-									<button className="btn-primary px-6 py-3 text-sm font-semibold flex items-center gap-2">
+									<motion.button 
+										className="btn-primary px-6 py-3 text-sm font-semibold flex items-center gap-2"
+										whileHover={{ scale: 1.05 }}
+										whileTap={{ scale: 0.98 }}
+									>
 										Start Free Today
 										<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
 										</svg>
-									</button>
+									</motion.button>
 								</a>
 							)}
 							<Link href="/app">
-								<button className="btn-secondary px-6 py-3 text-sm">
+								<motion.button 
+									className="btn-secondary px-6 py-3 text-sm"
+									whileHover={{ scale: 1.02 }}
+									whileTap={{ scale: 0.98 }}
+								>
 									I Have Access
-								</button>
+								</motion.button>
 							</Link>
 						</motion.div>
 					</motion.div>
@@ -448,39 +787,47 @@ export default function Page() {
 						id="results"
 						className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6"
 					>
-						<motion.div variants={fadeUp} custom={0}>
+						<motion.div variants={scaleUp}>
 							<MetricCard 
 								label="Pass Rate" 
-								value="76.9%" 
+								value="76.9%"
+								numericValue={76.9}
 								change="Based on 10,000 simulations"
 								positive
 								large
+								delay={0}
 							/>
 						</motion.div>
-						<motion.div variants={fadeUp} custom={1}>
+						<motion.div variants={scaleUp}>
 							<MetricCard 
 								label="Expected Value" 
-								value="+$2,431" 
+								value="+$2,431"
+								numericValue={2431}
 								change="Net profit per attempt"
 								positive
 								large
+								delay={1}
 							/>
 						</motion.div>
-						<motion.div variants={fadeUp} custom={2}>
+						<motion.div variants={scaleUp}>
 							<MetricCard 
 								label="Avg Attempts" 
-								value="1.3" 
+								value="1.3"
+								numericValue={1.3}
 								change="To pass evaluation"
 								large
+								delay={2}
 							/>
 						</motion.div>
-						<motion.div variants={fadeUp} custom={3}>
+						<motion.div variants={scaleUp}>
 							<MetricCard 
 								label="+EV ROI" 
-								value="+541%" 
+								value="+541%"
+								numericValue={541}
 								change="Return on eval cost"
 								positive
 								large
+								delay={3}
 							/>
 						</motion.div>
 					</motion.div>
@@ -490,7 +837,7 @@ export default function Page() {
 						initial="hidden"
 						animate={metricsInView ? "visible" : "hidden"}
 						variants={staggerContainer}
-						className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-8"
+						className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-6"
 					>
 						{[
 							{ label: "Profit Target", value: "$3,000" },
@@ -504,6 +851,7 @@ export default function Page() {
 								key={i} 
 								variants={fadeUp} 
 								custom={i + 4}
+								whileHover={{ scale: 1.02, y: -2 }}
 								className="dash-card p-3 text-center"
 							>
 								<div className="text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)] mb-1">
@@ -515,18 +863,21 @@ export default function Page() {
 							</motion.div>
 						))}
 					</motion.div>
+
+					{/* Simulation Preview */}
+					<div className="mb-6">
+						<SimulationPreview />
+					</div>
 				</div>
 
-				{/* Platform integrations */}
+				{/* Platform integrations - Enhanced with icons */}
 				<div className="border-y border-[var(--border)] bg-[var(--bg-secondary)]">
-					<div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+					<div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
 						<div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-							<span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">Import from</span>
+							<span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">Import from your platform</span>
 							<div className="flex flex-wrap items-center justify-center gap-2">
-								{["NinjaTrader", "TradingView", "Tradovate", "Rithmic", "Sierra Chart"].map((platform, i) => (
-									<div key={i} className="platform-logo">
-										{platform}
-									</div>
+								{Object.entries(platformIcons).map(([name, icon], i) => (
+									<PlatformLogo key={i} name={name} icon={icon} />
 								))}
 							</div>
 						</div>
@@ -534,73 +885,41 @@ export default function Page() {
 				</div>
 			</section>
 
-			{/* Equity Paths Section */}
-			<section ref={equityRef} id="equity" className="relative z-10 py-8 px-4 sm:px-6">
+			{/* Equity Paths Section - Enhanced */}
+			<section ref={equityRef} id="equity" className="relative z-10 py-10 px-4 sm:px-6">
 				<div className="max-w-7xl mx-auto">
 					<motion.div
 						initial="hidden"
 						animate={equityInView ? "visible" : "hidden"}
 						variants={staggerContainer}
 					>
-						<motion.div variants={fadeUp} custom={0} className="flex items-center justify-between mb-4">
+						<motion.div variants={fadeUp} custom={0} className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
 							<div>
-								<h2 className="text-xl font-semibold mb-1">Equity Paths Visualization</h2>
-								<p className="text-sm text-[var(--text-muted)]">10,000 simulated equity curves • TOPSTEP 50K</p>
+								<h2 className="text-xl sm:text-2xl font-semibold mb-1">Equity Paths Visualization</h2>
+								<p className="text-sm text-[var(--text-muted)]">10,000 simulated equity curves • TOPSTEP 50K Challenge</p>
 							</div>
-							<div className="hidden sm:flex items-center gap-4 text-xs">
+							<div className="flex items-center gap-4 text-xs">
 								<span className="flex items-center gap-2">
-									<span className="w-3 h-0.5 bg-[var(--positive)]" />
+									<span className="w-4 h-1 rounded bg-[var(--positive)]" />
 									<span className="text-[var(--text-muted)]">Pass (76.9%)</span>
 								</span>
 								<span className="flex items-center gap-2">
-									<span className="w-3 h-0.5 bg-[var(--negative)]" />
+									<span className="w-4 h-1 rounded bg-[var(--negative)]" />
 									<span className="text-[var(--text-muted)]">Fail (23.1%)</span>
+								</span>
+								<span className="flex items-center gap-2">
+									<span className="w-4 h-0.5 rounded bg-[var(--accent)]" style={{ borderBottom: '2px dashed var(--accent)' }} />
+									<span className="text-[var(--text-muted)]">Median</span>
 								</span>
 							</div>
 						</motion.div>
 
-						<motion.div variants={fadeUp} custom={1} className="chart-container p-4">
-							<div className="h-[300px] sm:h-[400px]">
-								<ResponsiveContainer width="100%" height="100%">
-									<LineChart data={equityPaths} margin={{ top: 20, right: 30, left: 0, bottom: 10 }}>
-										<CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-										<XAxis 
-											dataKey="day" 
-											axisLine={false}
-											tickLine={false}
-											tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
-											label={{ value: 'Trading Days', position: 'bottom', fill: 'var(--text-muted)', fontSize: 11 }}
-										/>
-										<YAxis 
-											axisLine={false}
-											tickLine={false}
-											tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
-											tickFormatter={(value: number) => `$${value.toLocaleString()}`}
-											domain={[-2500, 3500]}
-										/>
-										<Tooltip content={<ChartTooltip />} />
-										<ReferenceLine y={3000} stroke="var(--positive)" strokeDasharray="4 4" strokeOpacity={0.5} />
-										<ReferenceLine y={-2000} stroke="var(--negative)" strokeDasharray="4 4" strokeOpacity={0.5} />
-										<ReferenceLine y={0} stroke="var(--text-muted)" strokeOpacity={0.3} />
-										
-										{/* Passing paths */}
-										<Line type="monotone" dataKey="pass1" stroke="var(--positive)" strokeWidth={2} dot={false} name="Path A" />
-										<Line type="monotone" dataKey="pass2" stroke="var(--positive)" strokeWidth={1.5} dot={false} opacity={0.6} name="Path B" />
-										<Line type="monotone" dataKey="pass3" stroke="var(--positive)" strokeWidth={1} dot={false} opacity={0.4} name="Path C" />
-										
-										{/* Failing paths */}
-										<Line type="monotone" dataKey="fail1" stroke="var(--negative)" strokeWidth={1.5} dot={false} opacity={0.7} name="Fail X" />
-										<Line type="monotone" dataKey="fail2" stroke="var(--negative)" strokeWidth={1} dot={false} opacity={0.4} name="Fail Y" />
-										
-										{/* Median path */}
-										<Line type="monotone" dataKey="median" stroke="var(--accent)" strokeWidth={2} strokeDasharray="5 5" dot={false} name="Median" />
-									</LineChart>
-								</ResponsiveContainer>
-							</div>
+						<motion.div variants={fadeUp} custom={1} className="chart-container p-4 sm:p-6">
+							<AnimatedEquityChart data={strategyRuns} inView={equityInView} />
 							<div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--border)] text-xs text-[var(--text-muted)]">
-								<span>+$3,000 Profit Target</span>
-								<span className="text-[var(--accent)]">Median path shown as dashed line</span>
-								<span>-$2,000 Max Drawdown</span>
+								<span className="text-[var(--positive)]">+$3,000 Profit Target</span>
+								<span className="text-[var(--accent)]">Hover over paths for details</span>
+								<span className="text-[var(--negative)]">-$2,000 Max Drawdown</span>
 							</div>
 						</motion.div>
 					</motion.div>
@@ -647,8 +966,9 @@ export default function Page() {
 												borderRadius: '8px',
 												fontSize: '12px'
 											}}
+											cursor={{ fill: 'var(--bg-card-hover)' }}
 										/>
-										<Bar dataKey="count" radius={[2, 2, 0, 0]}>
+										<Bar dataKey="count" radius={[3, 3, 0, 0]}>
 											{pnlDistribution.map((entry, index) => (
 												<Cell key={index} fill={entry.color} />
 											))}
@@ -681,18 +1001,19 @@ export default function Page() {
 											axisLine={false}
 											tickLine={false}
 											tick={{ fill: 'var(--text-muted)', fontSize: 10 }}
-											tickFormatter={(value) => `${value}%`}
+											tickFormatter={(value: number) => `${value}%`}
 										/>
-								<Tooltip 
-									contentStyle={{ 
-										background: 'var(--bg-elevated)', 
-										border: '1px solid var(--border)',
-										borderRadius: '8px',
-										fontSize: '12px'
-									}}
-									formatter={(value: string | number) => [`${value}%`, 'Frequency']}
+										<Tooltip 
+											contentStyle={{ 
+												background: 'var(--bg-elevated)', 
+												border: '1px solid var(--border)',
+												borderRadius: '8px',
+												fontSize: '12px'
+											}}
+											formatter={(value: string | number) => [`${value}%`, 'Frequency']}
+											cursor={{ fill: 'var(--bg-card-hover)' }}
 										/>
-										<Bar dataKey="frequency" fill="var(--accent)" radius={[2, 2, 0, 0]} />
+										<Bar dataKey="frequency" fill="var(--accent)" radius={[3, 3, 0, 0]} />
 									</BarChart>
 								</ResponsiveContainer>
 							</div>
@@ -701,7 +1022,7 @@ export default function Page() {
 				</div>
 			</section>
 
-			{/* Scenario Outcomes Table */}
+			{/* Strategy Runs Table - Updated from Scenario Outcomes */}
 			<section ref={scenarioRef} className="relative z-10 py-8 px-4 sm:px-6">
 				<div className="max-w-7xl mx-auto">
 					<motion.div
@@ -710,8 +1031,8 @@ export default function Page() {
 						variants={staggerContainer}
 					>
 						<motion.div variants={fadeUp} custom={0} className="mb-4">
-							<h2 className="text-xl font-semibold mb-1">Most Probable Outcomes</h2>
-							<p className="text-sm text-[var(--text-muted)]">Clustered scenarios from Monte Carlo analysis</p>
+							<h2 className="text-xl font-semibold mb-1">Strategy Comparison</h2>
+							<p className="text-sm text-[var(--text-muted)]">Test multiple strategies to find your optimal approach</p>
 						</motion.div>
 
 						<motion.div variants={fadeUp} custom={1} className="chart-container overflow-hidden">
@@ -719,20 +1040,31 @@ export default function Page() {
 								<table className="data-table">
 									<thead>
 										<tr>
-											<th>Probability</th>
-											<th>Days to Complete</th>
-											<th>Max Drawdown</th>
+											<th>Strategy Run</th>
+											<th>Approach</th>
+											<th>Pass Rate</th>
+											<th>Days</th>
+											<th>Max DD</th>
 											<th>Net P&L</th>
-											<th>Outcome</th>
+											<th>Result</th>
 										</tr>
 									</thead>
 									<tbody>
-										{scenarioOutcomes.map((row, i) => (
-											<tr key={i}>
+										{strategyRuns.map((row, i) => (
+											<motion.tr 
+												key={i}
+												initial={{ opacity: 0, x: -10 }}
+												animate={scenarioInView ? { opacity: 1, x: 0 } : {}}
+												transition={{ delay: i * 0.1 }}
+											>
+												<td>
+													<span className="badge badge-run">{row.run}</span>
+												</td>
+												<td className="text-[var(--text-secondary)]">{row.strategy}</td>
 												<td className="font-semibold">{row.probability}</td>
 												<td>{row.days}</td>
 												<td className="text-[var(--negative)]">{row.maxDD}</td>
-												<td className={row.highlight ? 'text-[var(--positive)] font-semibold' : 'text-[var(--negative)]'}>
+												<td className={row.highlight ? 'text-[var(--positive)] font-semibold green-pulse' : 'text-[var(--negative)]'}>
 													{row.netPnL}
 												</td>
 												<td>
@@ -740,7 +1072,7 @@ export default function Page() {
 														{row.outcome}
 													</span>
 												</td>
-											</tr>
+											</motion.tr>
 										))}
 									</tbody>
 								</table>
@@ -764,37 +1096,30 @@ export default function Page() {
 						</motion.div>
 
 						<motion.div variants={fadeUp} custom={1} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-							<div className="metric-card metric-positive p-5">
-								<div className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)] mb-2">
-									Daily Profit Target
-								</div>
-								<div className="text-3xl font-semibold text-[var(--positive)] mb-1">+$187</div>
-								<p className="text-xs text-[var(--text-muted)]">Reach $3K in ~16 trading days</p>
-							</div>
-							
-							<div className="metric-card p-5">
-								<div className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)] mb-2">
-									Daily Stop Loss
-								</div>
-								<div className="text-3xl font-semibold text-[var(--negative)] mb-1">-$125</div>
-								<p className="text-xs text-[var(--text-muted)]">Protect against bust scenarios</p>
-							</div>
-							
-							<div className="metric-card p-5">
-								<div className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)] mb-2">
-									Win Rate Needed
-								</div>
-								<div className="text-3xl font-semibold text-[var(--accent)] mb-1">52.4%</div>
-								<p className="text-xs text-[var(--text-muted)]">You have 58.4% (surplus)</p>
-							</div>
-							
-							<div className="metric-card p-5">
-								<div className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)] mb-2">
-									Expected Days to Pass
-								</div>
-								<div className="text-3xl font-semibold text-[var(--text-primary)] mb-1">12</div>
-								<p className="text-xs text-[var(--text-muted)]">Median across simulations</p>
-							</div>
+							{[
+								{ label: "Daily Profit Target", value: "+$187", desc: "Reach $3K in ~16 trading days", positive: true },
+								{ label: "Daily Stop Loss", value: "-$125", desc: "Protect against bust scenarios", negative: true },
+								{ label: "Win Rate Needed", value: "52.4%", desc: "You have 58.4% (surplus)", accent: true },
+								{ label: "Expected Days to Pass", value: "12", desc: "Median across simulations", neutral: true },
+							].map((item, i) => (
+								<motion.div 
+									key={i}
+									whileHover={{ scale: 1.02, y: -4 }}
+									className={`metric-card p-5 ${item.positive ? 'metric-positive' : ''}`}
+								>
+									<div className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)] mb-2">
+										{item.label}
+									</div>
+									<div className={`text-3xl font-semibold mb-1 ${
+										item.positive ? 'text-[var(--positive)] green-pulse' : 
+										item.negative ? 'text-[var(--negative)]' : 
+										item.accent ? 'text-[var(--accent)]' : 'text-[var(--text-primary)]'
+									}`}>
+										{item.value}
+									</div>
+									<p className="text-xs text-[var(--text-muted)]">{item.desc}</p>
+								</motion.div>
+							))}
 						</motion.div>
 
 						{/* Mini equity preview */}
@@ -804,7 +1129,11 @@ export default function Page() {
 								{ label: "Risk per Trade", value: "$41", sub: "1R = 0.33% of drawdown" },
 								{ label: "R:R Ratio", value: "1.5:1", sub: "Matches your avg win/loss" },
 							].map((item, i) => (
-								<div key={i} className="dash-card p-4 flex items-center justify-between">
+								<motion.div 
+									key={i} 
+									className="dash-card p-4 flex items-center justify-between"
+									whileHover={{ scale: 1.01, y: -2 }}
+								>
 									<div>
 										<div className="text-xs text-[var(--text-muted)] mb-1">{item.label}</div>
 										<div className="text-lg font-semibold">{item.value}</div>
@@ -813,7 +1142,7 @@ export default function Page() {
 									<div className="w-20">
 										<MiniEquityChart />
 									</div>
-								</div>
+								</motion.div>
 							))}
 						</motion.div>
 					</motion.div>
@@ -829,7 +1158,7 @@ export default function Page() {
 						variants={staggerContainer}
 					>
 						<motion.div variants={fadeUp} custom={0} className="text-center mb-8">
-							<h2 className="text-2xl sm:text-3xl font-['Instrument_Serif',_serif] italic mb-2">
+							<h2 className="text-2xl sm:text-3xl font-['Space_Grotesk',_sans-serif] font-bold mb-2">
 								Why Quant-Level Simulation?
 							</h2>
 							<p className="text-sm text-[var(--text-muted)] max-w-xl mx-auto">
@@ -899,6 +1228,7 @@ export default function Page() {
 									key={i} 
 									variants={fadeUp} 
 									custom={i + 1}
+									whileHover={{ scale: 1.02, y: -4 }}
 									className="dash-card p-5"
 								>
 									<div className="w-10 h-10 rounded-lg bg-[var(--accent-dim)] flex items-center justify-center text-[var(--accent)] mb-3">
@@ -914,15 +1244,23 @@ export default function Page() {
 						<motion.div variants={fadeUp} custom={7} className="text-center mt-8">
 							{BYPASS_ACCESS ? (
 								<Link href="/app">
-									<button className="btn-primary px-8 py-3 text-sm font-semibold">
+									<motion.button 
+										className="btn-primary px-8 py-3 text-sm font-semibold"
+										whileHover={{ scale: 1.05 }}
+										whileTap={{ scale: 0.98 }}
+									>
 										Launch Simulator
-									</button>
+									</motion.button>
 								</Link>
 							) : (
 								<a href={WHOP_CHECKOUT_URL}>
-									<button className="btn-primary px-8 py-3 text-sm font-semibold">
+									<motion.button 
+										className="btn-primary px-8 py-3 text-sm font-semibold"
+										whileHover={{ scale: 1.05 }}
+										whileTap={{ scale: 0.98 }}
+									>
 										Start Free Today
-									</button>
+									</motion.button>
 								</a>
 							)}
 						</motion.div>
@@ -940,11 +1278,19 @@ export default function Page() {
 							{ num: "02", title: "Select Prop Firm", desc: "Topstep, Take Profit Trader, Apex, Tradeify, or custom rules. We know every target, drawdown, and fee." },
 							{ num: "03", title: "Get Your Odds", desc: "Pass probability, expected value, cost analysis, and a personalized trading plan in seconds." },
 						].map((step, i) => (
-							<div key={i} className="dash-card p-5">
-								<div className="text-3xl font-['Instrument_Serif',_serif] text-[var(--accent)] mb-3">{step.num}</div>
+							<motion.div 
+								key={i} 
+								className="dash-card p-5"
+								initial={{ opacity: 0, y: 20 }}
+								whileInView={{ opacity: 1, y: 0 }}
+								viewport={{ once: true }}
+								transition={{ delay: i * 0.15 }}
+								whileHover={{ scale: 1.02, y: -2 }}
+							>
+								<div className="text-3xl font-['Space_Grotesk',_sans-serif] font-bold text-[var(--accent)] mb-3">{step.num}</div>
 								<h3 className="font-semibold mb-2">{step.title}</h3>
 								<p className="text-sm text-[var(--text-secondary)] leading-relaxed">{step.desc}</p>
-							</div>
+							</motion.div>
 						))}
 					</div>
 				</div>
@@ -959,13 +1305,18 @@ export default function Page() {
 						variants={staggerContainer}
 					>
 						<motion.div variants={fadeUp} custom={0} className="text-center mb-8">
-							<h2 className="text-2xl sm:text-3xl font-['Instrument_Serif',_serif] italic mb-2">Simple Pricing</h2>
+							<h2 className="text-2xl sm:text-3xl font-['Space_Grotesk',_sans-serif] font-bold mb-2">Simple Pricing</h2>
 							<p className="text-sm text-[var(--text-muted)]">Start free. Upgrade when you need unlimited simulations.</p>
 						</motion.div>
 
 						<div className="grid sm:grid-cols-2 gap-4">
 							{/* Free */}
-							<motion.div variants={fadeUp} custom={1} className="pricing-card p-6">
+							<motion.div 
+								variants={fadeUp} 
+								custom={1} 
+								className="pricing-card p-6"
+								whileHover={{ scale: 1.02, y: -4 }}
+							>
 								<div className="mb-6">
 									<p className="text-sm text-[var(--text-muted)] mb-1">FREE</p>
 									<div className="flex items-baseline gap-1">
@@ -992,14 +1343,23 @@ export default function Page() {
 								</div>
 								
 								<a href={WHOP_CHECKOUT_URL} className="block">
-									<button className="btn-secondary w-full py-3 text-sm">
+									<motion.button 
+										className="btn-secondary w-full py-3 text-sm"
+										whileHover={{ scale: 1.02 }}
+										whileTap={{ scale: 0.98 }}
+									>
 										Get Started Free
-									</button>
+									</motion.button>
 								</a>
 							</motion.div>
 
 							{/* Unlimited */}
-							<motion.div variants={fadeUp} custom={2} className="pricing-card pricing-featured p-6 relative">
+							<motion.div 
+								variants={fadeUp} 
+								custom={2} 
+								className="pricing-card pricing-featured p-6 relative"
+								whileHover={{ scale: 1.02, y: -4 }}
+							>
 								<div className="absolute -top-3 left-1/2 -translate-x-1/2">
 									<span className="badge badge-accent text-[10px] px-3 py-1">MOST POPULAR</span>
 								</div>
@@ -1028,9 +1388,13 @@ export default function Page() {
 								</div>
 								
 								<a href={WHOP_CHECKOUT_URL} className="block">
-									<button className="btn-primary w-full py-3 text-sm font-semibold">
+									<motion.button 
+										className="btn-primary w-full py-3 text-sm font-semibold"
+										whileHover={{ scale: 1.02 }}
+										whileTap={{ scale: 0.98 }}
+									>
 										Upgrade to Unlimited
-									</button>
+									</motion.button>
 								</a>
 							</motion.div>
 						</div>
@@ -1063,40 +1427,55 @@ export default function Page() {
 			{/* Final CTA */}
 			<section className="relative z-10 py-16 px-4 sm:px-6 cta-gradient border-t border-[var(--border)]">
 				<div className="max-w-2xl mx-auto text-center">
-					<h2 className="text-3xl sm:text-4xl font-['Instrument_Serif',_serif] italic mb-4">
-						Stop guessing.<br />
-						<span className="text-[var(--accent)]">Start knowing.</span>
-					</h2>
-					<p className="text-[var(--text-secondary)] mb-6 max-w-md mx-auto">
-						Your next prop firm attempt doesn't have to be a gamble. Run the numbers first.
-					</p>
-					<div className="flex flex-wrap gap-3 justify-center mb-6">
-						{BYPASS_ACCESS ? (
-							<Link href="/app">
-								<button className="btn-primary px-8 py-4 text-sm font-semibold flex items-center gap-2">
-									Launch App
-									<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-									</svg>
-								</button>
-							</Link>
-						) : (
-							<a href={WHOP_CHECKOUT_URL}>
-								<button className="btn-primary px-8 py-4 text-sm font-semibold flex items-center gap-2">
-									Start Free Today
-									<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-									</svg>
-								</button>
-							</a>
-						)}
-					</div>
-					<p className="text-xs text-[var(--text-muted)] flex items-center justify-center gap-2">
-						<svg className="w-4 h-4 text-[var(--positive)]" fill="currentColor" viewBox="0 0 20 20">
-							<path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-						</svg>
-						Your data stays in your browser. We never see your trades.
-					</p>
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						viewport={{ once: true }}
+						transition={{ duration: 0.6 }}
+					>
+						<h2 className="text-3xl sm:text-4xl font-['Space_Grotesk',_sans-serif] font-bold mb-4">
+							Stop guessing.<br />
+							<span className="headline-gradient">Start knowing.</span>
+						</h2>
+						<p className="text-[var(--text-secondary)] mb-6 max-w-md mx-auto">
+							Your next prop firm attempt doesn't have to be a gamble. Run the numbers first.
+						</p>
+						<div className="flex flex-wrap gap-3 justify-center mb-6">
+							{BYPASS_ACCESS ? (
+								<Link href="/app">
+									<motion.button 
+										className="btn-primary px-8 py-4 text-sm font-semibold flex items-center gap-2"
+										whileHover={{ scale: 1.05 }}
+										whileTap={{ scale: 0.98 }}
+									>
+										Launch App
+										<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+										</svg>
+									</motion.button>
+								</Link>
+							) : (
+								<a href={WHOP_CHECKOUT_URL}>
+									<motion.button 
+										className="btn-primary px-8 py-4 text-sm font-semibold flex items-center gap-2"
+										whileHover={{ scale: 1.05 }}
+										whileTap={{ scale: 0.98 }}
+									>
+										Start Free Today
+										<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+										</svg>
+									</motion.button>
+								</a>
+							)}
+						</div>
+						<p className="text-xs text-[var(--text-muted)] flex items-center justify-center gap-2">
+							<svg className="w-4 h-4 text-[var(--positive)]" fill="currentColor" viewBox="0 0 20 20">
+								<path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+							</svg>
+							Your data stays in your browser. We never see your trades.
+						</p>
+					</motion.div>
 				</div>
 			</section>
 
