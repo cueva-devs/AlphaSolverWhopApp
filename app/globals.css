@@ -1,3 +1,6 @@
+/* Google Fonts - Inter for body, Instrument Serif for headlines, Space Grotesk for display */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
 @layer theme, base, frosted_ui, components, utilities;
 
 @import "tailwindcss/theme.css" layer(theme);
@@ -7,9 +10,6 @@
 
 /* biome-ignore lint/suspicious/noUnknownAtRules: this rule is imported from whop */
 @config '../tailwind.config.ts';
-
-/* Google Fonts - Inter for body, Instrument Serif for headlines, Space Grotesk for display */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 :root {
 	/* Typography */

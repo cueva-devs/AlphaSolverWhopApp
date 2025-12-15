@@ -122,7 +122,7 @@ const cardHover = {
 	hover: { 
 		scale: 1.02, 
 		y: -4,
-		transition: { duration: 0.25, ease: "easeOut" }
+		transition: { duration: 0.25 }
 	}
 };
 
