@@ -480,7 +480,7 @@ function SimulationPreview() {
 }
 
 // ============================================
-// PLATFORM LOGO COMPONENT - Using Brandfetch CDN
+// PLATFORM LOGO COMPONENT - Using Brandfetch API
 // ============================================
 const tradingPlatforms = [
 	{ name: "NinjaTrader", domain: "ninjatrader.com" },
@@ -497,17 +497,38 @@ const propFirms = [
 ];
 
 function PlatformLogo({ name, domain }: { name: string; domain: string }) {
+	const [logoUrl, setLogoUrl] = useState<string | null>(null);
+	const [loading, setLoading] = useState(true);
 	const [imgError, setImgError] = useState(false);
-	
+
+	useEffect(() => {
+		fetch(`/api/brand-logo?domain=${domain}`)
+			.then(res => res.json())
+			.then(data => {
+				if (data.icon) {
+					setLogoUrl(data.icon);
+				} else {
+					setImgError(true);
+				}
+				setLoading(false);
+			})
+			.catch(() => {
+				setImgError(true);
+				setLoading(false);
+			});
+	}, [domain]);
+
 	return (
 		<motion.div 
 			className="platform-logo"
 			whileHover={{ scale: 1.05, y: -2 }}
 			whileTap={{ scale: 0.98 }}
 		>
-			{!imgError ? (
+			{loading ? (
+				<span className="w-4 h-4 bg-[var(--bg-tertiary)] rounded-sm animate-pulse" />
+			) : logoUrl && !imgError ? (
 				<img 
-					src={`https://cdn.brandfetch.io/${domain}/w/400/h/400?c=1id_OlBY6B4Dz-kpNXO`}
+					src={logoUrl}
 					alt={name}
 					className="w-4 h-4 object-contain rounded-sm"
 					onError={() => setImgError(true)}
