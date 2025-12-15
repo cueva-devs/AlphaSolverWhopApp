@@ -530,7 +530,7 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
 // ============================================
 // ANIMATED EQUITY CHART
 // ============================================
-function AnimatedEquityChart({ data, inView }: { data: typeof strategyRuns extends (infer U)[] ? U : never[]; inView: boolean }) {
+function AnimatedEquityChart({ inView }: { inView: boolean }) {
 	const equityPaths = useMemo(() => generateEquityPaths(), []);
 	const controls = useAnimation();
 
@@ -915,7 +915,7 @@ export default function Page() {
 						</motion.div>
 
 						<motion.div variants={fadeUp} custom={1} className="chart-container p-4 sm:p-6">
-							<AnimatedEquityChart data={strategyRuns} inView={equityInView} />
+							<AnimatedEquityChart inView={equityInView} />
 							<div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--border)] text-xs text-[var(--text-muted)]">
 								<span className="text-[var(--positive)]">+$3,000 Profit Target</span>
 								<span className="text-[var(--accent)]">Hover over paths for details</span>
