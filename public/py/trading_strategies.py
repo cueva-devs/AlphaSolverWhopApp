@@ -624,6 +624,20 @@ CSV_TEMPLATES = {
         "mfe_column": None,
         "parser": "tradovate"
     },
+    "MetaTrader 4 (MT4)": {
+        "description": "MetaTrader 4 Account History export (HTML saved as CSV or copy-paste)",
+        "pnl_column": "Profit",
+        "date_column": "Time",
+        "mfe_column": None,
+        "parser": "metatrader4"
+    },
+    "MetaTrader 5 (MT5)": {
+        "description": "MetaTrader 5 Account History export",
+        "pnl_column": "Profit",
+        "date_column": "Time",
+        "mfe_column": None,
+        "parser": "metatrader5"
+    },
     "Custom": {
         "description": "Specify your own column names",
         "pnl_column": "",
@@ -908,6 +922,178 @@ def parse_tradovate_csv(uploaded_file, no_trade_override: Optional[float] = None
                                         no_trade_override=no_trade_override)
 
 
+def parse_metatrader4_csv(uploaded_file, no_trade_override: Optional[float] = None) -> BootstrappedTradingStrategy:
+    """
+    Parse a MetaTrader 4 Account History export.
+    
+    MT4 exports trade history as HTML by default. Users typically:
+    1. Copy-paste from Account History tab to Excel/CSV
+    2. Save HTML report and convert to CSV
+    
+    Common MT4 columns:
+    - 'Order' / 'Ticket': Trade ticket number
+    - 'Time' / 'Open Time' / 'Close Time': Trade datetime
+    - 'Type': buy/sell/balance
+    - 'Size' / 'Volume' / 'Lots': Position size
+    - 'Symbol': Currency pair/instrument
+    - 'Price' / 'Open Price': Entry price
+    - 'S/L': Stop loss level
+    - 'T/P': Take profit level
+    - 'Close Price': Exit price
+    - 'Commission': Commission charged
+    - 'Swap': Overnight swap charges
+    - 'Profit': Realized P&L
+    """
+    df = pd.read_csv(uploaded_file)
+    
+    # Normalize column names (strip whitespace, handle variations)
+    df.columns = df.columns.str.strip()
+    
+    # Find profit column
+    profit_cols = ['Profit', 'profit', 'P/L', 'PnL', 'Net Profit']
+    pnl_col = None
+    for col in profit_cols:
+        if col in df.columns:
+            pnl_col = col
+            break
+    
+    if pnl_col is None:
+        # Try case-insensitive search
+        for col in df.columns:
+            if 'profit' in col.lower():
+                pnl_col = col
+                break
+    
+    if pnl_col is None:
+        raise ValueError(f"Could not find profit column. Found columns: {list(df.columns)}")
+    
+    # Find date column (prefer Close Time for closed trades)
+    date_cols = ['Close Time', 'Time', 'Open Time', 'Date', 'Close Date']
+    date_col = None
+    for col in date_cols:
+        if col in df.columns:
+            date_col = col
+            break
+    
+    if date_col is None:
+        for col in df.columns:
+            if 'time' in col.lower() or 'date' in col.lower():
+                date_col = col
+                break
+    
+    # Filter out balance operations and keep only trades
+    if 'Type' in df.columns:
+        # Keep only buy/sell trades, exclude balance/deposit/withdrawal
+        trade_types = ['buy', 'sell']
+        df = df[df['Type'].str.lower().isin(trade_types)].copy()
+    elif 'type' in df.columns:
+        trade_types = ['buy', 'sell']
+        df = df[df['type'].str.lower().isin(trade_types)].copy()
+    
+    if len(df) == 0:
+        raise ValueError("No trades found after filtering. Make sure your CSV contains buy/sell trades.")
+    
+    # Parse profit (handle currency format)
+    df['pnl'] = df[pnl_col].apply(parse_currency_value)
+    
+    # Parse date
+    if date_col:
+        # MT4 datetime format is typically: YYYY.MM.DD HH:MM or YYYY.MM.DD HH:MM:SS
+        df['date'] = pd.to_datetime(df[date_col], errors='coerce').dt.date
+    else:
+        df['date'] = pd.date_range(start='2024-01-01', periods=len(df), freq='D').date
+    
+    return BootstrappedTradingStrategy(df, pnl_column='pnl', date_column='date',
+                                        no_trade_override=no_trade_override)
+
+
+def parse_metatrader5_csv(uploaded_file, no_trade_override: Optional[float] = None) -> BootstrappedTradingStrategy:
+    """
+    Parse a MetaTrader 5 Account History export.
+    
+    MT5 can export to CSV/HTML/XML. Common columns:
+    - 'Time': Trade datetime (may have separate Open Time / Close Time)
+    - 'Deal': Deal ticket number
+    - 'Order': Order ticket number
+    - 'Symbol': Instrument
+    - 'Type': buy/sell/balance
+    - 'Direction': in/out
+    - 'Volume': Position size in lots
+    - 'Price': Execution price
+    - 'S/L': Stop loss
+    - 'T/P': Take profit
+    - 'Commission': Commission
+    - 'Swap': Swap charges
+    - 'Profit': Realized P&L
+    - 'Fee': Additional fees
+    - 'Comment': Trade comment
+    """
+    df = pd.read_csv(uploaded_file)
+    
+    # Normalize column names
+    df.columns = df.columns.str.strip()
+    
+    # Find profit column
+    profit_cols = ['Profit', 'profit', 'P/L', 'PnL', 'Net Profit']
+    pnl_col = None
+    for col in profit_cols:
+        if col in df.columns:
+            pnl_col = col
+            break
+    
+    if pnl_col is None:
+        for col in df.columns:
+            if 'profit' in col.lower():
+                pnl_col = col
+                break
+    
+    if pnl_col is None:
+        raise ValueError(f"Could not find profit column. Found columns: {list(df.columns)}")
+    
+    # Find date column
+    date_cols = ['Time', 'Close Time', 'Open Time', 'Date']
+    date_col = None
+    for col in date_cols:
+        if col in df.columns:
+            date_col = col
+            break
+    
+    if date_col is None:
+        for col in df.columns:
+            if 'time' in col.lower() or 'date' in col.lower():
+                date_col = col
+                break
+    
+    # Filter out non-trade entries
+    # MT5 may have 'Type' column with buy/sell or 'Direction' with in/out
+    if 'Type' in df.columns:
+        trade_types = ['buy', 'sell']
+        type_col = df['Type'].str.lower()
+        df = df[type_col.isin(trade_types)].copy()
+    elif 'type' in df.columns:
+        trade_types = ['buy', 'sell']
+        type_col = df['type'].str.lower()
+        df = df[type_col.isin(trade_types)].copy()
+    elif 'Direction' in df.columns:
+        # For deal-based exports, 'out' means closing a position (realized P&L)
+        df = df[df['Direction'].str.lower() == 'out'].copy()
+    
+    if len(df) == 0:
+        raise ValueError("No trades found after filtering. Make sure your CSV contains closed trades.")
+    
+    # Parse profit
+    df['pnl'] = df[pnl_col].apply(parse_currency_value)
+    
+    # Parse date (MT5 format: YYYY.MM.DD HH:MM:SS)
+    if date_col:
+        df['date'] = pd.to_datetime(df[date_col], errors='coerce').dt.date
+    else:
+        df['date'] = pd.date_range(start='2024-01-01', periods=len(df), freq='D').date
+    
+    return BootstrappedTradingStrategy(df, pnl_column='pnl', date_column='date',
+                                        no_trade_override=no_trade_override)
+
+
 def parse_trade_log_with_template(uploaded_file, template_name: str,
                                    custom_pnl_col: str = '',
                                    custom_date_col: str = '',
@@ -943,6 +1129,10 @@ def parse_trade_log_with_template(uploaded_file, template_name: str,
         return parse_rithmic_csv(uploaded_file, no_trade_override=no_trade_override)
     elif parser == "tradovate":
         return parse_tradovate_csv(uploaded_file, no_trade_override=no_trade_override)
+    elif parser == "metatrader4":
+        return parse_metatrader4_csv(uploaded_file, no_trade_override=no_trade_override)
+    elif parser == "metatrader5":
+        return parse_metatrader5_csv(uploaded_file, no_trade_override=no_trade_override)
     
     # For Custom template, use provided column names
     if template_name == "Custom":

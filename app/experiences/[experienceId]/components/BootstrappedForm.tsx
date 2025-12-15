@@ -226,7 +226,13 @@ export default function BootstrappedForm({
 					<Select.Trigger />
 					<Select.Content>
 						<Select.Item value="NinjaTrader">NinjaTrader</Select.Item>
-						<Select.Item value="Generic (Simple)">Generic</Select.Item>
+						<Select.Item value="TradingView (Strategy Tester)">TradingView (Strategy Tester)</Select.Item>
+						<Select.Item value="TradingView (Broker History)">TradingView (Broker History)</Select.Item>
+						<Select.Item value="Rithmic / R|Trader">Rithmic / R|Trader</Select.Item>
+						<Select.Item value="Tradovate">Tradovate</Select.Item>
+						<Select.Item value="MetaTrader 4 (MT4)">MetaTrader 4 (MT4)</Select.Item>
+						<Select.Item value="MetaTrader 5 (MT5)">MetaTrader 5 (MT5)</Select.Item>
+						<Select.Item value="Generic (Simple)">Generic (Simple)</Select.Item>
 						<Select.Item value="Custom">Custom</Select.Item>
 					</Select.Content>
 				</Select.Root>

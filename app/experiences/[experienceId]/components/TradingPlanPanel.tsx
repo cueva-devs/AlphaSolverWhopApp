@@ -391,7 +391,7 @@ export default function TradingPlanPanel({
 				<Card size="2" variant="surface">
 					<Heading size="5" as="h2" className="mb-2">Winning Scenario Clusters</Heading>
 					<Text size="2" color="gray" className="mb-4 block">
-						DBSCAN identified these distinct winning patterns in the simulation
+						Clustering algorithm identified these distinct winning patterns in the simulation
 					</Text>
 
 					<WinningClustersTable clusters={allWinningClusters} />

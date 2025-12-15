@@ -4,6 +4,8 @@ export type CsvFormat =
 	| "TradingView (Broker History)" 
 	| "Rithmic / R|Trader" 
 	| "Tradovate" 
+	| "MetaTrader 4 (MT4)"
+	| "MetaTrader 5 (MT5)"
 	| "Generic (Simple)" 
 	| "Custom";
 

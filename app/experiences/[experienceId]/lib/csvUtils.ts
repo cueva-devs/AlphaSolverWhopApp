@@ -74,6 +74,32 @@ export async function parseTradeCsv(
 		dateIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
 			"time",
 		]);
+	} else if (options.template === "MetaTrader 4 (MT4)") {
+		// MT4 Account History: "Time" / "Close Time", "Profit"
+		pnlIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
+			"profit",
+			"p/l",
+			"pnl",
+		]);
+		dateIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
+			"close time",
+			"time",
+			"open time",
+			"date",
+		]);
+	} else if (options.template === "MetaTrader 5 (MT5)") {
+		// MT5 Account History: "Time", "Profit"
+		pnlIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
+			"profit",
+			"p/l",
+			"pnl",
+		]);
+		dateIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
+			"time",
+			"close time",
+			"open time",
+			"date",
+		]);
 	} else if (options.template === "Generic (Simple)") {
 		// Generic: flexible column names
 		pnlIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
