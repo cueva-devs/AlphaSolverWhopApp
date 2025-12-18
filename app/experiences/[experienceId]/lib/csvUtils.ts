@@ -39,23 +39,41 @@ export async function parseTradeCsv(
 		mfeIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
 			"mfe",
 		]);
-	} else if (options.template === "TradingView (Strategy Tester)") {
-		// TradingView Strategy Tester: "Date/Time", "Profit"
+	} else if (options.template === "TradingView") {
+		// TradingView Strategy Tester: "Date/Time", "Net P&L USD", "Run-up USD"
+		// Filter to only Exit rows to avoid double counting
+		
+		// Find required column indices
 		pnlIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
-			"profit",
+			"net p&l usd",
+			"net profit",
 		]);
 		dateIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
 			"date/time",
 			"datetime",
 		]);
-	} else if (options.template === "TradingView (Broker History)") {
-		// TradingView Broker History: "Close Time", "Profit"
-		pnlIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
-			"profit",
+		mfeIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
+			"run-up usd",
+			"run-up",
+			"mfe",
 		]);
-		dateIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
-			"close time",
+		
+		// Find Type column for filtering
+		const typeIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
+			"type",
 		]);
+		
+		if (typeIdx === -1) {
+			throw new Error("TradingView format requires 'Type' column for filtering");
+		}
+		
+		// Add filter function to options for this template
+		// Note: Since we can't easily modify the shared parsing loop structure to support
+		// row filtering based on column values without bigger changes,
+		// we'll handle this by returning false for non-exit rows in a pre-check
+		// or by modifying the loop below. 
+		// Actually, let's just make the loop check for "Exit" in the Type column if we are in TradingView mode.
+		
 	} else if (options.template === "Rithmic / R|Trader") {
 		// Rithmic: "Entry Time", "Profit"
 		pnlIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
@@ -70,54 +88,14 @@ export async function parseTradeCsv(
 			"p&l",
 			"pnl",
 			"profit",
-		]);
-		dateIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
-			"time",
-		]);
-	} else if (options.template === "MetaTrader 4 (MT4)") {
-		// MT4 Account History: "Time" / "Close Time", "Profit"
-		pnlIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
-			"profit",
 			"p/l",
-			"pnl",
-		]);
-		dateIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
-			"close time",
-			"time",
-			"open time",
-			"date",
-		]);
-	} else if (options.template === "MetaTrader 5 (MT5)") {
-		// MT5 Account History: "Time", "Profit"
-		pnlIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
-			"profit",
-			"p/l",
-			"pnl",
+			"net profit",
 		]);
 		dateIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
 			"time",
 			"close time",
 			"open time",
 			"date",
-		]);
-	} else if (options.template === "Generic (Simple)") {
-		// Generic: flexible column names
-		pnlIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
-			"pnl",
-			"profit",
-			"profit/loss",
-			"net",
-		]);
-		dateIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
-			"date",
-			"time",
-			"datetime",
-			"timestamp",
-		]);
-		mfeIdx = findColumnIndexCaseInsensitive(headers, headersLower, [
-			"mfe",
-			"max favorable excursion",
-			"max profit",
 		]);
 	} else {
 		// Custom template - use provided column names
@@ -152,8 +130,14 @@ export async function parseTradeCsv(
 	}
 	// MFE is optional - don't throw error if not found
 
-	// Parse data rows
+		// Parse data rows
 	const trades: ParsedTrade[] = [];
+	
+	// Find Type column index if needed for filtering (TradingView)
+	const typeIdx = options.template === "TradingView" 
+		? findColumnIndexCaseInsensitive(headers, headersLower, ["type"]) 
+		: -1;
+		
 	for (let i = 1; i < lines.length; i++) {
 		const values = parseCsvLine(lines[i]);
 
@@ -162,9 +146,18 @@ export async function parseTradeCsv(
 			pnlIdx,
 			dateIdx,
 			mfeIdx >= 0 ? mfeIdx : -1,
+			typeIdx >= 0 ? typeIdx : -1
 		);
 		if (values.length <= maxRequiredIdx) {
 			continue; // Skip incomplete rows
+		}
+
+		// For TradingView, filter to only "Exit" rows
+		if (options.template === "TradingView" && typeIdx !== -1) {
+			const typeVal = values[typeIdx]?.trim().toLowerCase() || "";
+			if (!typeVal.startsWith("exit")) {
+				continue; // Skip non-exit rows
+			}
 		}
 
 		const dateStr = values[dateIdx]?.trim() || "";

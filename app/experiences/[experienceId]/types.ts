@@ -1,12 +1,8 @@
 export type CsvFormat = 
 	| "NinjaTrader" 
-	| "TradingView (Strategy Tester)" 
-	| "TradingView (Broker History)" 
+	| "TradingView" 
 	| "Rithmic / R|Trader" 
 	| "Tradovate" 
-	| "MetaTrader 4 (MT4)"
-	| "MetaTrader 5 (MT5)"
-	| "Generic (Simple)" 
 	| "Custom";
 
 // Saved Run type for export/import

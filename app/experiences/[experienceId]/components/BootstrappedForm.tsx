@@ -26,7 +26,7 @@ export default function BootstrappedForm({
 	planConfig,
 }: BootstrappedFormProps) {
 	const [formData, setFormData] = useState<BootstrappedParams>({
-		template: "Generic (Simple)",
+		template: "NinjaTrader",
 		numPaths: Math.min(1000, planConfig.maxPaths),
 		numDays: Math.min(30, planConfig.maxDays),
 	});
@@ -226,13 +226,9 @@ export default function BootstrappedForm({
 					<Select.Trigger />
 					<Select.Content>
 						<Select.Item value="NinjaTrader">NinjaTrader</Select.Item>
-						<Select.Item value="TradingView (Strategy Tester)">TradingView (Strategy Tester)</Select.Item>
-						<Select.Item value="TradingView (Broker History)">TradingView (Broker History)</Select.Item>
+						<Select.Item value="TradingView">TradingView</Select.Item>
 						<Select.Item value="Rithmic / R|Trader">Rithmic / R|Trader</Select.Item>
 						<Select.Item value="Tradovate">Tradovate</Select.Item>
-						<Select.Item value="MetaTrader 4 (MT4)">MetaTrader 4 (MT4)</Select.Item>
-						<Select.Item value="MetaTrader 5 (MT5)">MetaTrader 5 (MT5)</Select.Item>
-						<Select.Item value="Generic (Simple)">Generic (Simple)</Select.Item>
 						<Select.Item value="Custom">Custom</Select.Item>
 					</Select.Content>
 				</Select.Root>
@@ -243,6 +239,19 @@ export default function BootstrappedForm({
 
 			{formData.template === "Custom" && (
 				<>
+					<div className="bg-gray-a2 p-3 rounded-md border border-gray-a4">
+						<Text size="2" className="mb-2 block">
+							Download the CSV template to ensure your data is formatted correctly.
+						</Text>
+						<a 
+							href="/sample_template.csv" 
+							download="alphasolver_template.csv"
+							className="inline-flex items-center justify-center px-4 py-2 bg-blue-6 text-white text-sm font-medium rounded-md hover:bg-blue-7 transition-colors w-full"
+						>
+							📥 Download CSV Template
+						</a>
+					</div>
+
 					<div>
 						<Text size="2" weight="medium" className="mb-2 block">
 							PNL Column Name

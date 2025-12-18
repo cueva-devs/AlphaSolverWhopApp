@@ -582,13 +582,6 @@ def parse_trade_log(uploaded_file, pnl_column: str = 'pnl',
 # ============================================================================
 
 CSV_TEMPLATES = {
-    "Generic (Simple)": {
-        "description": "Simple CSV with date, pnl, and optional mfe columns",
-        "pnl_column": "pnl",
-        "date_column": "date",
-        "mfe_column": "mfe",
-        "parser": None  # Uses default parser
-    },
     "NinjaTrader": {
         "description": "NinjaTrader Trade Performance export",
         "pnl_column": "Profit",
@@ -616,20 +609,6 @@ CSV_TEMPLATES = {
         "date_column": "Time",
         "mfe_column": None,
         "parser": "tradovate"
-    },
-    "MetaTrader 4 (MT4)": {
-        "description": "MetaTrader 4 Account History export (HTML saved as CSV or copy-paste)",
-        "pnl_column": "Profit",
-        "date_column": "Time",
-        "mfe_column": None,
-        "parser": "metatrader4"
-    },
-    "MetaTrader 5 (MT5)": {
-        "description": "MetaTrader 5 Account History export",
-        "pnl_column": "Profit",
-        "date_column": "Time",
-        "mfe_column": None,
-        "parser": "metatrader5"
     },
     "Custom": {
         "description": "Specify your own column names",

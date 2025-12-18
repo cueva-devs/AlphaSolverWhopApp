@@ -474,17 +474,11 @@ export const CSV_TEMPLATES = {
 		dateColumn: "Entry time",
 		mfeColumn: "MFE"
 	},
-	"TradingView (Strategy Tester)": {
+	"TradingView": {
 		description: "TradingView Strategy Tester export (List of Trades)",
-		pnlColumn: "Profit",
+		pnlColumn: "Net P&L USD",
 		dateColumn: "Date/Time",
-		mfeColumn: null
-	},
-	"TradingView (Broker History)": {
-		description: "TradingView Broker Account History export",
-		pnlColumn: "Profit",
-		dateColumn: "Close Time",
-		mfeColumn: null
+		mfeColumn: "Run-up USD"
 	},
 	"Rithmic / R|Trader": {
 		description: "Rithmic R|Trader trade export",
@@ -497,24 +491,6 @@ export const CSV_TEMPLATES = {
 		pnlColumn: "P&L",
 		dateColumn: "Time",
 		mfeColumn: null
-	},
-	"MetaTrader 4 (MT4)": {
-		description: "MetaTrader 4 Account History export",
-		pnlColumn: "Profit",
-		dateColumn: "Time",
-		mfeColumn: null
-	},
-	"MetaTrader 5 (MT5)": {
-		description: "MetaTrader 5 Account History export",
-		pnlColumn: "Profit",
-		dateColumn: "Time",
-		mfeColumn: null
-	},
-	"Generic (Simple)": {
-		description: "Simple CSV with date, pnl, and optional mfe columns",
-		pnlColumn: "pnl",
-		dateColumn: "date",
-		mfeColumn: "mfe"
 	},
 	"Custom": {
 		description: "Specify your own column names",
