@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Text, Callout } from "@whop/react/components";
+import { Button, Text, Callout, Select } from "@whop/react/components";
 import type {
 	BootstrappedParams,
 	ParsedTrade,
@@ -30,6 +30,8 @@ export default function StrategyPanel({
 	const [showAdvanced, setShowAdvanced] = useState(false);
 	// Default to 10000 runs, but cap at plan limit
 	const [numPaths, setNumPaths] = useState(Math.min(10000, planConfig.maxPaths));
+	// Confidence level for CI (90%, 95%, 99%)
+	const [confidenceLevel, setConfidenceLevel] = useState<number>(0.95);
 
 	const handleRunSimulation = () => {
 		if (parsedTrades && parsedTrades.length > 0) {
@@ -38,6 +40,7 @@ export default function StrategyPanel({
 					template: csvFormat,
 					numPaths,
 					numDays: Math.min(100, planConfig.maxDays),
+					confidenceLevel,
 				},
 				parsedTrades,
 			);
@@ -94,7 +97,26 @@ export default function StrategyPanel({
 					</Text>
 				</Button>
 				{showAdvanced && (
-					<div className="mt-2 p-3 bg-gray-a2 border border-gray-a5 rounded-md">
+					<div className="mt-2 p-3 bg-gray-a2 border border-gray-a5 rounded-md space-y-3">
+						<div>
+							<Text size="2" weight="medium" className="mb-2 block">
+								Confidence Interval
+							</Text>
+							<Select.Root
+								value={String(confidenceLevel)}
+								onValueChange={(val) => setConfidenceLevel(parseFloat(val))}
+							>
+								<Select.Trigger />
+								<Select.Content>
+									<Select.Item value="0.90">90% CI</Select.Item>
+									<Select.Item value="0.95">95% CI (default)</Select.Item>
+									<Select.Item value="0.99">99% CI</Select.Item>
+								</Select.Content>
+							</Select.Root>
+							<Text size="1" color="gray" className="mt-1 block">
+								Higher CI = wider range, more conservative estimate
+							</Text>
+						</div>
 						<Text size="1" color="gray">
 							Bootstrapped simulation uses your uploaded trade log to resample historical trades.
 							This provides more realistic results based on your actual trading performance.

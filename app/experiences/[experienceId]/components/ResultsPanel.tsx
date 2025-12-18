@@ -295,7 +295,7 @@ export default function ResultsPanel({
 									</Text>
 									{result.passRateCiLower !== undefined && result.passRateCiUpper !== undefined && (
 										<Text size="1" className="text-green-500 block mt-1">
-											↑ 95% CI: [{result.passRateCiLower.toFixed(1)}%, {result.passRateCiUpper.toFixed(1)}%]
+											↑ {result.confidenceLevel ? `${Math.round(result.confidenceLevel * 100)}%` : '95%'} CI: [{result.passRateCiLower.toFixed(1)}%, {result.passRateCiUpper.toFixed(1)}%]
 										</Text>
 									)}
 								</div>

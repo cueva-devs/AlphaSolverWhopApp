@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { Card, Heading, Text, Tabs, Callout, Badge, Button, Select } from "@whop/react/components";
-import type { TradingPlan, OptimalStrategy, ClusterInfo, BestPath } from "../types";
+import type { TradingPlan, OptimalStrategy, ClusterInfo, BestPath, GameType, PhaseTargets } from "../types";
 
 interface TradingPlanPanelProps {
 	tradingPlan: TradingPlan | null | undefined;
 	isRunning: boolean;
 	hasTradeLog: boolean;
 	hasRunSimulation: boolean;
+	gameType: GameType;
 }
 
 function formatCurrency(value: number): string {
@@ -50,7 +51,7 @@ function StrategyTab({ strategy }: { strategy: OptimalStrategy }) {
 					<strong> Probability:</strong> {formatPercent(clusterInfo?.probability || 0)} | 
 					<strong> Median Days:</strong> {Math.round(clusterInfo?.days_median || 0)} | 
 					<strong> Max DD:</strong> {formatCurrency(clusterInfo?.max_drawdown_median || 0)} |
-					<strong> Expected P&L:</strong> {formatCurrency(clusterInfo?.final_pnl_median || 0)}
+					<strong> Acct Profit:</strong> {formatCurrency(clusterInfo?.final_pnl_median || 0)}
 				</Callout.Text>
 			</Callout.Root>
 
@@ -90,8 +91,9 @@ function StrategyTab({ strategy }: { strategy: OptimalStrategy }) {
 					value={formatPercent(strategy.daily_win_rate_needed)}
 				/>
 				<MetricCard 
-					label="Expected Payout" 
+					label="Cluster Median P&L" 
 					value={formatCurrency(strategy.expected_pnl || 0)}
+					delta="Account profit (not payout)"
 				/>
 			</div>
 
@@ -106,6 +108,83 @@ function StrategyTab({ strategy }: { strategy: OptimalStrategy }) {
 					<Text size="2">Win rate: <strong>{formatPercent(strategy.daily_win_rate_needed)}</strong></Text>
 					<Text size="2">Cluster probability: <strong>{formatPercent(strategy.cluster_probability || 0)}</strong></Text>
 				</div>
+			</div>
+		</div>
+	);
+}
+
+function PhaseTargetsDisplay({ phaseTargets, gameType }: { phaseTargets: PhaseTargets | undefined; gameType: GameType }) {
+	if (!phaseTargets) return null;
+
+	const { eval: evalPhase, funded, payout, summary } = phaseTargets;
+
+	// Combine Only: Just show eval targets
+	if (gameType === "combine_only") {
+		return (
+			<div className="bg-blue-a2 border border-blue-a5 rounded-lg p-4 space-y-3">
+				<div className="flex items-center gap-2">
+					<Badge color="blue">Combine Only</Badge>
+					<Text size="2" weight="bold">Evaluation Phase Targets</Text>
+				</div>
+				<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+					<MetricCard label="Profit Target" value={formatCurrency(evalPhase.profit_target)} delta={`Reach ${formatCurrency(evalPhase.target_balance)}`} />
+					<MetricCard label="Max Loss Limit" value={formatCurrency(evalPhase.max_loss)} />
+					<MetricCard label="Daily Loss Limit" value={formatCurrency(evalPhase.daily_loss_limit)} />
+					<MetricCard label="Starting Balance" value={formatCurrency(evalPhase.initial_balance)} />
+				</div>
+				<Text size="1" color="gray">Goal: Pass the evaluation. No payout calculation in this mode.</Text>
+			</div>
+		);
+	}
+
+	// Funded Only: Just show funded targets
+	if (gameType === "funded_only") {
+		return (
+			<div className="bg-green-a2 border border-green-a5 rounded-lg p-4 space-y-3">
+				<div className="flex items-center gap-2">
+					<Badge color="green">Funded Only</Badge>
+					<Text size="2" weight="bold">Funded Phase Targets</Text>
+				</div>
+				<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+					<MetricCard label="Min Winning Days" value={`${funded.min_winning_days} days`} delta={`≥${formatCurrency(funded.winning_day_minimum)}/day`} />
+					<MetricCard label="Min Balance for Payout" value={formatCurrency(funded.min_balance_for_payout)} />
+					<MetricCard label="Profit Share" value={`${payout.profit_share_pct}%`} />
+					<MetricCard label="Max Loss Limit" value={formatCurrency(funded.max_loss)} />
+				</div>
+				<Text size="1" color="gray">{summary.payout_formula}</Text>
+			</div>
+		);
+	}
+
+	// Combine + Funded: Show both phases
+	return (
+		<div className="space-y-3">
+			{/* Phase 1: Evaluation */}
+			<div className="bg-blue-a2 border border-blue-a5 rounded-lg p-4 space-y-2">
+				<div className="flex items-center gap-2">
+					<Badge color="blue">Phase 1</Badge>
+					<Text size="2" weight="bold">Pass Evaluation</Text>
+				</div>
+				<div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+					<MetricCard label="Profit Target" value={formatCurrency(evalPhase.profit_target)} delta={`Reach ${formatCurrency(evalPhase.target_balance)}`} />
+					<MetricCard label="Max Loss" value={formatCurrency(evalPhase.max_loss)} />
+					<MetricCard label="Daily Loss Limit" value={formatCurrency(evalPhase.daily_loss_limit)} />
+				</div>
+			</div>
+
+			{/* Phase 2: Funded Payout */}
+			<div className="bg-green-a2 border border-green-a5 rounded-lg p-4 space-y-2">
+				<div className="flex items-center gap-2">
+					<Badge color="green">Phase 2</Badge>
+					<Text size="2" weight="bold">Reach Payout in Funded</Text>
+				</div>
+				<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+					<MetricCard label="Min Winning Days" value={`${funded.min_winning_days} days`} delta={`≥${formatCurrency(funded.winning_day_minimum)}/day`} />
+					<MetricCard label="Min Balance" value={formatCurrency(funded.min_balance_for_payout)} delta={`+${formatCurrency(funded.profit_needed_for_payout)} profit`} />
+					<MetricCard label="Profit Share" value={`${payout.profit_share_pct}%`} />
+					<MetricCard label="Min Payout" value={formatCurrency(payout.min_payout_at_threshold)} delta="At minimum balance" />
+				</div>
+				<Text size="1" color="gray">{summary.payout_formula}</Text>
 			</div>
 		</div>
 	);
@@ -160,7 +239,7 @@ function WinningClustersTable({ clusters }: { clusters: ClusterInfo[] }) {
 							<th className="text-left py-2 px-3 whitespace-nowrap">Probability</th>
 							<th className="text-left py-2 px-3 whitespace-nowrap">Median Days</th>
 							<th className="text-left py-2 px-3 whitespace-nowrap">Max Drawdown</th>
-							<th className="text-left py-2 px-3 whitespace-nowrap">Expected P&L</th>
+							<th className="text-left py-2 px-3 whitespace-nowrap">Acct Profit</th>
 							<th className="text-left py-2 px-3">Description</th>
 						</tr>
 					</thead>
@@ -246,7 +325,8 @@ export default function TradingPlanPanel({
 	tradingPlan, 
 	isRunning, 
 	hasTradeLog,
-	hasRunSimulation 
+	hasRunSimulation,
+	gameType
 }: TradingPlanPanelProps) {
 	// Show loading state
 	if (isRunning) {
@@ -299,7 +379,8 @@ export default function TradingPlanPanel({
 		optimalStrategies,
 		allWinningClusters,
 		bestPath,
-		simulatedEv
+		simulatedEv,
+		phaseTargets
 	} = tradingPlan;
 
 	// Strategy order
@@ -313,6 +394,18 @@ export default function TradingPlanPanel({
 
 	return (
 		<div className="space-y-6">
+			{/* Phase-Specific Targets */}
+			{phaseTargets && (
+				<Card size="2" variant="surface">
+					<Heading size="5" as="h2" className="mb-4">
+						{gameType === "combine_only" ? "Evaluation Targets" : 
+						 gameType === "funded_only" ? "Funded Targets" : 
+						 "Phase Targets (Combine + Funded)"}
+					</Heading>
+					<PhaseTargetsDisplay phaseTargets={phaseTargets} gameType={gameType} />
+				</Card>
+			)}
+
 			{/* Simulation Results Summary */}
 			<Card size="2" variant="surface">
 				<Heading size="5" as="h2" className="mb-4">Simulation Results</Heading>

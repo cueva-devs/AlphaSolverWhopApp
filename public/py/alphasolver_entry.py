@@ -122,6 +122,10 @@ def run_simulation(mode: str, params_json: str, trades_json: Optional[str] = Non
             acct_fees=acct_fees
         )
         
+        # Set confidence level if provided (default 95%)
+        confidence_level = params.get('confidenceLevel', 0.95)
+        sim.confidence_level = confidence_level
+        
         # Run the appropriate simulation mode
         sim_mode = mode.lower() if mode else "full"
         if sim_mode in ("parametric", "bootstrapped", "full"):
@@ -454,6 +458,7 @@ def _extract_results(sim: Simulation, num_paths: int) -> Dict[str, Any]:
             'propFirm': mc_plan.get('prop_firm', {}),
             'kelly': mc_plan.get('kelly', {}),
             'allWinningClusters': mc_plan.get('all_winning_clusters', []),
+            'phaseTargets': mc_plan.get('phase_targets'),
         }
     except Exception as e:
         # Trading plan is optional - don't fail the whole simulation
@@ -580,6 +585,7 @@ def _extract_results_enhanced(sim: Simulation, num_paths: int, params: Dict[str,
             'propFirm': mc_plan.get('prop_firm', {}),
             'kelly': mc_plan.get('kelly', {}),
             'allWinningClusters': mc_plan.get('all_winning_clusters', []),
+            'phaseTargets': mc_plan.get('phase_targets'),
         }
     except Exception as e:
         print(f"Warning: Could not generate trading plan: {e}")
@@ -684,6 +690,7 @@ def _extract_results_enhanced(sim: Simulation, num_paths: int, params: Dict[str,
         # Confidence intervals
         'passRateCiLower': enhanced.get('pass_rate_ci_lower', 0),
         'passRateCiUpper': enhanced.get('pass_rate_ci_upper', 0),
+        'confidenceLevel': sim.confidence_level,
         'timeoutRate': enhanced.get('timeout_rate', 0),
         
         # Trade distributions - extract from bootstrapped strategy

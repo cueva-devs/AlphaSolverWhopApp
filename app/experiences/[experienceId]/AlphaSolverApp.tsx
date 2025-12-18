@@ -599,6 +599,7 @@ export default function AlphaSolverApp({
 									isRunning={isRunning || isEngineLoading}
 									hasTradeLog={!!parsedTrades && parsedTrades.length > 0}
 									hasRunSimulation={!!result}
+									gameType={accountConfig.gameType}
 								/>
 							</Tabs.Content>
 						</div>

@@ -40,6 +40,7 @@ class Simulation:
         # For confidence interval calculation
         self.pass_rate_ci_lower = 0
         self.pass_rate_ci_upper = 0
+        self.confidence_level = 0.95  # Default 95% CI
 
     def run(self):
         # simulate trading for all traders
@@ -113,7 +114,7 @@ class Simulation:
         self.pct_timeout = (len(self.timeout_trader_numbers) / len(self.traders)) * 100
         self.pct_pass_eval = (sum_passed_eval / len(self.traders)) * 100
         
-        # Calculate 95% confidence interval for pass rate using Wilson score interval
+        # Calculate confidence interval for pass rate using Wilson score interval
         self._calculate_confidence_interval(sum_winning_traders, len(self.traders))
 
     def run_eval_only(self):
@@ -223,7 +224,7 @@ class Simulation:
         self.pct_fails = (sum_losing_traders / len(self.traders)) * 100
         self.pct_timeout = (len(self.timeout_trader_numbers) / len(self.traders)) * 100
         
-        # Calculate 95% confidence interval for pass rate
+        # Calculate confidence interval for pass rate
         self._calculate_confidence_interval(sum_winning_traders, len(self.traders))
 
     def sim_results(self):
@@ -259,8 +260,11 @@ class Simulation:
             "Percent Wins (Full Payout)": f"{self.pct_wins:.2f}%"
         }
 
-    def _calculate_confidence_interval(self, successes, total, confidence=0.95):
+    def _calculate_confidence_interval(self, successes, total, confidence=None):
         """Calculate Wilson score confidence interval for pass rate."""
+        if confidence is None:
+            confidence = self.confidence_level
+        
         if total == 0:
             self.pass_rate_ci_lower = 0
             self.pass_rate_ci_upper = 0
@@ -529,6 +533,9 @@ class Simulation:
                 "max_loss": max_loss_limit,
                 "daily_limit": daily_loss_limit,
             },
+            
+            # Phase-specific targets for Combine+Funded mode
+            "phase_targets": self._get_phase_targets(),
             
             # Kelly from simulation
             "kelly": self._calculate_mc_kelly(all_daily_pnls),
@@ -965,6 +972,69 @@ class Simulation:
             "months_to_pass": months_to_pass,
             "expected_pnl": cluster["final_pnl_median"],
             "cluster_probability": cluster["probability"],
+        }
+
+    def _get_phase_targets(self) -> dict:
+        """
+        Get phase-specific targets for different game types.
+        
+        Returns targets for:
+        - Eval phase: profit target to pass combine
+        - Funded phase: requirements for payout (winning days, min balance)
+        - Payout calculation: profit share details
+        """
+        # Eval phase targets
+        initial_eval = self.acct_rules.get('Initial Balance (Eval)', 50000)
+        funding_target = self.acct_rules.get('Funding Target Balance', 53000)
+        eval_profit_target = funding_target - initial_eval
+        
+        # Funded phase targets
+        initial_funded = self.acct_rules.get('Initial Balance (Funded)', 50000)
+        min_winning_days = self.acct_rules.get('Minimum Winning Days for Payout', 5)
+        winning_day_minimum = self.acct_rules.get('Winning Day PnL Minimum', 200)
+        min_balance_for_payout = self.acct_rules.get('Minimum Winning Balance', 52000)
+        funded_profit_for_payout = min_balance_for_payout - initial_funded
+        
+        # Payout calculation details
+        profit_share = self.acct_rules.get('Profit Share Fraction', 0.9)
+        unshared_balance = self.acct_rules.get('Unshared Winning Balance (Funded)', 60000)
+        
+        # Calculate example payout at minimum balance
+        if min_balance_for_payout > initial_funded:
+            min_payout = (min_balance_for_payout - initial_funded) * profit_share
+        else:
+            min_payout = 0
+        
+        return {
+            # Eval phase (Combine)
+            "eval": {
+                "initial_balance": initial_eval,
+                "target_balance": funding_target,
+                "profit_target": eval_profit_target,
+                "max_loss": self.acct_rules.get('Max Loss (Eval)', 2000),
+                "daily_loss_limit": self.acct_rules.get('Maximum Daily Loss', 1000),
+            },
+            # Funded phase
+            "funded": {
+                "initial_balance": initial_funded,
+                "min_winning_days": min_winning_days,
+                "winning_day_minimum": winning_day_minimum,
+                "min_balance_for_payout": min_balance_for_payout,
+                "profit_needed_for_payout": funded_profit_for_payout,
+                "max_loss": self.acct_rules.get('Max Loss (Funded)', 2000),
+            },
+            # Payout details
+            "payout": {
+                "profit_share_pct": profit_share * 100,
+                "unshared_balance_threshold": unshared_balance,
+                "min_payout_at_threshold": min_payout,
+            },
+            # Summary for UI
+            "summary": {
+                "eval_target": f"${eval_profit_target:,.0f} profit to pass eval",
+                "funded_requirements": f"{min_winning_days} winning days (≥${winning_day_minimum}/day), balance ≥${min_balance_for_payout:,.0f}",
+                "payout_formula": f"{profit_share*100:.0f}% of profits above ${initial_funded:,.0f}",
+            }
         }
 
     def plot_outcomes(self, title):

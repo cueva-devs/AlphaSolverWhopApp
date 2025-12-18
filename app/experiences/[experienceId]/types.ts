@@ -40,7 +40,11 @@ export interface BootstrappedParams {
 	accountRules?: Record<string, number>;
 	accountFees?: Record<string, number>;
 	gameType?: GameType;
+	// Confidence level for CI (0.90, 0.95, 0.99)
+	confidenceLevel?: number;
 }
+
+export type ConfidenceLevel = 0.90 | 0.95 | 0.99;
 
 export interface ParsedTrade {
 	date: string;
@@ -123,6 +127,7 @@ export interface SimulationResult {
 	// Confidence intervals
 	passRateCiLower?: number;
 	passRateCiUpper?: number;
+	confidenceLevel?: number;  // The CI level used (0.90, 0.95, 0.99)
 	timeoutRate?: number;
 	// Trade distributions
 	tradesPerDayDistribution?: number[];
@@ -189,6 +194,35 @@ export interface BestPath {
 	max_drawdown: number;
 }
 
+// Phase-specific targets for different game types
+export interface PhaseTargets {
+	eval: {
+		initial_balance: number;
+		target_balance: number;
+		profit_target: number;
+		max_loss: number;
+		daily_loss_limit: number;
+	};
+	funded: {
+		initial_balance: number;
+		min_winning_days: number;
+		winning_day_minimum: number;
+		min_balance_for_payout: number;
+		profit_needed_for_payout: number;
+		max_loss: number;
+	};
+	payout: {
+		profit_share_pct: number;
+		unshared_balance_threshold: number;
+		min_payout_at_threshold: number;
+	};
+	summary: {
+		eval_target: string;
+		funded_requirements: string;
+		payout_formula: string;
+	};
+}
+
 export interface TradingPlan {
 	passRate: number;
 	passRateCi: [number, number];
@@ -202,5 +236,6 @@ export interface TradingPlan {
 	propFirm: Record<string, number>;
 	allWinningClusters: ClusterInfo[];
 	simulatedEv?: number;
+	phaseTargets?: PhaseTargets;
 }
 
