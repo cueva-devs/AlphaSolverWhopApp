@@ -459,6 +459,20 @@ export default function AlphaSolverApp({
 										))}
 									</Select.Content>
 								</Select.Root>
+								{csvFormat === "Custom" && (
+									<div className="mt-3 p-3 bg-gray-a2 rounded-md border border-gray-a4">
+										<Text size="2" color="gray" className="mb-2 block">
+											Download the CSV template to ensure your data is formatted correctly.
+										</Text>
+										<a 
+											href="/sample_template.csv" 
+											download="alphasolver_template.csv"
+											className="inline-flex items-center justify-center px-4 py-2 bg-blue-9 text-white text-sm font-medium rounded-md hover:bg-blue-10 transition-colors w-full"
+										>
+											📥 Download CSV Template
+										</a>
+									</div>
+								)}
 							</div>
 							<div>
 								<Text size="2" weight="medium" className="mb-2 block">
