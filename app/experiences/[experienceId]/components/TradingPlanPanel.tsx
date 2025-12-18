@@ -30,11 +30,16 @@ function MetricCard({ label, value, delta, help }: { label: string; value: strin
 	);
 }
 
-function StrategyTab({ strategy }: { strategy: OptimalStrategy }) {
+function StrategyTab({ strategy, gameType }: { strategy: OptimalStrategy; gameType: GameType }) {
 	const clusterInfo = strategy.cluster_info;
 	const viable = strategy.viable_for_30d;
 	const maxDD = strategy.max_drawdown_safe;
 	const propLimit = strategy.prop_firm_max_loss || 0;
+	const scenario = strategy.scenario_performance;
+	const evalProj = strategy.eval_projection;
+	const fundedProj = strategy.funded_projection;
+	const totalProj = strategy.total_projection;
+	const showFundedPhase = gameType === "combine" || gameType === "funded_only";
 
 	return (
 		<div className="space-y-4">
@@ -44,69 +49,174 @@ function StrategyTab({ strategy }: { strategy: OptimalStrategy }) {
 				<Text size="2" color="gray">Optimization: {strategy.optimization}</Text>
 			</div>
 
-			{/* Cluster info */}
-			<Callout.Root color="blue">
-				<Callout.Text>
-					<strong>From Cluster:</strong> {clusterInfo?.name || 'N/A'} | 
-					<strong> Probability:</strong> {formatPercent(clusterInfo?.probability || 0)} | 
-					<strong> Median Days:</strong> {Math.round(clusterInfo?.days_median || 0)} | 
-					<strong> Max DD:</strong> {formatCurrency(clusterInfo?.max_drawdown_median || 0)} |
-					<strong> Acct Profit:</strong> {formatCurrency(clusterInfo?.final_pnl_median || 0)}
-				</Callout.Text>
-			</Callout.Root>
-
-			{/* Viability */}
-			{viable ? (
-				<Callout.Root color="green">
-					<Callout.Text>✓ Viable for 1-month pass (~21 trading days)</Callout.Text>
-				</Callout.Root>
-			) : (
-				<Callout.Root color="yellow">
-					<Callout.Text>⚠ Extended timeline: {strategy.target_days} days (~{strategy.months_to_pass.toFixed(1)} months)</Callout.Text>
+			{/* Scenario Performance Summary */}
+			{scenario && (
+				<Callout.Root color="blue">
+					<Callout.Text>
+						<strong>Scenario Performance:</strong> {formatCurrency(scenario.daily_profit)}/day | 
+						<strong> Win Rate:</strong> {formatPercent(scenario.win_rate)} | 
+						<strong> Max DD:</strong> {formatCurrency(scenario.max_drawdown)} |
+						<strong> Cluster:</strong> {clusterInfo?.name || 'N/A'} ({formatPercent(clusterInfo?.probability || 0)})
+					</Callout.Text>
 				</Callout.Root>
 			)}
 
-			{/* Metrics grid */}
-			<div className="grid grid-cols-3 gap-3">
-				<MetricCard 
-					label="Daily P&L Target" 
-					value={formatCurrency(strategy.daily_pnl_target)}
-				/>
-				<MetricCard 
-					label="Daily Loss Stop" 
-					value={formatCurrency(strategy.daily_loss_stop)}
-				/>
-				<MetricCard 
-					label="Max Drawdown (Safe)" 
-					value={formatCurrency(maxDD)}
-					delta={`Limit: ${formatCurrency(propLimit)}`}
-				/>
-				<MetricCard 
-					label="Target Days" 
-					value={`${strategy.target_days}`}
-					delta={`Range: ${strategy.target_days_range[0]}-${strategy.target_days_range[1]}`}
-				/>
-				<MetricCard 
-					label="Win Rate Needed" 
-					value={formatPercent(strategy.daily_win_rate_needed)}
-				/>
-				<MetricCard 
-					label="Cluster Median P&L" 
-					value={formatCurrency(strategy.expected_pnl || 0)}
-					delta="Account profit (not payout)"
-				/>
-			</div>
+			{/* Viability */}
+			{totalProj && totalProj.total_days <= 21 ? (
+				<Callout.Root color="green">
+					<Callout.Text>✓ Projected to reach payout in ~{totalProj.total_days} days (within 1 month)</Callout.Text>
+				</Callout.Root>
+			) : totalProj ? (
+				<Callout.Root color="yellow">
+					<Callout.Text>⚠ Extended timeline: ~{totalProj.total_days} days to payout</Callout.Text>
+				</Callout.Root>
+			) : null}
+
+			{/* Scenario Projections for Combine+Funded */}
+			{showFundedPhase && evalProj && fundedProj && (
+				<div className="space-y-3">
+					{/* Eval Phase Projection */}
+					{gameType !== "funded_only" && (
+						<div className="bg-blue-a2 border border-blue-a5 rounded-lg p-4">
+							<div className="flex items-center gap-2 mb-3">
+								<Badge color="blue">Eval Phase</Badge>
+								<Text size="2" weight="bold">If you achieve this scenario...</Text>
+							</div>
+							<div className="grid grid-cols-3 gap-3">
+								<MetricCard 
+									label="Days to Pass" 
+									value={`${evalProj.days_to_pass} days`}
+									delta={`At ${formatCurrency(scenario?.daily_profit || 0)}/day`}
+								/>
+								<MetricCard 
+									label="Profit Target" 
+									value={formatCurrency(evalProj.profit_target)}
+									delta="To pass eval"
+								/>
+								<MetricCard 
+									label="Max Drawdown" 
+									value={formatCurrency(maxDD)}
+									delta={`Limit: ${formatCurrency(propLimit)}`}
+								/>
+							</div>
+						</div>
+					)}
+
+					{/* Funded Phase Projection */}
+					<div className="bg-green-a2 border border-green-a5 rounded-lg p-4">
+						<div className="flex items-center gap-2 mb-3">
+							<Badge color="green">{gameType === "funded_only" ? "Funded Phase" : "Then in Funded..."}</Badge>
+							<Text size="2" weight="bold">Payout Eligibility</Text>
+						</div>
+						<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+							<MetricCard 
+								label="Days to Payout" 
+								value={`${fundedProj.days_to_payout} days`}
+								delta={`Need ${fundedProj.min_winning_days_required} winning days`}
+							/>
+							<MetricCard 
+								label="Funded Profit" 
+								value={formatCurrency(fundedProj.funded_profit)}
+								delta={`Balance: ${formatCurrency(fundedProj.funded_balance)}`}
+							/>
+							<MetricCard 
+								label="Profit Share" 
+								value={`${fundedProj.profit_share_pct}%`}
+								delta="Of funded profits"
+							/>
+							<MetricCard 
+								label="Projected Payout" 
+								value={formatCurrency(fundedProj.projected_payout)}
+								delta="Your take-home"
+							/>
+						</div>
+					</div>
+
+					{/* Total Journey Summary */}
+					{totalProj && (
+						<div className="bg-purple-a2 border border-purple-a5 rounded-lg p-4">
+							<div className="flex items-center gap-2 mb-3">
+								<Badge color="purple">Total Journey</Badge>
+								<Text size="2" weight="bold">Eval → Funded → Payout</Text>
+							</div>
+							<div className="grid grid-cols-4 gap-3">
+								<MetricCard 
+									label="Eval Days" 
+									value={`${totalProj.eval_days}`}
+								/>
+								<MetricCard 
+									label="Funded Days" 
+									value={`${totalProj.funded_days}`}
+								/>
+								<MetricCard 
+									label="Total Days" 
+									value={`${totalProj.total_days}`}
+								/>
+								<MetricCard 
+									label="Final Payout" 
+									value={formatCurrency(totalProj.final_payout)}
+								/>
+							</div>
+						</div>
+					)}
+				</div>
+			)}
+
+			{/* Combine Only: Simple metrics */}
+			{gameType === "combine_only" && evalProj && (
+				<div className="bg-blue-a2 border border-blue-a5 rounded-lg p-4">
+					<div className="flex items-center gap-2 mb-3">
+						<Badge color="blue">Eval Projection</Badge>
+						<Text size="2" weight="bold">If you achieve this scenario...</Text>
+					</div>
+					<div className="grid grid-cols-3 gap-3">
+						<MetricCard 
+							label="Days to Pass" 
+							value={`${evalProj.days_to_pass} days`}
+							delta={`At ${formatCurrency(scenario?.daily_profit || 0)}/day`}
+						/>
+						<MetricCard 
+							label="Profit Target" 
+							value={formatCurrency(evalProj.profit_target)}
+							delta="To pass eval"
+						/>
+						<MetricCard 
+							label="Max Drawdown" 
+							value={formatCurrency(maxDD)}
+							delta={`Limit: ${formatCurrency(propLimit)}`}
+						/>
+					</div>
+					<Text size="1" color="gray" className="mt-3 block">
+						Note: Combine Only mode - no payout calculation (just passing the evaluation)
+					</Text>
+				</div>
+			)}
 
 			{/* Key targets summary */}
 			<div className="bg-gray-a3 rounded-lg p-4 mt-4">
 				<Text size="2" weight="bold" className="block mb-2">Key Targets for {strategy.label}:</Text>
 				<div className="grid grid-cols-2 gap-2 text-sm">
-					<Text size="2">Daily profit: <strong>{formatCurrency(strategy.daily_pnl_target)}</strong></Text>
-					<Text size="2">Daily loss limit: <strong>{formatCurrency(strategy.daily_loss_stop)}</strong></Text>
-					<Text size="2">Max drawdown: <strong>{formatCurrency(maxDD)}</strong></Text>
-					<Text size="2">Duration: <strong>{strategy.target_days} days</strong></Text>
-					<Text size="2">Win rate: <strong>{formatPercent(strategy.daily_win_rate_needed)}</strong></Text>
-					<Text size="2">Cluster probability: <strong>{formatPercent(strategy.cluster_probability || 0)}</strong></Text>
+					{showFundedPhase && totalProj ? (
+						<>
+							<Text size="2">Daily profit needed: <strong>{formatCurrency(scenario?.daily_profit || 0)}</strong></Text>
+							<Text size="2">Win rate needed: <strong>{formatPercent(scenario?.win_rate || 0)}</strong></Text>
+							<Text size="2">Eval days: <strong>{totalProj.eval_days}</strong></Text>
+							<Text size="2">Funded days: <strong>{totalProj.funded_days}</strong></Text>
+							<Text size="2">Total days: <strong>{totalProj.total_days}</strong></Text>
+							<Text size="2">Max drawdown: <strong>{formatCurrency(maxDD)}</strong></Text>
+							<Text size="2">Projected payout: <strong>{formatCurrency(totalProj.final_payout)}</strong></Text>
+							<Text size="2">Cluster probability: <strong>{formatPercent(strategy.cluster_probability || 0)}</strong></Text>
+						</>
+					) : (
+						<>
+							<Text size="2">Daily profit: <strong>{formatCurrency(scenario?.daily_profit || strategy.daily_pnl_target)}</strong></Text>
+							<Text size="2">Win rate: <strong>{formatPercent(scenario?.win_rate || strategy.daily_win_rate_needed)}</strong></Text>
+							<Text size="2">Days to pass: <strong>{evalProj?.days_to_pass || strategy.target_days}</strong></Text>
+							<Text size="2">Max drawdown: <strong>{formatCurrency(maxDD)}</strong></Text>
+							<Text size="2">Daily loss limit: <strong>{formatCurrency(strategy.daily_loss_stop)}</strong></Text>
+							<Text size="2">Cluster probability: <strong>{formatPercent(strategy.cluster_probability || 0)}</strong></Text>
+						</>
+					)}
 				</div>
 			</div>
 		</div>
@@ -394,18 +504,6 @@ export default function TradingPlanPanel({
 
 	return (
 		<div className="space-y-6">
-			{/* Phase-Specific Targets */}
-			{phaseTargets && (
-				<Card size="2" variant="surface">
-					<Heading size="5" as="h2" className="mb-4">
-						{gameType === "combine_only" ? "Evaluation Targets" : 
-						 gameType === "funded_only" ? "Funded Targets" : 
-						 "Phase Targets (Combine + Funded)"}
-					</Heading>
-					<PhaseTargetsDisplay phaseTargets={phaseTargets} gameType={gameType} />
-				</Card>
-			)}
-
 			{/* Simulation Results Summary */}
 			<Card size="2" variant="surface">
 				<Heading size="5" as="h2" className="mb-4">Simulation Results</Heading>
@@ -462,7 +560,7 @@ export default function TradingPlanPanel({
 
 						{availableStrategies.map(key => (
 							<Tabs.Content key={key} value={key} className="mt-4">
-								<StrategyTab strategy={optimalStrategies[key]} />
+								<StrategyTab strategy={optimalStrategies[key]} gameType={gameType} />
 							</Tabs.Content>
 						))}
 					</Tabs.Root>

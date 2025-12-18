@@ -1,3 +1,4 @@
+import math
 import numpy as np
 from trader import Trader
 from io import BytesIO
@@ -958,6 +959,57 @@ class Simulation:
         viable_for_30d = days_median <= trading_days_per_month
         months_to_pass = days_median / trading_days_per_month
         
+        # ============ SCENARIO PERFORMANCE ============
+        # Extract the scenario's actual performance metrics
+        scenario_daily_profit = cluster_data.get("daily_pnl_median", daily_target)
+        scenario_win_rate = cluster["daily_win_rate_median"] / 100  # Convert to decimal
+        
+        # ============ EVAL PHASE PROJECTION ============
+        # Project: "If you achieve this scenario's performance, how long to pass eval?"
+        if scenario_daily_profit > 0:
+            projected_days_to_pass_eval = math.ceil(profit_target / scenario_daily_profit)
+        else:
+            projected_days_to_pass_eval = 999  # Can't pass with negative daily profit
+        
+        # ============ FUNDED PHASE PROJECTION ============
+        # Project: "After passing eval, how long to reach payout eligibility?"
+        min_winning_days = self.acct_rules.get('Minimum Winning Days for Payout', 5)
+        winning_day_min_pnl = self.acct_rules.get('Winning Day PnL Minimum', 200)
+        min_balance_for_payout = self.acct_rules.get('Minimum Winning Balance', 52000)
+        initial_funded_balance = self.acct_rules.get('Initial Balance (Funded)', 50000)
+        profit_share = self.acct_rules.get('Profit Share Fraction', 0.9)
+        
+        # Days needed to accumulate winning days (based on win rate)
+        if scenario_win_rate > 0:
+            # Expected days to get N winning days = N / win_rate
+            projected_days_for_winning_days = math.ceil(min_winning_days / scenario_win_rate)
+        else:
+            projected_days_for_winning_days = 999
+        
+        # Profit accumulated in funded during those days
+        funded_profit_at_payout = scenario_daily_profit * projected_days_for_winning_days
+        funded_balance_at_payout = initial_funded_balance + funded_profit_at_payout
+        
+        # Check if min balance requirement is met
+        profit_needed_for_min_balance = max(0, min_balance_for_payout - initial_funded_balance)
+        if scenario_daily_profit > 0:
+            days_for_min_balance = math.ceil(profit_needed_for_min_balance / scenario_daily_profit)
+        else:
+            days_for_min_balance = 999
+        
+        # Take the longer of the two requirements
+        projected_days_to_payout = max(projected_days_for_winning_days, days_for_min_balance)
+        
+        # Recalculate funded profit at actual payout day
+        funded_profit_at_payout = scenario_daily_profit * projected_days_to_payout
+        funded_balance_at_payout = initial_funded_balance + funded_profit_at_payout
+        
+        # Calculate actual payout amount
+        projected_payout = funded_profit_at_payout * profit_share
+        
+        # Total journey
+        total_projected_days = projected_days_to_pass_eval + projected_days_to_payout
+        
         return {
             "daily_pnl_target": daily_target,
             "daily_pnl_target_30d": daily_target_30d,
@@ -972,6 +1024,34 @@ class Simulation:
             "months_to_pass": months_to_pass,
             "expected_pnl": cluster["final_pnl_median"],
             "cluster_probability": cluster["probability"],
+            
+            # ============ SCENARIO PROJECTION ============
+            "scenario_performance": {
+                "daily_profit": scenario_daily_profit,
+                "win_rate": cluster["daily_win_rate_median"],
+                "max_drawdown": cluster["max_drawdown_median"],
+            },
+            "eval_projection": {
+                "profit_target": profit_target,
+                "days_to_pass": projected_days_to_pass_eval,
+                "daily_profit_needed": scenario_daily_profit,
+            },
+            "funded_projection": {
+                "min_winning_days_required": min_winning_days,
+                "winning_day_minimum_pnl": winning_day_min_pnl,
+                "min_balance_required": min_balance_for_payout,
+                "days_to_payout": projected_days_to_payout,
+                "funded_profit": funded_profit_at_payout,
+                "funded_balance": funded_balance_at_payout,
+                "profit_share_pct": profit_share * 100,
+                "projected_payout": projected_payout,
+            },
+            "total_projection": {
+                "total_days": total_projected_days,
+                "eval_days": projected_days_to_pass_eval,
+                "funded_days": projected_days_to_payout,
+                "final_payout": projected_payout,
+            },
         }
 
     def _get_phase_targets(self) -> dict:
@@ -1430,6 +1510,11 @@ class Simulation:
             running_balance = np.array(trader.running_balance)
             total_days = trader.account.total_days
             
+            # Calculate days in eval vs funded
+            # running_balance only records funded phase days
+            days_in_funded = len(running_balance)
+            days_in_eval = total_days - days_in_funded
+            
             # Calculate path features
             if len(running_balance) > 1:
                 daily_pnls = np.diff(running_balance)
@@ -1447,6 +1532,20 @@ class Simulation:
             outcome = 1 if trader.account.won else 0
             final_pnl = trader.PnL
             
+            # Calculate actual payout (for winners)
+            # trader.PnL already includes the payout from funded_full_payout()
+            # but also subtracts costs, so actual_payout = PnL + total_costs
+            if outcome == 1:
+                # Estimate costs paid
+                eval_cost = self.acct_fees.get('Eval Acct Cost', 0)
+                monthly_cost = self.acct_fees.get('Monthly Eval Cost', 0)
+                funded_setup = self.acct_fees.get('Funded Acct Setup Cost', 0)
+                months_in_eval = max(0, (days_in_eval - 1) // 30)
+                total_costs = eval_cost + (monthly_cost * months_in_eval) + funded_setup
+                actual_payout = final_pnl + total_costs
+            else:
+                actual_payout = 0
+            
             features.append([
                 total_days,
                 max_dd,
@@ -1458,9 +1557,12 @@ class Simulation:
             path_data.append({
                 "trader_num": trader_num,
                 "days": total_days,
+                "days_in_eval": days_in_eval,
+                "days_in_funded": days_in_funded,
                 "max_drawdown": max_dd,
                 "volatility": pnl_volatility,
                 "final_pnl": final_pnl,
+                "actual_payout": actual_payout,
                 "outcome": "pass" if outcome == 1 else "fail",
                 "daily_win_rate": daily_win_rate * 100
             })
@@ -1492,13 +1594,19 @@ class Simulation:
             
             # Calculate cluster statistics
             days = [p["days"] for p in cluster_paths]
+            days_in_eval = [p["days_in_eval"] for p in cluster_paths]
+            days_in_funded = [p["days_in_funded"] for p in cluster_paths]
             drawdowns = [p["max_drawdown"] for p in cluster_paths]
             final_pnls = [p["final_pnl"] for p in cluster_paths]
+            actual_payouts = [p["actual_payout"] for p in cluster_paths]
             outcomes = [p["outcome"] for p in cluster_paths]
             win_rates = [p["daily_win_rate"] for p in cluster_paths]
             
             pass_count = sum(1 for o in outcomes if o == "pass")
             fail_count = len(outcomes) - pass_count
+            
+            # For winners, calculate payout stats
+            winner_payouts = [p for p in actual_payouts if p > 0]
             
             cluster_info = {
                 "label": label,
@@ -1509,11 +1617,18 @@ class Simulation:
                 "pass_rate": pass_count / len(cluster_paths) * 100 if cluster_paths else 0,
                 "days_median": np.median(days),
                 "days_range": (int(np.min(days)), int(np.max(days))),
+                # Phase breakdown
+                "days_in_eval_median": np.median(days_in_eval),
+                "days_in_funded_median": np.median(days_in_funded),
+                # Drawdown and P&L
                 "max_drawdown_median": np.median(drawdowns),
                 "max_drawdown_p90": np.percentile(drawdowns, 90),
                 "final_pnl_median": np.median(final_pnls),
                 "final_pnl_range": (np.min(final_pnls), np.max(final_pnls)),
                 "daily_win_rate_median": np.median(win_rates),
+                # Actual payout (for winners)
+                "actual_payout_median": np.median(winner_payouts) if winner_payouts else 0,
+                "actual_payout_range": (np.min(winner_payouts), np.max(winner_payouts)) if winner_payouts else (0, 0),
             }
             
             # Generate human-readable description

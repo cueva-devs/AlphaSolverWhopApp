@@ -158,6 +158,36 @@ export interface ClusterInfo {
 	description: string;
 }
 
+export interface ScenarioPerformance {
+	daily_profit: number;
+	win_rate: number;
+	max_drawdown: number;
+}
+
+export interface EvalProjection {
+	profit_target: number;
+	days_to_pass: number;
+	daily_profit_needed: number;
+}
+
+export interface FundedProjection {
+	min_winning_days_required: number;
+	winning_day_minimum_pnl: number;
+	min_balance_required: number;
+	days_to_payout: number;
+	funded_profit: number;
+	funded_balance: number;
+	profit_share_pct: number;
+	projected_payout: number;
+}
+
+export interface TotalProjection {
+	total_days: number;
+	eval_days: number;
+	funded_days: number;
+	final_payout: number;
+}
+
 export interface OptimalStrategy {
 	label: string;
 	description: string;
@@ -174,6 +204,11 @@ export interface OptimalStrategy {
 	prop_firm_max_loss?: number;
 	expected_pnl: number;
 	cluster_probability: number;
+	// Scenario projections
+	scenario_performance?: ScenarioPerformance;
+	eval_projection?: EvalProjection;
+	funded_projection?: FundedProjection;
+	total_projection?: TotalProjection;
 }
 
 export interface WinnerLoserStats {
