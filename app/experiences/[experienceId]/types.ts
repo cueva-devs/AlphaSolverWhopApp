@@ -219,6 +219,7 @@ export interface WinnerLoserStats {
 	daily_win_rate?: number;
 	max_drawdown_median?: number;
 	final_pnl_median?: number;
+	common_failure?: "max_drawdown" | "daily_limit" | "timeout";
 }
 
 export interface BestPath {

@@ -601,13 +601,6 @@ export default function TradingPlanPanel({
 				</Card>
 			)}
 
-			{/* Best Case Scenario */}
-			{bestPath && (
-				<Card size="2" variant="surface">
-					<Heading size="5" as="h2" className="mb-4">Best Case Scenario</Heading>
-					<BestCaseSection bestPath={bestPath} />
-				</Card>
-			)}
 		</div>
 	);
 }
