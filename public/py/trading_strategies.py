@@ -596,19 +596,12 @@ CSV_TEMPLATES = {
         "mfe_column": "MFE",
         "parser": "ninjatrader"
     },
-    "TradingView (Strategy Tester)": {
+    "TradingView": {
         "description": "TradingView Strategy Tester export (List of Trades)",
-        "pnl_column": "Profit",
+        "pnl_column": "Net P&L USD",
         "date_column": "Date/Time",
-        "mfe_column": None,
-        "parser": "tradingview_strategy"
-    },
-    "TradingView (Broker History)": {
-        "description": "TradingView Broker Account History export",
-        "pnl_column": "Profit",
-        "date_column": "Close Time",
-        "mfe_column": None,
-        "parser": "tradingview_broker"
+        "mfe_column": "Run-up USD",
+        "parser": "tradingview"
     },
     "Rithmic / R|Trader": {
         "description": "Rithmic R|Trader trade export",
@@ -708,121 +701,60 @@ def parse_ninjatrader_csv(uploaded_file, no_trade_override: Optional[float] = No
                                         no_trade_override=no_trade_override)
 
 
-def parse_tradingview_strategy_csv(uploaded_file, no_trade_override: Optional[float] = None) -> BootstrappedTradingStrategy:
+def parse_tradingview_csv(uploaded_file, no_trade_override: Optional[float] = None) -> BootstrappedTradingStrategy:
     """
     Parse a TradingView Strategy Tester CSV export (List of Trades tab).
     
     TradingView Strategy Tester columns:
-    - 'Trade #': Trade number
-    - 'Type': Entry/Exit
-    - 'Signal': Long/Short
-    - 'Date/Time': Trade datetime
-    - 'Price': Entry/Exit price
-    - 'Profit': P&L (may include %, need to handle)
-    - 'Profit %': Percentage profit
-    - 'Cumulative Profit': Running total
+    - 'Trade #': Trade number (same for entry and exit rows)
+    - 'Type': 'Entry long', 'Exit long', 'Entry short', 'Exit short'
+    - 'Date/Time': Trade datetime (format: 2019-05-06 12:15)
+    - 'Signal': 'Long', 'Short', 'TP/SL'
+    - 'Price USD': Entry/exit price
+    - 'Position size (qty)': Quantity
+    - 'Position size (value)': Position value
+    - 'Net P&L USD': P&L in USD (this is what we need)
+    - 'Net P&L %': Percentage P&L
+    - 'Run-up USD': Maximum Favorable Excursion (MFE)
+    - 'Run-up %': MFE as percentage
+    - 'Drawdown USD': Maximum Adverse Excursion (MAE)
+    - 'Drawdown %': MAE as percentage
+    - 'Cumulative P&L USD': Running total P&L
+    - 'Cumulative P&L %': Running total P&L percentage
+    
+    Note: Each trade has TWO rows (Entry and Exit) with the same Trade # and P&L.
+    We filter to only Exit rows to avoid double-counting.
     """
     df = pd.read_csv(uploaded_file)
     
-    # TradingView may have different column names, try common variations
-    profit_cols = ['Profit', 'Profit, $', 'Net Profit', 'P/L']
-    date_cols = ['Date/Time', 'Exit Date/Time', 'Close Date', 'Time']
+    # Validate required columns
+    required_cols = ['Trade #', 'Type', 'Date/Time', 'Net P&L USD']
+    missing = [col for col in required_cols if col not in df.columns]
+    if missing:
+        raise ValueError(f"TradingView CSV missing required columns: {missing}. Found columns: {list(df.columns)}")
     
-    # Find profit column
-    pnl_col = None
-    for col in profit_cols:
-        if col in df.columns:
-            pnl_col = col
-            break
+    # Filter to only Exit rows to avoid double-counting trades
+    # Exit rows have 'Type' starting with 'Exit'
+    df_exits = df[df['Type'].str.lower().str.startswith('exit')].copy()
     
-    if pnl_col is None:
-        # Try to find any column with 'profit' in the name
-        for col in df.columns:
-            if 'profit' in col.lower() and '%' not in col.lower():
-                pnl_col = col
-                break
+    if len(df_exits) == 0:
+        raise ValueError("No exit trades found in CSV. Check that 'Type' column contains 'Exit long' or 'Exit short' values.")
     
-    if pnl_col is None:
-        raise ValueError(f"Could not find profit column. Found columns: {list(df.columns)}")
+    # Parse the P&L column
+    df_exits['pnl'] = df_exits['Net P&L USD'].apply(parse_currency_value)
     
-    # Find date column
-    date_col = None
-    for col in date_cols:
-        if col in df.columns:
-            date_col = col
-            break
+    # Parse MFE (Run-up) if available
+    if 'Run-up USD' in df_exits.columns:
+        df_exits['mfe'] = df_exits['Run-up USD'].apply(parse_currency_value)
     
-    if date_col is None:
-        for col in df.columns:
-            if 'date' in col.lower() or 'time' in col.lower():
-                date_col = col
-                break
+    # Parse MAE (Drawdown) if available - store as positive value
+    if 'Drawdown USD' in df_exits.columns:
+        df_exits['mae'] = df_exits['Drawdown USD'].apply(lambda x: abs(parse_currency_value(x)))
     
-    # Parse profit (handle currency format)
-    df['pnl'] = df[pnl_col].apply(parse_currency_value)
+    # Parse the date from Date/Time
+    df_exits['date'] = pd.to_datetime(df_exits['Date/Time'], errors='coerce').dt.date
     
-    # Parse date
-    if date_col:
-        df['date'] = pd.to_datetime(df[date_col], errors='coerce').dt.date
-    else:
-        df['date'] = pd.date_range(start='2024-01-01', periods=len(df), freq='D').date
-    
-    return BootstrappedTradingStrategy(df, pnl_column='pnl', date_column='date',
-                                        no_trade_override=no_trade_override)
-
-
-def parse_tradingview_broker_csv(uploaded_file, no_trade_override: Optional[float] = None) -> BootstrappedTradingStrategy:
-    """
-    Parse a TradingView Broker Account History CSV export.
-    
-    TradingView Broker History columns (varies by broker):
-    - 'Symbol': Instrument traded
-    - 'Side': Buy/Sell
-    - 'Qty': Quantity
-    - 'Open Time' / 'Entry Time': Entry datetime
-    - 'Close Time' / 'Exit Time': Exit datetime  
-    - 'Open Price': Entry price
-    - 'Close Price': Exit price
-    - 'Profit' / 'P&L' / 'Net P/L': Realized P&L
-    - 'Commission': Trading fees
-    """
-    df = pd.read_csv(uploaded_file)
-    
-    # Find profit column
-    profit_cols = ['Profit', 'P&L', 'Net P/L', 'Realized P&L', 'Net Profit']
-    pnl_col = None
-    for col in profit_cols:
-        if col in df.columns:
-            pnl_col = col
-            break
-    
-    if pnl_col is None:
-        for col in df.columns:
-            if 'profit' in col.lower() or 'p&l' in col.lower() or 'pnl' in col.lower():
-                pnl_col = col
-                break
-    
-    if pnl_col is None:
-        raise ValueError(f"Could not find profit column. Found columns: {list(df.columns)}")
-    
-    # Find date column (prefer close time)
-    date_cols = ['Close Time', 'Exit Time', 'Close Date', 'Open Time', 'Entry Time', 'Time', 'Date']
-    date_col = None
-    for col in date_cols:
-        if col in df.columns:
-            date_col = col
-            break
-    
-    # Parse profit
-    df['pnl'] = df[pnl_col].apply(parse_currency_value)
-    
-    # Parse date
-    if date_col:
-        df['date'] = pd.to_datetime(df[date_col], errors='coerce').dt.date
-    else:
-        df['date'] = pd.date_range(start='2024-01-01', periods=len(df), freq='D').date
-    
-    return BootstrappedTradingStrategy(df, pnl_column='pnl', date_column='date',
+    return BootstrappedTradingStrategy(df_exits, pnl_column='pnl', date_column='date',
                                         no_trade_override=no_trade_override)
 
 
@@ -1121,10 +1053,8 @@ def parse_trade_log_with_template(uploaded_file, template_name: str,
     parser = template["parser"]
     if parser == "ninjatrader":
         return parse_ninjatrader_csv(uploaded_file, no_trade_override=no_trade_override)
-    elif parser == "tradingview_strategy":
-        return parse_tradingview_strategy_csv(uploaded_file, no_trade_override=no_trade_override)
-    elif parser == "tradingview_broker":
-        return parse_tradingview_broker_csv(uploaded_file, no_trade_override=no_trade_override)
+    elif parser == "tradingview":
+        return parse_tradingview_csv(uploaded_file, no_trade_override=no_trade_override)
     elif parser == "rithmic":
         return parse_rithmic_csv(uploaded_file, no_trade_override=no_trade_override)
     elif parser == "tradovate":
