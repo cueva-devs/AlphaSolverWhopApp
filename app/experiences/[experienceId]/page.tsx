@@ -102,16 +102,63 @@ export default async function ExperiencePage({
 			);
 		}
 
-		// Determine user's plan based on product/experience
-		const firstProduct = experience.products?.[0];
+		// Determine user's plan based on products they actually own
+		// Check access for each product to find which ones the user has
+		const productAccessPromises = (experience.products || []).map(async (product) => {
+			try {
+				const productAccess = await whopsdk.users.checkAccess(product.id, { id: userId });
+				const hasProductAccess = (productAccess as { has_access?: boolean; hasAccess?: boolean }).has_access ?? 
+					(productAccess as { has_access?: boolean; hasAccess?: boolean }).hasAccess ?? false;
+				return { product, hasAccess: hasProductAccess };
+			} catch {
+				return { product, hasAccess: false };
+			}
+		});
+
+		const productAccessResults = await Promise.all(productAccessPromises);
+		const userOwnedProducts = productAccessResults
+			.filter(result => result.hasAccess)
+			.map(result => result.product);
+
+		// Debug logging for product access (always log for now to help troubleshoot)
+		console.log("User owned products:", userOwnedProducts.map(p => ({ id: p.id, title: p.title })));
+
+		// Determine plan: prioritize unlimited over free
+		// Check for unlimited product first (highest priority)
+		const unlimitedProduct = userOwnedProducts.find(p => {
+			const lowerName = (p.title || "").toLowerCase();
+			return lowerName.includes("unlimited") || 
+			       lowerName.includes("pro") || 
+			       lowerName.includes("premium");
+		});
+		
+		let userProduct = null;
+		if (unlimitedProduct) {
+			userProduct = unlimitedProduct;
+		} else if (userOwnedProducts.length > 0) {
+			// Use first owned product (likely free)
+			userProduct = userOwnedProducts[0];
+		} else {
+			// Fallback to first experience product (shouldn't happen if access check passed)
+			userProduct = experience.products?.[0];
+		}
+
 		const planId: PlanId = determinePlanId(
-			firstProduct?.id,
-			firstProduct?.title,
+			userProduct?.id,
+			userProduct?.title,
 		);
 		const planConfig = getEffectivePlanConfig(planId);
 
-		// Find the unlimited product for upgrade URL
-		const unlimitedProduct = experience.products?.find(p => 
+		// Log detected plan for debugging
+		console.log("Detected plan:", { 
+			planId, 
+			dailyCredits: planConfig.dailyCredits,
+			userProduct: userProduct?.title,
+			hasUnlimited: !!unlimitedProduct 
+		});
+
+		// Find the unlimited product for upgrade URL (from experience, not user's products)
+		const unlimitedProductForUpgrade = experience.products?.find(p => 
 			p.title?.toLowerCase().includes("unlimited") || 
 			p.title?.toLowerCase().includes("pro") ||
 			p.title?.toLowerCase().includes("premium")
@@ -119,8 +166,8 @@ export default async function ExperiencePage({
 		
 		// Construct upgrade URL - prefer env var, then product URL, then experience page
 		let upgradeUrl = process.env.NEXT_PUBLIC_WHOP_UPGRADE_URL;
-		if (!upgradeUrl && unlimitedProduct) {
-			upgradeUrl = `https://whop.com/products/${unlimitedProduct.id}`;
+		if (!upgradeUrl && unlimitedProductForUpgrade) {
+			upgradeUrl = `https://whop.com/products/${unlimitedProductForUpgrade.id}`;
 		}
 		if (!upgradeUrl) {
 			upgradeUrl = `https://whop.com/experiences/${experienceId}`;
