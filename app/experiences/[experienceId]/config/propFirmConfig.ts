@@ -497,6 +497,12 @@ export const CSV_TEMPLATES = {
 		pnlColumn: "",
 		dateColumn: "",
 		mfeColumn: ""
+	},
+	"AI Upload": {
+		description: "AI-powered automatic column detection (Paid feature)",
+		pnlColumn: "",
+		dateColumn: "",
+		mfeColumn: ""
 	}
 };
 

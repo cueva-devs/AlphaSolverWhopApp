@@ -15,6 +15,8 @@ import type {
 	CsvFormat,
 } from "./types";
 import { CSV_TEMPLATES, getCsvTemplateList, getAccountConfig } from "./config/propFirmConfig";
+import type { AiColumnMapping } from "./lib/aiMappingSchema";
+import { extractCsvPreview, getAiColumnMapping, parseCsvWithAiMapping } from "./lib/aiMappingService";
 import type { PlanId, PlanConfig } from "./config/planConfig";
 import { createSavedRun, exportRun, importRun, estimateFileSize } from "./lib/saveRunUtils";
 import { 
@@ -61,6 +63,11 @@ export default function AlphaSolverApp({
 	const [csvError, setCsvError] = useState<string | null>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const importInputRef = useRef<HTMLInputElement>(null);
+	
+	// AI Upload state
+	const [isAnalyzingCsv, setIsAnalyzingCsv] = useState(false);
+	const [aiMapping, setAiMapping] = useState<AiColumnMapping | null>(null);
+	const [aiMappingConfirmed, setAiMappingConfirmed] = useState(false);
 	const [lastParams, setLastParams] = useState<BootstrappedParams | null>(null);
 	const [creditsState, setCreditsState] = useState<CreditsState | null>(null);
 	const [isLoadingCredits, setIsLoadingCredits] = useState(true);
@@ -246,7 +253,7 @@ export default function AlphaSolverApp({
 		}
 	};
 
-	const parseCsvFile = async (file: File, format: CsvFormat) => {
+	const parseCsvFile = async (file: File, format: CsvFormat, mapping?: AiColumnMapping) => {
 		// Validate file type
 		if (file.type !== "text/csv" && !file.name.endsWith(".csv")) {
 			setCsvError("Please select a valid CSV file");
@@ -260,9 +267,21 @@ export default function AlphaSolverApp({
 		setIsParsingCsv(true);
 
 		try {
-			const trades = await parseTradeCsv(file, {
-				template: format,
-			});
+			let trades: ParsedTrade[];
+			
+			if (format === "AI Upload" && mapping) {
+				// Use AI mapping to parse
+				trades = await parseCsvWithAiMapping(file, mapping);
+			} else if (format === "AI Upload" && !mapping) {
+				// AI Upload selected but no mapping yet - just store the file
+				setIsParsingCsv(false);
+				return;
+			} else {
+				// Use standard template parsing
+				trades = await parseTradeCsv(file, {
+					template: format,
+				});
+			}
 			setParsedTrades(trades);
 		} catch (error) {
 			setCsvError(
@@ -276,10 +295,67 @@ export default function AlphaSolverApp({
 		}
 	};
 
+	// AI Upload: Analyze CSV headers and get column mapping from AI
+	const handleAnalyzeCsv = async () => {
+		if (!csvFile) {
+			setCsvError("Please select a CSV file first");
+			return;
+		}
+
+		if (!planConfig.allowAiUpload) {
+			setCsvError("AI Upload is a paid feature. Please upgrade your plan.");
+			return;
+		}
+
+		setIsAnalyzingCsv(true);
+		setCsvError(null);
+		setAiMapping(null);
+		setAiMappingConfirmed(false);
+		setParsedTrades(null);
+
+		try {
+			// Extract headers and sample rows
+			const { headers, sampleRows } = await extractCsvPreview(csvFile);
+
+			// Call AI mapping API
+			const result = await getAiColumnMapping(headers, sampleRows);
+
+			if (result.success && result.mapping) {
+				setAiMapping(result.mapping);
+			} else {
+				setCsvError(result.error || "Failed to analyze CSV. Please try a different template.");
+			}
+		} catch (error) {
+			setCsvError(error instanceof Error ? error.message : "Failed to analyze CSV");
+		} finally {
+			setIsAnalyzingCsv(false);
+		}
+	};
+
+	// Confirm AI mapping and parse the CSV
+	const handleConfirmAiMapping = async () => {
+		if (!csvFile || !aiMapping) return;
+		
+		setAiMappingConfirmed(true);
+		await parseCsvFile(csvFile, "AI Upload", aiMapping);
+	};
+
+	// Reset AI mapping state
+	const handleResetAiMapping = () => {
+		setAiMapping(null);
+		setAiMappingConfirmed(false);
+		setParsedTrades(null);
+	};
+
 	const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (!file) return;
-		await parseCsvFile(file, csvFormat);
+		
+		// Reset AI mapping when file changes
+		setAiMapping(null);
+		setAiMappingConfirmed(false);
+		
+		await parseCsvFile(file, csvFormat, aiMapping || undefined);
 	};
 
 	const handleDragOver = (e: React.DragEvent) => {
@@ -473,6 +549,107 @@ export default function AlphaSolverApp({
 										</a>
 									</div>
 								)}
+								{csvFormat === "AI Upload" && (
+									<div className="mt-3 p-3 bg-purple-a2 rounded-md border border-purple-a4">
+										{!planConfig.allowAiUpload ? (
+											<Callout.Root color="amber">
+												<Callout.Text size="2">
+													AI Upload is a paid feature. Upgrade to Unlimited to use automatic column detection.
+												</Callout.Text>
+											</Callout.Root>
+										) : !csvFile ? (
+											<Text size="2" color="gray">
+												Upload a CSV file, then click "Analyze CSV" to automatically detect columns.
+											</Text>
+										) : !aiMapping ? (
+											<div className="space-y-2">
+												<Text size="2" color="gray" className="block">
+													AI will analyze your CSV headers and map them to the required columns.
+												</Text>
+												<Button
+													type="button"
+													size="2"
+													variant="solid"
+													color="purple"
+													onClick={handleAnalyzeCsv}
+													disabled={isAnalyzingCsv}
+													loading={isAnalyzingCsv}
+													className="w-full"
+												>
+													{isAnalyzingCsv ? "Analyzing..." : "🤖 Analyze CSV"}
+												</Button>
+											</div>
+										) : !aiMappingConfirmed ? (
+											<div className="space-y-3">
+												<Text size="2" weight="medium" className="block">
+													AI Detected Columns:
+												</Text>
+												<div className="space-y-1 text-sm">
+													<div className="flex justify-between">
+														<Text size="1" color="gray">PNL:</Text>
+														<Text size="1" weight="medium">{aiMapping.pnl.column} ({aiMapping.pnl.format})</Text>
+													</div>
+													<div className="flex justify-between">
+														<Text size="1" color="gray">Date:</Text>
+														<Text size="1" weight="medium">{aiMapping.date.column} ({aiMapping.date.format})</Text>
+													</div>
+													{aiMapping.mfe && (
+														<div className="flex justify-between">
+															<Text size="1" color="gray">MFE:</Text>
+															<Text size="1" weight="medium">{aiMapping.mfe.column} ({aiMapping.mfe.format})</Text>
+														</div>
+													)}
+													{aiMapping.row_filter && (
+														<div className="flex justify-between">
+															<Text size="1" color="gray">Filter:</Text>
+															<Text size="1" weight="medium">{aiMapping.row_filter.column} {aiMapping.row_filter.condition} "{aiMapping.row_filter.value}"</Text>
+														</div>
+													)}
+												</div>
+												<div className="flex gap-2">
+													<Button
+														type="button"
+														size="2"
+														variant="soft"
+														onClick={handleResetAiMapping}
+														className="flex-1"
+													>
+														Re-analyze
+													</Button>
+													<Button
+														type="button"
+														size="2"
+														variant="solid"
+														color="green"
+														onClick={handleConfirmAiMapping}
+														className="flex-1"
+													>
+														✓ Confirm & Parse
+													</Button>
+												</div>
+											</div>
+										) : (
+											<div className="space-y-2">
+												<Text size="2" weight="medium" color="green" className="block">
+													✓ AI Mapping Confirmed
+												</Text>
+												<div className="space-y-1 text-sm">
+													<Text size="1" color="gray">PNL: {aiMapping.pnl.column}</Text>
+													<Text size="1" color="gray">Date: {aiMapping.date.column}</Text>
+													{aiMapping.mfe && <Text size="1" color="gray">MFE: {aiMapping.mfe.column}</Text>}
+												</div>
+												<Button
+													type="button"
+													size="1"
+													variant="soft"
+													onClick={handleResetAiMapping}
+												>
+													Change Mapping
+												</Button>
+											</div>
+										)}
+									</div>
+								)}
 							</div>
 							<div>
 								<Text size="2" weight="medium" className="mb-2 block">
@@ -500,9 +677,15 @@ export default function AlphaSolverApp({
 										</div>
 									) : csvFile ? (
 										<div className="space-y-2">
-											<Text size="2" weight="medium" color="green">
-												✓ Loaded {parsedTrades?.length || 0} trades
-											</Text>
+											{csvFormat === "AI Upload" && !aiMappingConfirmed ? (
+												<Text size="2" weight="medium" color="purple">
+													📄 File ready for AI analysis
+												</Text>
+											) : (
+												<Text size="2" weight="medium" color="green">
+													✓ Loaded {parsedTrades?.length || 0} trades
+												</Text>
+											)}
 											<Text size="2" color="gray">
 												{csvFile.name}
 											</Text>
@@ -519,6 +702,8 @@ export default function AlphaSolverApp({
 													setCsvFile(null);
 													setParsedTrades(null);
 													setCsvError(null);
+													setAiMapping(null);
+													setAiMappingConfirmed(false);
 													if (fileInputRef.current) {
 														fileInputRef.current.value = "";
 													}

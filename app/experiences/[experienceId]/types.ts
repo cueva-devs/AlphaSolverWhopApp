@@ -3,7 +3,8 @@ export type CsvFormat =
 	| "TradingView" 
 	| "Rithmic / R|Trader" 
 	| "Tradovate" 
-	| "Custom";
+	| "Custom"
+	| "AI Upload";
 
 // Saved Run type for export/import
 export interface SavedRun {

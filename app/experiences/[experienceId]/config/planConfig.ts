@@ -8,6 +8,7 @@ export interface PlanConfig {
 	dailyCredits: number; // -1 = unlimited
 	allowExport: boolean;
 	allowTradingPlan: boolean;
+	allowAiUpload: boolean; // AI-powered CSV column mapping
 }
 
 export const PLAN_CONFIGS: Record<PlanId, PlanConfig> = {
@@ -19,6 +20,7 @@ export const PLAN_CONFIGS: Record<PlanId, PlanConfig> = {
 		dailyCredits: 3, // 3 runs per day
 		allowExport: false,
 		allowTradingPlan: true,
+		allowAiUpload: false,
 	},
 	unlimited: {
 		label: "Unlimited",
@@ -28,6 +30,7 @@ export const PLAN_CONFIGS: Record<PlanId, PlanConfig> = {
 		dailyCredits: -1, // Unlimited
 		allowExport: true,
 		allowTradingPlan: true,
+		allowAiUpload: true,
 	},
 };
 
