@@ -444,14 +444,21 @@ export default function AlphaSolverApp({
 								<Text size="1" color="gray" className="block">
 									Credits reset daily at midnight.
 								</Text>
-								{noCreditsRemaining && !isWhopIframe && upgradeUrl && (
-									<a href={upgradeUrl} target="_blank" rel="noopener noreferrer">
-										<Button variant="solid" color="blue" size="2" className="w-full mt-2">
-											Upgrade to Unlimited
-										</Button>
-									</a>
+								{noCreditsRemaining && upgradeUrl && (
+									<div className="space-y-2">
+										<a href={upgradeUrl} target="_blank" rel="noopener noreferrer">
+											<Button variant="solid" color="blue" size="2" className="w-full mt-2">
+												Upgrade to Unlimited
+											</Button>
+										</a>
+										{isWhopIframe && (
+											<Text size="1" color="gray" className="text-center">
+												Or contact your community admin to upgrade your plan
+											</Text>
+										)}
+									</div>
 								)}
-								{noCreditsRemaining && isWhopIframe && (
+								{noCreditsRemaining && !upgradeUrl && isWhopIframe && (
 									<Callout.Root color="amber" className="mt-2">
 										<Callout.Text size="1">
 											Contact your community admin to upgrade your plan, or come back tomorrow.
