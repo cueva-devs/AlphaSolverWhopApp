@@ -1,175 +1,320 @@
 "use client";
 
-import { useState } from "react";
-import { Card, Text, Heading, Callout, Table, Spinner, Button, Select } from "@whop/react/components";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useInView } from "react-intersection-observer";
 import type { SimulationResult, AccountConfig, OutcomeScenario } from "../types";
 import EquityChart from "./EquityChart";
 import TradeDistributionCharts from "./TradeDistributionCharts";
+
+// ============================================
+// ANIMATION VARIANTS (matching landing page)
+// ============================================
+const fadeUp = {
+	hidden: { opacity: 0, y: 20 },
+	visible: (i: number) => ({
+		opacity: 1,
+		y: 0,
+		transition: { duration: 0.5, delay: i * 0.08, ease: [0.25, 0.4, 0.25, 1] as const }
+	})
+};
+
+const staggerContainer = {
+	hidden: { opacity: 0 },
+	visible: {
+		opacity: 1,
+		transition: { staggerChildren: 0.08, delayChildren: 0.1 }
+	}
+};
+
+const scaleUp = {
+	hidden: { opacity: 0, scale: 0.95 },
+	visible: { 
+		opacity: 1, 
+		scale: 1,
+		transition: { duration: 0.5, ease: [0.25, 0.4, 0.25, 1] as const }
+	}
+};
+
+const cardHover = {
+	rest: { scale: 1, y: 0 },
+	hover: { 
+		scale: 1.02, 
+		y: -4,
+		transition: { duration: 0.25 }
+	}
+};
+
+// ============================================
+// ANIMATED COUNTER (matching landing page)
+// ============================================
+function AnimatedCounter({ 
+	value, 
+	suffix = "", 
+	prefix = "", 
+	decimals = 0,
+	duration = 2000
+}: { 
+	value: number; 
+	suffix?: string; 
+	prefix?: string;
+	decimals?: number;
+	duration?: number;
+}) {
+	const [count, setCount] = useState(0);
+	const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.3 });
+
+	useEffect(() => {
+		if (inView) {
+			const steps = 60;
+			const increment = value / steps;
+			let current = 0;
+			const timer = setInterval(() => {
+				current += increment;
+				if (current >= value) {
+					setCount(value);
+					clearInterval(timer);
+				} else {
+					setCount(current);
+				}
+			}, duration / steps);
+			return () => clearInterval(timer);
+		}
+	}, [inView, value, duration]);
+
+	return (
+		<motion.span 
+			ref={ref}
+			initial={{ opacity: 0, y: 10 }}
+			animate={inView ? { opacity: 1, y: 0 } : {}}
+			transition={{ duration: 0.4 }}
+		>
+			{prefix}{decimals > 0 ? count.toFixed(decimals) : Math.floor(count).toLocaleString()}{suffix}
+		</motion.span>
+	);
+}
+
+// ============================================
+// METRIC CARD COMPONENT (matching landing page)
+// ============================================
+function MetricCard({ 
+	label, 
+	value, 
+	numericValue,
+	change, 
+	positive,
+	large = false,
+	delay = 0,
+	accent = false,
+}: { 
+	label: string; 
+	value: string;
+	numericValue?: number;
+	change?: string;
+	positive?: boolean;
+	large?: boolean;
+	delay?: number;
+	accent?: boolean;
+}) {
+	const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.3 });
+	
+	return (
+		<motion.div 
+			ref={ref}
+			initial="rest"
+			whileHover="hover"
+			variants={cardHover}
+			className={`metric-card p-4 ${large ? 'p-6' : ''} ${positive ? 'metric-positive' : ''} ${accent ? 'border-[var(--accent)]' : ''}`}
+		>
+			<div className="relative z-10">
+				<div className="flex items-start justify-between mb-2">
+					<span className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+						{label}
+					</span>
+				</div>
+				<motion.div 
+					className={`font-semibold ${large ? 'text-3xl' : 'text-2xl'} ${
+						positive ? 'text-[var(--positive)] green-pulse' : 
+						accent ? 'text-[var(--accent)]' : 
+						'text-[var(--text-primary)]'
+					}`}
+					initial={{ opacity: 0, scale: 0.9 }}
+					animate={inView ? { opacity: 1, scale: 1 } : {}}
+					transition={{ duration: 0.4, delay: delay * 0.1 }}
+				>
+					{numericValue !== undefined ? (
+						<AnimatedCounter 
+							value={numericValue} 
+							suffix={value.includes('%') ? '%' : ''} 
+							prefix={value.startsWith('+') ? '+' : value.startsWith('$') ? '$' : ''}
+							decimals={value.includes('.') ? 1 : 0}
+						/>
+					) : value}
+				</motion.div>
+				{change && (
+					<motion.div 
+						className={`text-xs mt-1 ${positive ? 'text-[var(--positive)]' : 'text-[var(--text-muted)]'}`}
+						initial={{ opacity: 0 }}
+						animate={inView ? { opacity: 1 } : {}}
+						transition={{ delay: 0.3 + delay * 0.1 }}
+					>
+						{change}
+					</motion.div>
+				)}
+			</div>
+		</motion.div>
+	);
+}
 
 function MostProbableOutcomesTable({ outcomes }: { outcomes: OutcomeScenario[] }) {
 	const [currentPage, setCurrentPage] = useState(1);
 	const [pageSize, setPageSize] = useState(10);
 	const [minProbability, setMinProbability] = useState(0.1);
 
-	// Filter outcomes by minimum probability
 	const filteredOutcomes = outcomes.filter(o => o.probability >= minProbability);
-
 	const totalPages = Math.ceil(filteredOutcomes.length / pageSize);
 	const startIndex = (currentPage - 1) * pageSize;
 	const endIndex = Math.min(startIndex + pageSize, filteredOutcomes.length);
 	const paginatedOutcomes = filteredOutcomes.slice(startIndex, endIndex);
 
 	const showPagination = filteredOutcomes.length > 10;
-	const dominant = outcomes[0]; // Always use first from original (highest probability)
+	const dominant = outcomes[0];
 	const isPass = dominant.netPnl > 0;
 
 	return (
-		<Card size="2" variant="surface">
-			<Heading size="4" as="h3" className="mb-3">
-				Most Probable Outcomes
-			</Heading>
-			<Text size="1" color="gray" className="mb-3 block">
-				Scenarios identified via clustering algorithm on simulation paths.
-			</Text>
+		<motion.div 
+			initial={{ opacity: 0, y: 20 }}
+			animate={{ opacity: 1, y: 0 }}
+			transition={{ duration: 0.5 }}
+			className="chart-container p-5"
+		>
+			<div className="mb-4">
+				<h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1">
+					Most Probable Outcomes
+				</h3>
+				<p className="text-xs text-[var(--text-muted)]">
+					Scenarios identified via clustering algorithm on simulation paths
+				</p>
+			</div>
 
 			{/* Dominant Scenario Callout */}
-			<div 
-				className={`mb-4 p-3 rounded-r-md border-l-4 ${
+			<motion.div 
+				initial={{ opacity: 0, scale: 0.95 }}
+				animate={{ opacity: 1, scale: 1 }}
+				transition={{ delay: 0.2 }}
+				className={`mb-4 p-4 rounded-lg border-l-4 ${
 					isPass 
-						? 'bg-green-500/10 border-green-500' 
-						: 'bg-red-500/10 border-red-500'
+						? 'bg-[var(--positive-dim)] border-[var(--positive)]' 
+						: 'bg-[var(--negative-dim)] border-[var(--negative)]'
 				}`}
 			>
-				<Text size="1" color="gray" className="uppercase tracking-wide block mb-1">
+				<div className="text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)] mb-1">
 					Most Likely Outcome ({dominant.probability.toFixed(1)}%)
-				</Text>
-				<Text size="3" weight="bold" className={isPass ? 'text-green-500' : 'text-red-500'}>
+				</div>
+				<div className={`text-xl font-semibold ${isPass ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
 					{dominant.scenario}
-				</Text>
-			</div>
+				</div>
+			</motion.div>
 
-			{/* Filters and pagination controls */}
-			<div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-				{/* Minimum probability filter */}
+			{/* Filters */}
+			<div className="flex flex-wrap items-center justify-between gap-3 mb-4">
 				<div className="flex items-center gap-2">
-					<Text size="2" color="gray">Min Probability:</Text>
-					<Select.Root 
-						value={String(minProbability)} 
-						onValueChange={(val) => {
-							setMinProbability(Number(val));
+					<span className="text-xs text-[var(--text-muted)]">Min Probability:</span>
+					<select 
+						value={minProbability} 
+						onChange={(e) => {
+							setMinProbability(Number(e.target.value));
 							setCurrentPage(1);
 						}}
+						className="bg-[var(--bg-tertiary)] border border-[var(--border)] rounded px-2 py-1 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent)]"
 					>
-						<Select.Trigger className="w-24" />
-						<Select.Content>
-							<Select.Item value="0">All</Select.Item>
-							<Select.Item value="0.1">≥ 0.1%</Select.Item>
-							<Select.Item value="0.25">≥ 0.25%</Select.Item>
-							<Select.Item value="0.5">≥ 0.5%</Select.Item>
-							<Select.Item value="1">≥ 1%</Select.Item>
-							<Select.Item value="2">≥ 2%</Select.Item>
-							<Select.Item value="5">≥ 5%</Select.Item>
-						</Select.Content>
-					</Select.Root>
+						<option value={0}>All</option>
+						<option value={0.1}>≥ 0.1%</option>
+						<option value={0.25}>≥ 0.25%</option>
+						<option value={0.5}>≥ 0.5%</option>
+						<option value={1}>≥ 1%</option>
+						<option value={2}>≥ 2%</option>
+						<option value={5}>≥ 5%</option>
+					</select>
 				</div>
-
-				<Text size="2" color="gray">
+				<span className="text-xs text-[var(--text-muted)]">
 					{filteredOutcomes.length} of {outcomes.length} scenarios
-				</Text>
-
-				{/* Page size selector */}
-				{showPagination && (
-					<div className="flex items-center gap-2">
-						<Text size="2" color="gray">Rows:</Text>
-						<Select.Root 
-							value={String(pageSize)} 
-							onValueChange={(val) => {
-								setPageSize(Number(val));
-								setCurrentPage(1);
-							}}
-						>
-							<Select.Trigger className="w-20" />
-							<Select.Content>
-								<Select.Item value="10">10</Select.Item>
-								<Select.Item value="25">25</Select.Item>
-								<Select.Item value="50">50</Select.Item>
-							</Select.Content>
-						</Select.Root>
-					</div>
-				)}
+				</span>
 			</div>
 
-			{/* Scenario Table */}
-			<div className="overflow-x-auto max-h-[400px] overflow-y-auto border border-gray-a4 rounded-lg">
-				<table className="w-full text-sm">
-					<thead className="sticky top-0 bg-gray-a3">
-						<tr className="border-b border-gray-a6">
-							<th className="text-left py-2 px-3 font-semibold">Scenario</th>
-							<th className="text-right py-2 px-3 font-semibold whitespace-nowrap">Probability</th>
-							<th className="text-right py-2 px-3 font-semibold">Days</th>
-							<th className="text-right py-2 px-3 font-semibold whitespace-nowrap">Max DD</th>
-							<th className="text-right py-2 px-3 font-semibold whitespace-nowrap">Net P&L</th>
+			{/* Table */}
+			<div className="overflow-x-auto border border-[var(--border)] rounded-lg">
+				<table className="data-table w-full text-sm">
+					<thead>
+						<tr>
+							<th>Scenario</th>
+							<th className="text-right">Probability</th>
+							<th className="text-right">Days</th>
+							<th className="text-right whitespace-nowrap">Max DD</th>
+							<th className="text-right whitespace-nowrap">Net P&L</th>
 						</tr>
 					</thead>
 					<tbody>
 						{paginatedOutcomes.map((outcome, idx) => (
-							<tr key={startIndex + idx} className="border-b border-gray-a4 hover:bg-gray-a2">
-								<td className="py-2 px-3">{outcome.scenario}</td>
-								<td className="py-2 px-3 text-right">{outcome.probability.toFixed(1)}%</td>
-								<td className="py-2 px-3 text-right">{outcome.days}</td>
-								<td className="py-2 px-3 text-right">${outcome.maxDD.toFixed(0)}</td>
-								<td className={`py-2 px-3 text-right font-medium ${
-									outcome.netPnl >= 0 ? 'text-green-500' : 'text-red-500'
+							<motion.tr 
+								key={startIndex + idx}
+								initial={{ opacity: 0, x: -10 }}
+								animate={{ opacity: 1, x: 0 }}
+								transition={{ delay: idx * 0.03 }}
+								className="hover:bg-[var(--bg-card-hover)]"
+							>
+								<td className="py-3 px-4">{outcome.scenario}</td>
+								<td className="py-3 px-4 text-right">{outcome.probability.toFixed(1)}%</td>
+								<td className="py-3 px-4 text-right">{outcome.days}</td>
+								<td className="py-3 px-4 text-right">${outcome.maxDD.toFixed(0)}</td>
+								<td className={`py-3 px-4 text-right font-medium ${
+									outcome.netPnl >= 0 ? 'text-[var(--positive)]' : 'text-[var(--negative)]'
 								}`}>
 									${outcome.netPnl.toFixed(0)}
 								</td>
-							</tr>
+							</motion.tr>
 						))}
 					</tbody>
 				</table>
 			</div>
 
-			{/* Pagination controls */}
+			{/* Pagination */}
 			{showPagination && totalPages > 1 && (
-				<div className="flex items-center justify-center gap-2 mt-3">
-					<Button 
-						variant="soft" 
-						size="1"
-						disabled={currentPage === 1}
+				<div className="flex items-center justify-center gap-2 mt-4">
+					<button
 						onClick={() => setCurrentPage(1)}
+						disabled={currentPage === 1}
+						className="px-3 py-1 text-xs bg-[var(--bg-tertiary)] border border-[var(--border)] rounded disabled:opacity-50 disabled:cursor-not-allowed hover:border-[var(--accent)] transition-colors"
 					>
 						««
-					</Button>
-					<Button 
-						variant="soft" 
-						size="1"
-						disabled={currentPage === 1}
+					</button>
+					<button
 						onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+						disabled={currentPage === 1}
+						className="px-3 py-1 text-xs bg-[var(--bg-tertiary)] border border-[var(--border)] rounded disabled:opacity-50 disabled:cursor-not-allowed hover:border-[var(--accent)] transition-colors"
 					>
 						«
-					</Button>
-					<Text size="2" className="px-3">
+					</button>
+					<span className="px-4 text-xs text-[var(--text-muted)]">
 						Page {currentPage} of {totalPages}
-					</Text>
-					<Button 
-						variant="soft" 
-						size="1"
-						disabled={currentPage === totalPages}
+					</span>
+					<button
 						onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+						disabled={currentPage === totalPages}
+						className="px-3 py-1 text-xs bg-[var(--bg-tertiary)] border border-[var(--border)] rounded disabled:opacity-50 disabled:cursor-not-allowed hover:border-[var(--accent)] transition-colors"
 					>
 						»
-					</Button>
-					<Button 
-						variant="soft" 
-						size="1"
-						disabled={currentPage === totalPages}
+					</button>
+					<button
 						onClick={() => setCurrentPage(totalPages)}
+						disabled={currentPage === totalPages}
+						className="px-3 py-1 text-xs bg-[var(--bg-tertiary)] border border-[var(--border)] rounded disabled:opacity-50 disabled:cursor-not-allowed hover:border-[var(--accent)] transition-colors"
 					>
 						»»
-					</Button>
+					</button>
 				</div>
 			)}
-		</Card>
+		</motion.div>
 	);
 }
 
@@ -186,350 +331,393 @@ export default function ResultsPanel({
 	error,
 	accountConfig,
 }: ResultsPanelProps) {
+	const [metricsRef, metricsInView] = useInView({ triggerOnce: true, threshold: 0.1 });
+	const [resultsRef, resultsInView] = useInView({ triggerOnce: true, threshold: 0.1 });
+
 	return (
-		<div className="flex flex-col lg:flex-row gap-4 lg:gap-6 h-full">
+		<div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
+			<div className="flex flex-col lg:flex-row gap-6 p-6 max-w-7xl mx-auto">
 			{/* Left Column - Results */}
-			<div className="flex-1 space-y-4 lg:space-y-6 overflow-y-auto pr-0 lg:pr-4">
+			<div className="flex-1 space-y-6 overflow-y-auto">
 				{/* Error Banner */}
 				{error && (
-					<Callout.Root color="red">
-						<Callout.Text>
-							<Text size="2" weight="bold" className="block mb-1">
-								Simulation Error
-							</Text>
-							{error}
-						</Callout.Text>
-					</Callout.Root>
+					<motion.div
+						initial={{ opacity: 0, y: -10 }}
+						animate={{ opacity: 1, y: 0 }}
+						className="p-4 rounded-lg bg-[var(--negative-dim)] border border-[var(--negative)]"
+					>
+						<div className="text-sm font-semibold text-[var(--negative)] mb-1">
+							Simulation Error
+						</div>
+						<div className="text-sm text-[var(--text-secondary)]">{error}</div>
+					</motion.div>
 				)}
 
 				{/* Loading State */}
 				{isRunning && (
-					<div className="flex flex-col items-center justify-center py-12">
-						<Spinner size="4" className="mb-4" />
-						<Text size="3" color="gray">
+					<motion.div 
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						className="flex flex-col items-center justify-center py-24"
+					>
+						<div className="relative mb-6">
+							<div className="w-16 h-16 border-4 border-[var(--border)] border-t-[var(--accent)] rounded-full animate-spin" />
+							<div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-[var(--positive)] rounded-full animate-spin" style={{ animationDelay: '0.15s', animationDuration: '1.5s' }} />
+						</div>
+						<div className="text-lg font-semibold text-[var(--text-primary)] mb-2">
 							Running simulation...
-						</Text>
-					</div>
+						</div>
+						<div className="text-sm text-[var(--text-muted)]">
+							Analyzing thousands of possible outcomes
+						</div>
+					</motion.div>
 				)}
 
-				{/* Empty State - Landing Page Content */}
+				{/* Empty State - Redesigned */}
 				{!result && !isRunning && !error && (
-					<Card size="3" variant="surface" className="p-6">
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.6 }}
+						className="chart-container p-8"
+					>
 						<div className="space-y-6">
 							<div>
-								<Heading size="6" as="h2" className="mb-3">
-									🎯 What is AlphaSolver?
-								</Heading>
-								<Text size="3" color="gray">
-									AlphaSolver is a <strong>Monte Carlo simulation tool</strong> designed to help prop firm traders understand their true probability of passing evaluations and getting funded.
-								</Text>
+								<h2 className="text-3xl font-['Space_Grotesk',_sans-serif] font-bold mb-3">
+									<span className="text-[var(--text-primary)]">Know your </span>
+									<span className="headline-gradient">true odds</span>
+								</h2>
+								<p className="text-base text-[var(--text-secondary)] leading-relaxed">
+									AlphaSolver is a <strong className="text-[var(--text-primary)]">Monte Carlo simulation tool</strong> designed to help prop firm traders understand their true probability of passing evaluations and getting funded.
+								</p>
 							</div>
 
-							<div>
-								<Heading size="5" as="h3" className="mb-3">
-									How It Works
-								</Heading>
-								<ol className="list-decimal list-inside space-y-2">
-									<li>
-										<Text size="2"><strong>Upload your trade log</strong> — Import your historical trades from NinjaTrader, TradingView, Tradovate, or any CSV format</Text>
-									</li>
-									<li>
-										<Text size="2"><strong>Select your prop firm</strong> — Choose from Topstep, Take Profit Trader, Funded Futures Network, Tradeify, or create custom rules</Text>
-									</li>
-									<li>
-										<Text size="2"><strong>Run the simulation</strong> — We simulate thousands of possible outcomes using your actual trading statistics</Text>
-									</li>
-									<li>
-										<Text size="2"><strong>Get actionable insights</strong> — See your pass rate, expected costs, ROI, and optimal trading strategies</Text>
-									</li>
-								</ol>
+							<div className="grid sm:grid-cols-2 gap-4 pt-4 border-t border-[var(--border)]">
+								{[
+									{
+										icon: "📊",
+										title: "Data-driven decisions",
+										desc: "Know your actual odds before paying for an evaluation"
+									},
+									{
+										icon: "💰",
+										title: "Cost analysis",
+										desc: "Understand the true cost including resets and fees"
+									},
+									{
+										icon: "🎲",
+										title: "Risk assessment",
+										desc: "See best and worst case scenarios"
+									},
+									{
+										icon: "📈",
+										title: "Strategy optimization",
+										desc: "Get personalized trading plan recommendations"
+									}
+								].map((item, i) => (
+									<motion.div
+										key={i}
+										initial={{ opacity: 0, y: 10 }}
+										animate={{ opacity: 1, y: 0 }}
+										transition={{ delay: 0.1 + i * 0.1 }}
+										className="dash-card p-4"
+									>
+										<div className="text-2xl mb-2">{item.icon}</div>
+										<div className="font-semibold mb-1 text-sm">{item.title}</div>
+										<div className="text-xs text-[var(--text-secondary)]">{item.desc}</div>
+									</motion.div>
+								))}
 							</div>
 
-							<div>
-								<Heading size="5" as="h3" className="mb-3">
-									Why Use AlphaSolver?
-								</Heading>
-								<ul className="space-y-2">
-									<li>
-										<Text size="2">📊 <strong>Data-driven decisions</strong> — Know your actual odds before paying for an evaluation</Text>
-									</li>
-									<li>
-										<Text size="2">💰 <strong>Cost analysis</strong> — Understand the true cost of getting funded including resets and monthly fees</Text>
-									</li>
-									<li>
-										<Text size="2">🎲 <strong>Risk assessment</strong> — See best and worst case scenarios based on your trading style</Text>
-									</li>
-									<li>
-										<Text size="2">📈 <strong>Strategy optimization</strong> — Get personalized recommendations for daily profit targets and risk limits</Text>
-									</li>
-								</ul>
-							</div>
-
-							<div className="pt-4 border-t border-gray-a5">
-								<Heading size="5" as="h3" className="mb-2">
-									Get Started
-								</Heading>
-								<Text size="2" color="gray">
-									👈 <strong>Upload your trade log</strong> in the sidebar and click <strong>Run Simulation</strong> to see your personalized results.
-								</Text>
+							<div className="pt-4 border-t border-[var(--border)]">
+								<p className="text-sm text-[var(--text-muted)]">
+									👈 <strong className="text-[var(--text-primary)]">Upload your trade log</strong> in the sidebar and click <strong className="text-[var(--accent)]">Run Simulation</strong> to see your personalized results.
+								</p>
 							</div>
 						</div>
-					</Card>
+					</motion.div>
 				)}
 
 				{/* Results Content */}
 				{result && !isRunning && (
-					<>
-						{/* Outcome Probability */}
-						<div className="space-y-3">
-							<Heading size="5" as="h3" className="text-cyan-400">
-								Outcome Probability
-							</Heading>
-							<div className="grid grid-cols-2 gap-3">
-								<div className="bg-gray-a3 rounded-lg p-4">
-									<Text size="1" color="gray" className="block mb-2">
-										Pass Rate
-									</Text>
-									<Text size="7" weight="bold" className="block">
-										{result.passProbability.toFixed(1)}%
-									</Text>
-									{result.passRateCiLower !== undefined && result.passRateCiUpper !== undefined && (
-										<Text size="1" className="text-green-500 block mt-1">
-											↑ {result.confidenceLevel ? `${Math.round(result.confidenceLevel * 100)}%` : '95%'} CI: [{result.passRateCiLower.toFixed(1)}%, {result.passRateCiUpper.toFixed(1)}%]
-										</Text>
-									)}
-								</div>
-								<div className="bg-gray-a3 rounded-lg p-4">
-									<Text size="1" color="gray" className="block mb-2">
-										Fail Rate
-									</Text>
-									<Text size="7" weight="bold" className="block">
-										{(result.failProbability || 100 - result.passProbability).toFixed(1)}%
-									</Text>
-									{result.timeoutRate !== undefined && result.timeoutRate > 0 && (
-										<Text size="1" color="gray" className="block mt-1">
-											Timeout: {result.timeoutRate.toFixed(1)}%
-										</Text>
-									)}
-								</div>
-							</div>
-						</div>
+					<motion.div
+						ref={resultsRef}
+						initial="hidden"
+						animate={resultsInView ? "visible" : "hidden"}
+						variants={staggerContainer}
+						className="space-y-6"
+					>
+						{/* Hero Metrics - Matching Landing Page */}
+						<motion.div
+							ref={metricsRef}
+							initial="hidden"
+							animate={metricsInView ? "visible" : "hidden"}
+							variants={staggerContainer}
+							className="grid grid-cols-2 lg:grid-cols-4 gap-3"
+						>
+							<motion.div variants={scaleUp}>
+								<MetricCard 
+									label="Pass Rate" 
+									value={`${result.passProbability.toFixed(1)}%`}
+									numericValue={result.passProbability}
+									change={result.passRateCiLower !== undefined ? `${Math.round((result.confidenceLevel || 0.95) * 100)}% CI: [${result.passRateCiLower.toFixed(1)}%, ${result.passRateCiUpper?.toFixed(1)}%]` : undefined}
+									positive={result.passProbability >= 50}
+									large
+									delay={0}
+								/>
+							</motion.div>
+							<motion.div variants={scaleUp}>
+								<MetricCard 
+									label="Expected Value" 
+									value={`+$${Math.abs(result.netPnlPerAttempt || result.expectedPayout).toLocaleString()}`}
+									numericValue={Math.abs(result.netPnlPerAttempt || result.expectedPayout)}
+									change="Net profit per attempt"
+									positive={(result.netPnlPerAttempt || result.expectedPayout) > 0}
+									large
+									delay={1}
+								/>
+							</motion.div>
+							<motion.div variants={scaleUp}>
+								<MetricCard 
+									label="Avg Attempts" 
+									value={(result.expectedAttemptsToPass || 1.0).toFixed(1)}
+									numericValue={result.expectedAttemptsToPass || 1.0}
+									change="To pass evaluation"
+									large
+									delay={2}
+								/>
+							</motion.div>
+							<motion.div variants={scaleUp}>
+								<MetricCard 
+									label="Expected ROI" 
+									value={result.expectedROI ? `${result.expectedROI > 0 ? '+' : ''}${result.expectedROI.toFixed(0)}%` : "N/A"}
+									numericValue={result.expectedROI || 0}
+									change="Return on eval cost"
+									positive={result.expectedROI ? result.expectedROI > 0 : false}
+									large
+									delay={3}
+								/>
+							</motion.div>
+						</motion.div>
 
-						{/* Expected Value */}
-						<div className="space-y-3">
-							<Heading size="5" as="h3" className="text-cyan-400">
-								Expected Value
-							</Heading>
-							<div className="grid grid-cols-2 gap-3">
-								<div className="bg-gray-a3 rounded-lg p-4">
-									<Text size="1" color="gray" className="block mb-2">
-										Net EV Per Attempt
-									</Text>
-									<Text size="7" weight="bold" className="block">
-										${(result.netPnlPerAttempt || result.expectedPayout).toLocaleString(undefined, {
-											minimumFractionDigits: 2,
-											maximumFractionDigits: 2,
-										})}
-									</Text>
-								</div>
-								<div className="bg-gray-a3 rounded-lg p-4">
-									<Text size="1" color="gray" className="block mb-2">
-										Expected Attempts to Pass
-									</Text>
-									<Text size="7" weight="bold" className="block">
-										{(result.expectedAttemptsToPass || 1.0).toFixed(1)}
-									</Text>
-								</div>
-							</div>
-						</div>
+						{/* Secondary Metrics */}
+						<motion.div
+							variants={staggerContainer}
+							initial="hidden"
+							animate={metricsInView ? "visible" : "hidden"}
+							className="grid grid-cols-3 sm:grid-cols-6 gap-3"
+						>
+							{[
+								{ label: "Fail Rate", value: `${(result.failProbability || 100 - result.passProbability).toFixed(1)}%` },
+								{ label: "Avg Days", value: `${Math.round(result.avgDaysToPass || 0)}` },
+								{ label: "Total Days", value: `${Math.round(result.totalDaysToPayout || 0)}` },
+								{ label: "Eval Cost", value: `$${(result.initialPurchase || 149).toFixed(0)}` },
+								{ label: "Monthly Rebill", value: `$${(result.monthlyRebill || 149).toFixed(0)}` },
+								{ label: "Funded Setup", value: `$${(result.fundedSetup || 149).toFixed(0)}` },
+							].map((item, i) => (
+								<motion.div 
+									key={i} 
+									variants={fadeUp} 
+									custom={i + 4}
+									whileHover={{ scale: 1.02, y: -2 }}
+									className="dash-card p-3 text-center"
+								>
+									<div className="text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)] mb-1">
+										{item.label}
+									</div>
+									<div className="text-sm font-semibold text-[var(--text-primary)]">
+										{item.value}
+									</div>
+								</motion.div>
+							))}
+						</motion.div>
 
-						{/* Timeline */}
-						<div className="space-y-3">
-							<Heading size="5" as="h3" className="text-cyan-400">
-								Timeline (Winners)
-							</Heading>
+						{/* Timeline Section */}
+						<motion.div variants={fadeUp} custom={0} className="space-y-3">
+							<h3 className="text-lg font-semibold text-[var(--text-primary)]">Timeline</h3>
 							<div className="grid grid-cols-3 gap-3">
-								<div className="bg-gray-a3 rounded-lg p-4">
-									<Text size="1" color="gray" className="block mb-2">
-										Avg Days in Eval
-									</Text>
-									<Text size="7" weight="bold" className="block">
-										{Math.round(result.avgDaysToPass || 0)}
-									</Text>
-									{(() => {
-										const evalMonths = (result.avgDaysToPass || 0) / 30;
-										const rebills = evalMonths >= 1 ? Math.max(0, Math.floor(evalMonths) - 1) : 0;
-										return (
-											<Text size="1" className={rebills > 0 ? "text-red-500" : "text-green-500"}>
-												↑ ~{rebills} rebill(s)
-											</Text>
-										);
-									})()}
-								</div>
-								<div className="bg-gray-a3 rounded-lg p-4">
-									<Text size="1" color="gray" className="block mb-2">
-										Avg Days in Funded
-									</Text>
-									<Text size="7" weight="bold" className="block">
-										{Math.round(result.avgDaysInFunded || 0)}
-									</Text>
-								</div>
-								<div className="bg-gray-a3 rounded-lg p-4">
-									<Text size="1" color="gray" className="block mb-2">
-										Total Days to Payout
-									</Text>
-									<Text size="7" weight="bold" className="block">
-										{Math.round(result.totalDaysToPayout || 0)}
-									</Text>
-									<Text size="1" className="text-green-500">
-										↑ ~{((result.totalDaysToPayout || 0) / 21).toFixed(1)} months
-									</Text>
-								</div>
+								{[
+									{ 
+										label: "Avg Days in Eval", 
+										value: Math.round(result.avgDaysToPass || 0),
+										sub: (() => {
+											const evalMonths = (result.avgDaysToPass || 0) / 30;
+											const rebills = evalMonths >= 1 ? Math.max(0, Math.floor(evalMonths) - 1) : 0;
+											return `~${rebills} rebill(s)`;
+										})(),
+										positive: false
+									},
+									{ 
+										label: "Avg Days in Funded", 
+										value: Math.round(result.avgDaysInFunded || 0),
+										sub: undefined,
+										positive: false
+									},
+									{ 
+										label: "Total Days to Payout", 
+										value: Math.round(result.totalDaysToPayout || 0),
+										sub: `~${((result.totalDaysToPayout || 0) / 21).toFixed(1)} months`,
+										positive: true
+									},
+								].map((item, i) => (
+									<motion.div 
+										key={i}
+										whileHover={{ scale: 1.02, y: -4 }}
+										className={`metric-card p-4 ${item.positive ? 'metric-positive' : ''}`}
+									>
+										<div className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)] mb-2">
+											{item.label}
+										</div>
+										<div className={`text-2xl font-semibold mb-1 ${item.positive ? 'text-[var(--positive)]' : 'text-[var(--text-primary)]'}`}>
+											{item.value}
+										</div>
+										{item.sub && (
+											<div className="text-xs text-[var(--text-muted)]">{item.sub}</div>
+										)}
+									</motion.div>
+								))}
 							</div>
-						</div>
+						</motion.div>
 
 						{/* Cost Analysis */}
-						<div className="space-y-3">
-							<Heading size="5" as="h3" className="text-cyan-400">
-								Cost Analysis
-							</Heading>
-							<div className="grid grid-cols-3 gap-3">
-								<div className="bg-gray-a3 rounded-lg p-4">
-									<Text size="1" color="gray" className="block mb-2">
-										Eval Purchase
-									</Text>
-									<Text size="6" weight="bold" className="block">
-										${(result.initialPurchase || 149).toFixed(0)}
-									</Text>
-								</div>
-								<div className="bg-gray-a3 rounded-lg p-4">
-									<Text size="1" color="gray" className="block mb-2">
-										Monthly Rebill
-									</Text>
-									<Text size="6" weight="bold" className="block">
-										${(result.monthlyRebill || 149).toFixed(0)}
-									</Text>
-								</div>
-								<div className="bg-gray-a3 rounded-lg p-4">
-									<Text size="1" color="gray" className="block mb-2">
-										Funded Setup
-									</Text>
-									<Text size="6" weight="bold" className="block">
-										${(result.fundedSetup || 149).toFixed(0)}
-									</Text>
-								</div>
-							</div>
-
+						<motion.div variants={fadeUp} custom={1} className="space-y-3">
+							<h3 className="text-lg font-semibold text-[var(--text-primary)]">Cost Analysis</h3>
 							<div className="grid grid-cols-2 gap-3">
-								<div className="bg-gray-a3 rounded-lg p-4">
-									<Text size="2" weight="bold" className="block mb-2">
+								<motion.div 
+									whileHover={{ scale: 1.02, y: -2 }}
+									className="dash-card p-4"
+								>
+									<div className="text-sm font-semibold mb-3 text-[var(--positive)]">
 										If You Pass:
-									</Text>
-									<div className="space-y-1">
-										<Text size="1" color="gray" className="block">
-											Avg Total Costs: <span className="font-bold text-white">${(result.avgTotalCostsIfPass || 0).toFixed(0)}</span>
-										</Text>
-										<Text size="1" color="gray" className="block">
-											Avg Gross Payout: <span className="font-bold text-white">${(result.avgGrossPayoutIfPass || 0).toFixed(0)}</span>
-										</Text>
-										<Text size="1" color="gray" className="block">
-											Avg Net Profit: <span className="font-bold text-green-500">${(result.avgNetProfitIfPass || 0).toFixed(0)}</span>
-										</Text>
 									</div>
-								</div>
-								<div className="bg-gray-a3 rounded-lg p-4">
-									<Text size="2" weight="bold" className="block mb-2">
+									<div className="space-y-2 text-xs">
+										<div className="flex justify-between">
+											<span className="text-[var(--text-muted)]">Avg Total Costs:</span>
+											<span className="font-semibold text-[var(--text-primary)]">${(result.avgTotalCostsIfPass || 0).toFixed(0)}</span>
+										</div>
+										<div className="flex justify-between">
+											<span className="text-[var(--text-muted)]">Avg Gross Payout:</span>
+											<span className="font-semibold text-[var(--text-primary)]">${(result.avgGrossPayoutIfPass || 0).toFixed(0)}</span>
+										</div>
+										<div className="flex justify-between pt-2 border-t border-[var(--border)]">
+											<span className="text-[var(--text-muted)]">Avg Net Profit:</span>
+											<span className="font-semibold text-[var(--positive)]">${(result.avgNetProfitIfPass || 0).toFixed(0)}</span>
+										</div>
+									</div>
+								</motion.div>
+								<motion.div 
+									whileHover={{ scale: 1.02, y: -2 }}
+									className="dash-card p-4"
+								>
+									<div className="text-sm font-semibold mb-3 text-[var(--negative)]">
 										If You Fail:
-									</Text>
-									<div className="space-y-1">
-										<Text size="1" color="gray" className="block">
-											Avg Days Before Fail: <span className="font-bold text-white">{Math.round(result.avgDaysBeforeFail || 0)}</span>
-										</Text>
-										<Text size="1" color="gray" className="block">
-											Avg Cost Lost: <span className="font-bold text-red-500">${(result.avgCostLostIfFail || 0).toFixed(0)}</span>
-										</Text>
-										<Text size="1" color="gray" className="block">
-											Fail in Eval: {Math.round(result.failInEvalPercent || 0)}% | Funded: {Math.round(result.failInFundedPercent || 0)}%
-										</Text>
 									</div>
-								</div>
+									<div className="space-y-2 text-xs">
+										<div className="flex justify-between">
+											<span className="text-[var(--text-muted)]">Avg Days Before Fail:</span>
+											<span className="font-semibold text-[var(--text-primary)]">{Math.round(result.avgDaysBeforeFail || 0)}</span>
+										</div>
+										<div className="flex justify-between">
+											<span className="text-[var(--text-muted)]">Avg Cost Lost:</span>
+											<span className="font-semibold text-[var(--negative)]">${(result.avgCostLostIfFail || 0).toFixed(0)}</span>
+										</div>
+										<div className="flex justify-between pt-2 border-t border-[var(--border)]">
+											<span className="text-[var(--text-muted)]">Fail in Eval:</span>
+											<span className="font-semibold text-[var(--text-primary)]">{Math.round(result.failInEvalPercent || 0)}%</span>
+										</div>
+										<div className="flex justify-between">
+											<span className="text-[var(--text-muted)]">Fail in Funded:</span>
+											<span className="font-semibold text-[var(--text-primary)]">{Math.round(result.failInFundedPercent || 0)}%</span>
+										</div>
+									</div>
+								</motion.div>
 							</div>
-						</div>
+						</motion.div>
 
 						{/* Investment Summary */}
-						<div className="space-y-3">
-							<Heading size="5" as="h3" className="text-cyan-400">
-								Investment Summary
-							</Heading>
+						<motion.div variants={fadeUp} custom={2} className="space-y-3">
+							<h3 className="text-lg font-semibold text-[var(--text-primary)]">Investment Summary</h3>
 							<div className="grid grid-cols-3 gap-3">
-								<div className="bg-gray-a3 rounded-lg p-4">
-									<Text size="1" color="gray" className="block mb-2">
-										Expected Cost to Payout
-									</Text>
-									<Text size="6" weight="bold" className="block">
-										${(result.expectedCostToPayout || 0).toFixed(0)}
-									</Text>
-								</div>
-								<div className="bg-gray-a3 rounded-lg p-4">
-									<Text size="1" color="gray" className="block mb-2">
-										Expected Gross Payout
-									</Text>
-									<Text size="6" weight="bold" className="block">
-										${(result.expectedGrossPayout || result.expectedPayout).toLocaleString(undefined, {
-											minimumFractionDigits: 0,
-											maximumFractionDigits: 0,
-										})}
-									</Text>
-								</div>
-								<div className="bg-gray-a3 rounded-lg p-4">
-									<Text size="1" color="gray" className="block mb-2">
-										Expected ROI
-									</Text>
-									<Text size="6" weight="bold" className={result.expectedROI && result.expectedROI > 0 ? "text-green-500" : "text-red-500"}>
-										{result.expectedROI ? `${result.expectedROI > 0 ? '+' : ''}${result.expectedROI.toFixed(1)}%` : "N/A"}
-									</Text>
-									<Text size="1" className={result.expectedROI && result.expectedROI > 0 ? "text-green-500" : "text-red-500"}>
-										{result.expectedROI && result.expectedROI > 0 ? "↑ Profitable" : "↓ Unprofitable"}
-									</Text>
-								</div>
+								{[
+									{ 
+										label: "Expected Cost to Payout", 
+										value: `$${(result.expectedCostToPayout || 0).toFixed(0)}`,
+										positive: false
+									},
+									{ 
+										label: "Expected Gross Payout", 
+										value: `$${(result.expectedGrossPayout || result.expectedPayout).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
+										positive: true
+									},
+									{ 
+										label: "Expected ROI", 
+										value: result.expectedROI ? `${result.expectedROI > 0 ? '+' : ''}${result.expectedROI.toFixed(1)}%` : "N/A",
+										positive: result.expectedROI ? result.expectedROI > 0 : false
+									},
+								].map((item, i) => (
+									<motion.div 
+										key={i}
+										whileHover={{ scale: 1.02, y: -4 }}
+										className={`metric-card p-4 ${item.positive ? 'metric-positive' : ''}`}
+									>
+										<div className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)] mb-2">
+											{item.label}
+										</div>
+										<div className={`text-2xl font-semibold ${item.positive ? 'text-[var(--positive)] green-pulse' : 'text-[var(--text-primary)]'}`}>
+											{item.value}
+										</div>
+									</motion.div>
+								))}
 							</div>
-						</div>
+						</motion.div>
 
 						{/* Most Probable Outcomes */}
 						{result.mostProbableOutcomes && result.mostProbableOutcomes.length > 0 && (
 							<MostProbableOutcomesTable outcomes={result.mostProbableOutcomes} />
 						)}
-					</>
+					</motion.div>
 				)}
 			</div>
 
 			{/* Right Column - Visualizations */}
-			<div className="w-full lg:w-96 flex-shrink-0 space-y-4 lg:space-y-6 overflow-y-auto">
+			<div className="w-full lg:w-96 flex-shrink-0 space-y-6">
 				{result && !isRunning && (
-					<>
+					<motion.div
+						initial={{ opacity: 0, x: 20 }}
+						animate={{ opacity: 1, x: 0 }}
+						transition={{ delay: 0.3 }}
+						className="space-y-6"
+					>
 						{/* Simulation Paths Chart */}
-						<Card size="2" variant="surface">
-							<Heading size="4" as="h3" className="mb-3">
+						<motion.div 
+							whileHover={{ scale: 1.01 }}
+							className="chart-container p-5"
+						>
+							<h3 className="text-base font-semibold mb-3 text-[var(--text-primary)]">
 								{accountConfig.propFirm} {accountConfig.challenge} - Simulation Paths
-							</Heading>
+							</h3>
 							<EquityChart 
 								equityCurves={result.equityCurves} 
 								finalValues={result.finalValues}
 								winningPathIndices={result.winningPathIndices}
 								losingPathIndices={result.losingPathIndices}
 							/>
-						</Card>
+						</motion.div>
 
 						{/* Trade Distributions */}
-						<Card size="2" variant="surface">
-							<Heading size="4" as="h3" className="mb-3">
+						<motion.div 
+							whileHover={{ scale: 1.01 }}
+							className="chart-container p-5"
+						>
+							<h3 className="text-base font-semibold mb-3 text-[var(--text-primary)]">
 								Trade Distributions
-							</Heading>
+							</h3>
 							<TradeDistributionCharts result={result} />
-						</Card>
-					</>
+						</motion.div>
+					</motion.div>
 				)}
 			</div>
+		</div>
 		</div>
 	);
 }
