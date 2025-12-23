@@ -38,43 +38,58 @@ export async function POST(request: NextRequest) {
     // Check for API key
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
+      console.error("OPENROUTER_API_KEY is not set");
       return NextResponse.json(
         { error: "AI service not configured. Please set OPENROUTER_API_KEY." },
         { status: 503 }
       );
     }
 
+    console.log("API key found, length:", apiKey.length);
+
     // Build the prompt
     const prompt = buildAiMappingPrompt(headers, sampleRows);
+    console.log("Prompt built, calling OpenRouter API...");
 
     // Call OpenRouter API
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-4o-mini:free",
-        messages: [
-          {
-            role: "system",
-            content: "You are a data analyst that maps CSV columns to a trading analysis schema. Always respond with valid JSON only, no markdown or explanation.",
-          },
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-        temperature: 0,
-      }),
-    });
+    let response;
+    try {
+      response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-4o-mini:free",
+          messages: [
+            {
+              role: "system",
+              content: "You are a data analyst that maps CSV columns to a trading analysis schema. Always respond with valid JSON only, no markdown or explanation.",
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+          temperature: 0,
+        }),
+      });
+    } catch (fetchError) {
+      console.error("Fetch error:", fetchError);
+      return NextResponse.json(
+        { error: `Network error: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}` },
+        { status: 502 }
+      );
+    }
+
+    console.log("OpenRouter response status:", response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("OpenRouter API error:", errorText);
+      console.error("OpenRouter API error:", response.status, errorText);
       return NextResponse.json(
-        { error: "AI service error. Please try again." },
+        { error: `AI service error (${response.status}): ${errorText.substring(0, 200)}` },
         { status: 502 }
       );
     }
