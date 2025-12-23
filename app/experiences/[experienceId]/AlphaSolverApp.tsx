@@ -148,28 +148,9 @@ export default function AlphaSolverApp({
 		handleTabChange("simulation");
 	}, [handleTabChange]);
 
-	// Show confirmation dialog before running
-	const handleRequestRun = (params: BootstrappedParams, trades: ParsedTrade[]) => {
-		// Check credits first
-		if (planConfig.dailyCredits !== -1 && creditsRemaining <= 0) {
-			setCsvError("No credits remaining. Credits reset daily at midnight.");
-			return;
-		}
-		
-		setPendingRun({ params, trades });
-		setShowRunConfirm(true);
-	};
-
-	// Actually run the simulation after confirmation
-	const handleConfirmRun = async () => {
-		setShowRunConfirm(false);
-		
-		if (!pendingRun) return;
-		
-		const { params, trades } = pendingRun;
-		setPendingRun(null);
-		
-		// Use server-side credit via Vercel KV
+	// Actually execute the simulation (extracted for reuse)
+	const executeSimulation = async (params: BootstrappedParams, trades: ParsedTrade[]) => {
+		// Use server-side credit via Vercel KV (only for non-unlimited users)
 		if (planConfig.dailyCredits !== -1) {
 			if (!userId) {
 				setCsvError("Unable to verify user. Please refresh the page.");
@@ -235,6 +216,37 @@ export default function AlphaSolverApp({
 		setLastParams(paramsWithAccount);
 		setCsvError(null);
 		await run("bootstrapped", paramsWithAccount, trades);
+	};
+
+	// Show confirmation dialog before running (only for non-unlimited users)
+	const handleRequestRun = (params: BootstrappedParams, trades: ParsedTrade[]) => {
+		// Check credits first
+		if (planConfig.dailyCredits !== -1 && creditsRemaining <= 0) {
+			setCsvError("No credits remaining. Credits reset daily at midnight.");
+			return;
+		}
+		
+		// For unlimited users, run directly without confirmation
+		if (planConfig.dailyCredits === -1) {
+			executeSimulation(params, trades);
+			return;
+		}
+		
+		// For non-unlimited users, show confirmation dialog
+		setPendingRun({ params, trades });
+		setShowRunConfirm(true);
+	};
+
+	// Actually run the simulation after confirmation
+	const handleConfirmRun = async () => {
+		setShowRunConfirm(false);
+		
+		if (!pendingRun) return;
+		
+		const { params, trades } = pendingRun;
+		setPendingRun(null);
+		
+		await executeSimulation(params, trades);
 	};
 
 	const handleCancelRun = () => {
