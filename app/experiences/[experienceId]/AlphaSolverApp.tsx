@@ -133,10 +133,12 @@ export default function AlphaSolverApp({
 		});
 	}, [activeTab]);
 
-	// Reset navigation flag when a new simulation starts
+	// Reset navigation flag and scroll position when a new simulation starts
 	useEffect(() => {
 		if (isRunning || isEngineLoading) {
 			hasNavigatedToResults.current = false;
+			// Reset scroll position for simulation tab so it starts at top for new results
+			scrollPositions.current.simulation = 0;
 		}
 	}, [isRunning, isEngineLoading]);
 
@@ -148,6 +150,12 @@ export default function AlphaSolverApp({
 			const timer = setTimeout(() => {
 				handleTabChange("simulation");
 				hasNavigatedToResults.current = true;
+				// Scroll to top when auto-navigating to simulation tab
+				requestAnimationFrame(() => {
+					if (contentRef.current) {
+						contentRef.current.scrollTop = 0;
+					}
+				});
 			}, 500);
 			
 			return () => clearTimeout(timer);
