@@ -33,12 +33,34 @@ interface EquityChartProps {
 	maxSamples?: number;
 }
 
+// CSS variable colors (resolved at runtime)
+const getChartColors = () => {
+	if (typeof window === 'undefined') {
+		return {
+			positive: 'rgba(34, 197, 94, 0.6)',
+			negative: 'rgba(239, 68, 68, 0.6)',
+			border: 'rgba(30, 36, 50, 0.5)',
+			text: 'rgb(161, 161, 170)',
+			bg: 'rgb(26, 31, 46)',
+		};
+	}
+	
+	const style = getComputedStyle(document.documentElement);
+	return {
+		positive: 'rgba(34, 197, 94, 0.6)',
+		negative: 'rgba(239, 68, 68, 0.6)',
+		border: style.getPropertyValue('--border').trim() || 'rgba(30, 36, 50, 0.5)',
+		text: style.getPropertyValue('--text-muted').trim() || 'rgb(161, 161, 170)',
+		bg: style.getPropertyValue('--bg-elevated').trim() || 'rgb(26, 31, 46)',
+	};
+};
+
 export default function EquityChart({
 	equityCurves,
 	finalValues,
 	winningPathIndices,
 	losingPathIndices,
-	maxSamples = 50, // Increased default to match reference repo
+	maxSamples = 50,
 }: EquityChartProps) {
 	const chartData = useMemo(() => {
 		if (!equityCurves || equityCurves.length === 0) {
@@ -125,7 +147,7 @@ export default function EquityChart({
 			...winningCurves.map((curve) => ({
 				label: "Pass",
 				data: curve,
-				borderColor: "rgba(34, 197, 94, 0.6)", // green-500 with transparency
+				borderColor: "rgba(34, 197, 94, 0.6)",
 				backgroundColor: "rgba(34, 197, 94, 0.1)",
 				borderWidth: 1,
 				fill: false,
@@ -137,7 +159,7 @@ export default function EquityChart({
 			...losingCurves.map((curve) => ({
 				label: "Fail",
 				data: curve,
-				borderColor: "rgba(239, 68, 68, 0.6)", // red-500 with transparency
+				borderColor: "rgba(239, 68, 68, 0.6)",
 				backgroundColor: "rgba(239, 68, 68, 0.1)",
 				borderWidth: 1,
 				fill: false,
@@ -155,7 +177,7 @@ export default function EquityChart({
 
 	if (!chartData) {
 		return (
-			<div className="flex items-center justify-center h-80 text-gray-10 text-sm">
+			<div className="flex items-center justify-center h-80 text-[var(--text-muted)] text-sm">
 				No equity curve data available
 			</div>
 		);
@@ -171,22 +193,30 @@ export default function EquityChart({
 			tooltip: {
 				mode: "index" as const,
 				intersect: false,
-				backgroundColor: "rgba(0, 0, 0, 0.8)",
-				titleColor: "rgb(229, 231, 235)",
-				bodyColor: "rgb(229, 231, 235)",
-				borderColor: "rgb(139, 92, 246)",
+				backgroundColor: "#1a1f2e",
+				titleColor: "#f4f4f5",
+				bodyColor: "#a1a1aa",
+				borderColor: "#1e2432",
 				borderWidth: 1,
 				padding: 12,
+				cornerRadius: 8,
+				titleFont: {
+					size: 12,
+					weight: 500 as const,
+				},
+				bodyFont: {
+					size: 11,
+				},
 			},
 		},
 		scales: {
 			x: {
 				grid: {
-					color: "rgba(139, 92, 246, 0.1)",
+					color: "rgba(30, 36, 50, 0.5)",
 					drawBorder: false,
 				},
 				ticks: {
-					color: "rgb(196, 181, 253)",
+					color: "#52525b",
 					font: {
 						size: 10,
 					},
@@ -194,7 +224,7 @@ export default function EquityChart({
 				title: {
 					display: true,
 					text: "Trading Days",
-					color: "rgb(196, 181, 253)",
+					color: "#52525b",
 					font: {
 						size: 11,
 					},
@@ -202,22 +232,23 @@ export default function EquityChart({
 			},
 			y: {
 				grid: {
-					color: "rgba(139, 92, 246, 0.1)",
+					color: "rgba(30, 36, 50, 0.5)",
 					drawBorder: false,
 				},
 				ticks: {
-					color: "rgb(196, 181, 253)",
+					color: "#52525b",
 					font: {
 						size: 10,
 					},
-					callback: function (value: any) {
-						return "$" + value.toLocaleString();
+					callback: function (value: number | string) {
+						const num = typeof value === 'string' ? parseFloat(value) : value;
+						return "$" + num.toLocaleString();
 					},
 				},
 				title: {
 					display: true,
 					text: "Account Balance ($)",
-					color: "rgb(196, 181, 253)",
+					color: "#52525b",
 					font: {
 						size: 11,
 					},
@@ -231,11 +262,10 @@ export default function EquityChart({
 			{chartData ? (
 				<Line data={chartData} options={options} />
 			) : (
-				<div className="flex items-center justify-center h-full text-gray-10 text-sm">
+				<div className="flex items-center justify-center h-full text-[var(--text-muted)] text-sm">
 					No equity curve data available
 				</div>
 			)}
 		</div>
 	);
 }
-

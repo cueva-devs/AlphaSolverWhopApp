@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { Button, Card, Heading, Text } from "@whop/react/components";
 import Link from "next/link";
 import AlphaSolverApp from "../experiences/[experienceId]/AlphaSolverApp";
 import { getPlanConfig } from "../experiences/[experienceId]/config/planConfig";
@@ -32,27 +31,46 @@ export default async function DirectAppPage() {
 	if (!session) {
 		// No session - show login prompt
 		return (
-			<div className="min-h-screen bg-gray-1 flex items-center justify-center p-6">
-				<Card size="3" variant="surface" className="max-w-md w-full text-center">
-					<Heading size="6" className="mb-4">
-						Sign in to AlphaSolver
-					</Heading>
-					<Text size="3" color="gray" className="mb-6">
-						Sign in with your Whop account to access the app.
-					</Text>
+			<div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center p-6">
+				<div className="chart-container max-w-md w-full p-8 text-center">
+					{/* Logo */}
+					<div className="flex items-center justify-center gap-2 mb-6">
+						<span className="text-[var(--accent)] text-3xl font-bold">α</span>
+						<span className="text-lg font-semibold tracking-tight text-[var(--text-primary)]">ALPHASOLVER</span>
+					</div>
+					
+					<h1 className="text-2xl font-semibold text-[var(--text-primary)] mb-3">
+						Sign in to continue
+					</h1>
+					<p className="text-sm text-[var(--text-secondary)] mb-8">
+						Sign in with your Whop account to access the simulator.
+					</p>
+					
 					<div className="space-y-3">
 						<Link href="/api/auth/whop" className="block">
-							<Button variant="solid" size="3" className="w-full">
+							<button className="btn btn-primary btn-lg w-full">
 								Sign in with Whop
-							</Button>
+							</button>
 						</Link>
 						<Link href="/" className="block">
-							<Button variant="soft" size="2" className="w-full">
+							<button className="btn btn-soft btn-md w-full">
 								Back to Home
-							</Button>
+							</button>
 						</Link>
 					</div>
-				</Card>
+					
+					<div className="mt-8 pt-6 border-t border-[var(--border)]">
+						<p className="text-xs text-[var(--text-muted)]">
+							Don't have an account?{" "}
+							<a 
+								href={process.env.NEXT_PUBLIC_WHOP_CHECKOUT_URL || "https://whop.com/alphasolver"} 
+								className="text-[var(--accent)] hover:underline"
+							>
+								Get started free
+							</a>
+						</p>
+					</div>
+				</div>
 			</div>
 		);
 	}

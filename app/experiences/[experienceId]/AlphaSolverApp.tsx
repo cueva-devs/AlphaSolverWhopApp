@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Card, Tabs, Select, Button, Text, Heading, Callout, Spinner } from "@whop/react/components";
+import { motion, AnimatePresence } from "framer-motion";
 import StrategyPanel from "./components/StrategyPanel";
 import ResultsPanel from "./components/ResultsPanel";
 import AccountConfigPanel from "./components/AccountConfig";
@@ -39,6 +39,17 @@ interface AlphaSolverAppProps {
 
 type TabType = "simulation" | "trading_plan";
 
+// Animation variants
+const fadeIn = {
+	hidden: { opacity: 0 },
+	visible: { opacity: 1, transition: { duration: 0.3 } }
+};
+
+const slideUp = {
+	hidden: { opacity: 0, y: 10 },
+	visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
+};
+
 export default function AlphaSolverApp({
 	experienceId,
 	companyId,
@@ -46,7 +57,7 @@ export default function AlphaSolverApp({
 	planId,
 	planConfig,
 	upgradeUrl,
-	isWhopIframe = true, // Default to iframe context
+	isWhopIframe = true,
 }: AlphaSolverAppProps) {
 	const { run, result, isRunning, error, isEngineLoading } =
 		useSimulationEngine();
@@ -241,8 +252,6 @@ export default function AlphaSolverApp({
 			
 			// Directly set the result (no need to re-run simulation)
 			await run("bootstrapped", savedRun.params, savedRun.trades);
-			// Note: We could also directly set result if we modify useSimulationEngine
-			// For now, we re-run to ensure consistency
 		} catch (err) {
 			setCsvError(err instanceof Error ? err.message : "Failed to import run");
 		}
@@ -373,40 +382,45 @@ export default function AlphaSolverApp({
 	};
 
 	return (
-		<div className="min-h-screen bg-gray-1 flex flex-col">
+		<div className="app-shell">
 			{/* Run Confirmation Dialog */}
-			{showRunConfirm && (
-				<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-					<Card size="3" variant="surface" className="max-w-sm w-full">
-						<Heading size="5" className="mb-3">
-							Confirm Simulation
-						</Heading>
-						<Text size="2" color="gray" className="mb-4 block">
-							This will use 1 of your {creditsDisplay} daily credits. 
-							{planConfig.dailyCredits !== -1 && ` You'll have ${Math.max(0, creditsRemaining - 1)} left.`}
-						</Text>
-						<div className="flex gap-2">
-							<Button 
-								variant="soft" 
-								size="2" 
-								onClick={handleCancelRun}
-								className="flex-1"
-							>
-								Cancel
-							</Button>
-							<Button 
-								variant="solid" 
-								color="blue" 
-								size="2" 
-								onClick={handleConfirmRun}
-								className="flex-1"
-							>
-								Run Simulation
-							</Button>
-						</div>
-					</Card>
-				</div>
-			)}
+			<AnimatePresence>
+				{showRunConfirm && (
+					<motion.div 
+						className="dialog-overlay"
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						exit={{ opacity: 0 }}
+					>
+						<motion.div 
+							className="dialog-content"
+							initial={{ opacity: 0, scale: 0.95, y: 10 }}
+							animate={{ opacity: 1, scale: 1, y: 0 }}
+							exit={{ opacity: 0, scale: 0.95, y: 10 }}
+						>
+							<h3 className="dialog-title">Confirm Simulation</h3>
+							<p className="dialog-description">
+								This will use 1 of your {creditsDisplay} daily credits.
+								{planConfig.dailyCredits !== -1 && ` You'll have ${Math.max(0, creditsRemaining - 1)} left.`}
+							</p>
+							<div className="dialog-actions">
+								<button 
+									className="btn btn-soft btn-md flex-1"
+									onClick={handleCancelRun}
+								>
+									Cancel
+								</button>
+								<button 
+									className="btn btn-primary btn-md flex-1"
+									onClick={handleConfirmRun}
+								>
+									Run Simulation
+								</button>
+							</div>
+						</motion.div>
+					</motion.div>
+				)}
+			</AnimatePresence>
 
 			{/* Hidden import input */}
 			<input
@@ -417,117 +431,123 @@ export default function AlphaSolverApp({
 				className="hidden"
 			/>
 			
-			<main className="flex-1 flex flex-col md:flex-row gap-4 md:gap-6 p-4 md:gap-6 min-h-0 overflow-hidden">
+			<main className="flex-1 flex flex-col lg:flex-row gap-5 p-5 min-h-0 overflow-hidden">
 				{/* Left Sidebar */}
-				<aside className="w-full md:w-80 flex-shrink-0 flex flex-col gap-4 overflow-y-auto">
+				<aside className="w-full lg:w-80 flex-shrink-0 flex flex-col gap-4 overflow-y-auto">
 					{/* Plan & Credits Section */}
-					<Card size="2" variant="surface">
+					<motion.div 
+						className="sidebar-panel"
+						initial="hidden"
+						animate="visible"
+						variants={slideUp}
+					>
 						<div className="flex items-center justify-between mb-3">
-							<Heading size="4" as="h2">
+							<h2 className="text-sm font-semibold text-[var(--text-primary)]">
 								{planConfig.label} Plan
-							</Heading>
-							<div className="text-right">
-								<Text size="1" color="gray" className="block">
-									Daily Runs
-								</Text>
+							</h2>
+							<div className="credits-display">
+								<span className="credits-label">Daily Runs</span>
 								{isLoadingCredits ? (
-									<Spinner size="2" />
+									<div className="spinner mt-1" />
 								) : (
-									<Text size="3" weight="bold" className={planConfig.dailyCredits === -1 ? "text-green-500" : noCreditsRemaining ? "text-red-500" : ""}>
+									<div className={`credits-value ${planConfig.dailyCredits === -1 ? 'unlimited' : noCreditsRemaining ? 'depleted' : ''}`}>
 										{creditsDisplay}
-									</Text>
+									</div>
 								)}
 							</div>
 						</div>
 						{planConfig.dailyCredits !== -1 && (
-							<div className="space-y-2">
-								<Text size="1" color="gray" className="block">
-									Credits reset daily at midnight.
-								</Text>
+							<div className="space-y-3">
+								<p className="text-xs text-[var(--text-muted)]">
+									Credits reset daily at midnight UTC.
+								</p>
 								{noCreditsRemaining && upgradeUrl && (
 									<div className="space-y-2">
-										<a href={upgradeUrl} target="_blank" rel="noopener noreferrer">
-											<Button variant="solid" color="blue" size="2" className="w-full mt-2">
+										<a href={upgradeUrl} target="_blank" rel="noopener noreferrer" className="block">
+											<button className="btn btn-primary btn-md w-full">
 												Upgrade to Unlimited
-											</Button>
+											</button>
 										</a>
 										{isWhopIframe && (
-											<Text size="1" color="gray" className="text-center">
-												Or contact your community admin to upgrade your plan
-											</Text>
+											<p className="text-xs text-[var(--text-muted)] text-center">
+												Or contact your community admin to upgrade
+											</p>
 										)}
 									</div>
 								)}
 								{noCreditsRemaining && !upgradeUrl && isWhopIframe && (
-									<Callout.Root color="amber" className="mt-2">
-										<Callout.Text size="1">
-											Contact your community admin to upgrade your plan, or come back tomorrow.
-										</Callout.Text>
-									</Callout.Root>
+									<div className="callout callout-warning">
+										Contact your community admin to upgrade your plan, or come back tomorrow.
+									</div>
 								)}
 							</div>
 						)}
-					</Card>
+					</motion.div>
 
 					{/* Save/Load Section */}
-					<Card size="2" variant="surface">
-						<Heading size="4" as="h2" className="mb-3">
-							Save / Load
-						</Heading>
+					<motion.div 
+						className="sidebar-panel"
+						initial="hidden"
+						animate="visible"
+						variants={slideUp}
+						transition={{ delay: 0.05 }}
+					>
+						<h2 className="section-header">Save / Load</h2>
 						<div className="flex gap-2">
-							<Button
-								type="button"
-								size="2"
-								variant="soft"
+							<button
+								className="btn btn-soft btn-sm flex-1"
 								disabled={!result || !parsedTrades || !planConfig.allowExport}
 								onClick={handleExportRun}
-								className="flex-1"
 								title={!planConfig.allowExport ? "Upgrade to Unlimited to export runs" : undefined}
 							>
 								Export Run
-							</Button>
-							<Button
-								type="button"
-								size="2"
-								variant="soft"
+							</button>
+							<button
+								className="btn btn-soft btn-sm flex-1"
 								onClick={() => importInputRef.current?.click()}
-								className="flex-1"
 							>
 								Import Run
-							</Button>
+							</button>
 						</div>
 						{result && (
-							<Text size="1" color="gray" className="mt-2 block">
+							<p className="text-xs text-[var(--text-muted)] mt-2">
 								Est. file size: {estimateFileSize(result)}
-							</Text>
+							</p>
 						)}
-					</Card>
+					</motion.div>
 
 					{/* Account Section */}
-					<Card size="2" variant="surface">
-						<Heading size="4" as="h2" className="mb-3">
-							Account
-						</Heading>
+					<motion.div 
+						className="sidebar-panel"
+						initial="hidden"
+						animate="visible"
+						variants={slideUp}
+						transition={{ delay: 0.1 }}
+					>
+						<h2 className="section-header">Account</h2>
 						<AccountConfigPanel
 							config={accountConfig}
 							onChange={setAccountConfig}
 						/>
-					</Card>
+					</motion.div>
 
 					{/* Trade Log Section */}
-					<Card size="2" variant="surface">
-						<Heading size="4" as="h2" className="mb-3">
-							Trade Log
-						</Heading>
-						<div className="space-y-3">
+					<motion.div 
+						className="sidebar-panel"
+						initial="hidden"
+						animate="visible"
+						variants={slideUp}
+						transition={{ delay: 0.15 }}
+					>
+						<h2 className="section-header">Trade Log</h2>
+						<div className="space-y-4">
 							<div>
-								<Text size="2" weight="medium" className="mb-2 block">
-									CSV Format
-								</Text>
-								<Select.Root
+								<label className="section-label">CSV Format</label>
+								<select
+									className="select"
 									value={csvFormat}
-									onValueChange={async (value) => {
-										const newFormat = value as CsvFormat;
+									onChange={async (e) => {
+										const newFormat = e.target.value as CsvFormat;
 										setCsvFormat(newFormat);
 										// Re-parse if file is already loaded
 										if (csvFile) {
@@ -535,133 +555,120 @@ export default function AlphaSolverApp({
 										}
 									}}
 								>
-									<Select.Trigger />
-									<Select.Content>
-										{getCsvTemplateList().map((template) => (
-											<Select.Item key={template} value={template}>{template}</Select.Item>
-										))}
-									</Select.Content>
-								</Select.Root>
+									{getCsvTemplateList().map((template) => (
+										<option key={template} value={template}>{template}</option>
+									))}
+								</select>
+								
 								{csvFormat === "Custom" && (
-									<div className="mt-3 p-3 bg-gray-a2 rounded-md border border-gray-a4">
-										<Text size="2" color="gray" className="mb-2 block">
+									<div className="mt-3 p-3 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border)]">
+										<p className="text-xs text-[var(--text-muted)] mb-2">
 											Download the CSV template to ensure your data is formatted correctly.
-										</Text>
+										</p>
 										<a 
 											href="/sample_template.csv" 
 											download="alphasolver_template.csv"
-											className="inline-flex items-center justify-center px-4 py-2 bg-blue-9 text-white text-sm font-medium rounded-md hover:bg-blue-10 transition-colors w-full"
+											className="btn btn-primary btn-sm w-full"
 										>
-											📥 Download CSV Template
+											Download CSV Template
 										</a>
 									</div>
 								)}
+								
 								{csvFormat === "AI Upload" && (
-									<div className="mt-3 p-3 bg-purple-a2 rounded-md border border-purple-a4">
+									<div className="mt-3 p-3 bg-[var(--accent-dim)] rounded-lg border border-[rgba(59,130,246,0.25)]">
 										{!planConfig.allowAiUpload ? (
-											<Callout.Root color="amber">
-												<Callout.Text size="2">
-													AI Upload is a paid feature. Upgrade to Unlimited to use automatic column detection.
-												</Callout.Text>
-											</Callout.Root>
+											<div className="callout callout-warning">
+												AI Upload is a paid feature. Upgrade to Unlimited to use automatic column detection.
+											</div>
 										) : !csvFile ? (
-											<Text size="2" color="gray">
+											<p className="text-xs text-[var(--text-secondary)]">
 												Upload a CSV file, then click "Analyze CSV" to automatically detect columns.
-											</Text>
+											</p>
 										) : !aiMapping ? (
-											<div className="space-y-2">
-												<Text size="2" color="gray" className="block">
+											<div className="space-y-3">
+												<p className="text-xs text-[var(--text-secondary)]">
 													AI will analyze your CSV headers and map them to the required columns.
-												</Text>
-												<Button
-													type="button"
-													size="2"
-													variant="solid"
-													color="purple"
+												</p>
+												<button
+													className="btn btn-primary btn-sm w-full"
 													onClick={handleAnalyzeCsv}
 													disabled={isAnalyzingCsv}
-													loading={isAnalyzingCsv}
-													className="w-full"
 												>
-													{isAnalyzingCsv ? "Analyzing..." : "🤖 Analyze CSV"}
-												</Button>
+													{isAnalyzingCsv ? (
+														<>
+															<span className="spinner" />
+															Analyzing...
+														</>
+													) : "Analyze CSV"}
+												</button>
 											</div>
 										) : !aiMappingConfirmed ? (
 											<div className="space-y-3">
-												<Text size="2" weight="medium" className="block">
+												<p className="text-xs font-medium text-[var(--text-primary)]">
 													AI Detected Columns:
-												</Text>
-												<div className="space-y-1 text-sm">
+												</p>
+												<div className="space-y-1 text-xs">
 													<div className="flex justify-between">
-														<Text size="1" color="gray">PNL:</Text>
-														<Text size="1" weight="medium">{aiMapping.pnl.column} ({aiMapping.pnl.format})</Text>
+														<span className="text-[var(--text-muted)]">PNL:</span>
+														<span className="font-medium">{aiMapping.pnl.column} ({aiMapping.pnl.format})</span>
 													</div>
 													<div className="flex justify-between">
-														<Text size="1" color="gray">Date:</Text>
-														<Text size="1" weight="medium">{aiMapping.date.column} ({aiMapping.date.format})</Text>
+														<span className="text-[var(--text-muted)]">Date:</span>
+														<span className="font-medium">{aiMapping.date.column} ({aiMapping.date.format})</span>
 													</div>
 													{aiMapping.mfe && (
 														<div className="flex justify-between">
-															<Text size="1" color="gray">MFE:</Text>
-															<Text size="1" weight="medium">{aiMapping.mfe.column} ({aiMapping.mfe.format})</Text>
+															<span className="text-[var(--text-muted)]">MFE:</span>
+															<span className="font-medium">{aiMapping.mfe.column} ({aiMapping.mfe.format})</span>
 														</div>
 													)}
 													{aiMapping.row_filter && (
 														<div className="flex justify-between">
-															<Text size="1" color="gray">Filter:</Text>
-															<Text size="1" weight="medium">{aiMapping.row_filter.column} {aiMapping.row_filter.condition} "{aiMapping.row_filter.value}"</Text>
+															<span className="text-[var(--text-muted)]">Filter:</span>
+															<span className="font-medium">{aiMapping.row_filter.column} {aiMapping.row_filter.condition} "{aiMapping.row_filter.value}"</span>
 														</div>
 													)}
 												</div>
 												<div className="flex gap-2">
-													<Button
-														type="button"
-														size="2"
-														variant="soft"
+													<button
+														className="btn btn-soft btn-sm flex-1"
 														onClick={handleResetAiMapping}
-														className="flex-1"
 													>
 														Re-analyze
-													</Button>
-													<Button
-														type="button"
-														size="2"
-														variant="solid"
-														color="green"
+													</button>
+													<button
+														className="btn btn-success btn-sm flex-1"
 														onClick={handleConfirmAiMapping}
-														className="flex-1"
 													>
-														✓ Confirm & Parse
-													</Button>
+														Confirm & Parse
+													</button>
 												</div>
 											</div>
 										) : (
 											<div className="space-y-2">
-												<Text size="2" weight="medium" color="green" className="block">
-													✓ AI Mapping Confirmed
-												</Text>
-												<div className="space-y-1 text-sm">
-													<Text size="1" color="gray">PNL: {aiMapping.pnl.column}</Text>
-													<Text size="1" color="gray">Date: {aiMapping.date.column}</Text>
-													{aiMapping.mfe && <Text size="1" color="gray">MFE: {aiMapping.mfe.column}</Text>}
+												<p className="text-xs font-medium text-[var(--positive)]">
+													AI Mapping Confirmed
+												</p>
+												<div className="space-y-1 text-xs text-[var(--text-muted)]">
+													<p>PNL: {aiMapping.pnl.column}</p>
+													<p>Date: {aiMapping.date.column}</p>
+													{aiMapping.mfe && <p>MFE: {aiMapping.mfe.column}</p>}
 												</div>
-												<Button
-													type="button"
-													size="1"
-													variant="soft"
+												<button
+													className="btn btn-soft btn-sm"
 													onClick={handleResetAiMapping}
 												>
 													Change Mapping
-												</Button>
+												</button>
 											</div>
 										)}
 									</div>
 								)}
 							</div>
+							
 							<div>
-								<Text size="2" weight="medium" className="mb-2 block">
-									Upload Trade Log
-								</Text>
+								<label className="section-label">Upload Trade Log</label>
 								<input
 									ref={fileInputRef}
 									type="file"
@@ -672,38 +679,35 @@ export default function AlphaSolverApp({
 								<div
 									onDragOver={handleDragOver}
 									onDrop={handleDrop}
-									className="border-2 border-dashed border-gray-a6 rounded-lg p-6 text-center cursor-pointer hover:border-gray-a8 transition-colors bg-gray-a2"
+									className={`file-drop-zone ${csvFile ? 'has-file' : ''}`}
 									onClick={handleFileSelect}
 								>
 									{isParsingCsv ? (
-										<div className="flex flex-col items-center">
-											<Spinner size="2" className="mb-2" />
-											<Text size="2" color="gray">
+										<div className="flex flex-col items-center gap-2">
+											<div className="spinner" />
+											<span className="text-sm text-[var(--text-muted)]">
 												Parsing CSV...
-											</Text>
+											</span>
 										</div>
 									) : csvFile ? (
 										<div className="space-y-2">
 											{csvFormat === "AI Upload" && !aiMappingConfirmed ? (
-												<Text size="2" weight="medium" color="purple">
-													📄 File ready for AI analysis
-												</Text>
+												<p className="text-sm font-medium text-[var(--accent)]">
+													File ready for AI analysis
+												</p>
 											) : (
-												<Text size="2" weight="medium" color="green">
-													✓ Loaded {parsedTrades?.length || 0} trades
-												</Text>
+												<p className="text-sm font-medium text-[var(--positive)]">
+													Loaded {parsedTrades?.length || 0} trades
+												</p>
 											)}
-											<Text size="2" color="gray">
+											<p className="text-xs text-[var(--text-muted)]">
 												{csvFile.name}
-											</Text>
-											<Text size="1" color="gray">
+											</p>
+											<p className="text-xs text-[var(--text-dim)]">
 												{(csvFile.size / 1024).toFixed(2)} KB
-											</Text>
-											<Button
-												type="button"
-												size="1"
-												variant="soft"
-												color="red"
+											</p>
+											<button
+												className="btn btn-danger btn-sm mt-2"
 												onClick={(e) => {
 													e.stopPropagation();
 													setCsvFile(null);
@@ -715,47 +719,48 @@ export default function AlphaSolverApp({
 														fileInputRef.current.value = "";
 													}
 												}}
-												className="mt-2"
 											>
 												Remove
-											</Button>
+											</button>
 										</div>
 									) : (
 										<>
-											<Text size="2" color="gray" className="mb-2">
+											<p className="text-sm text-[var(--text-muted)] mb-1">
 												Drag and drop file here
-											</Text>
-											<Text size="1" color="gray" className="mb-3">
-												Limit 200MB per file...
-											</Text>
-											<Button
-												type="button"
-												size="2"
-												variant="soft"
+											</p>
+											<p className="text-xs text-[var(--text-dim)] mb-3">
+												Limit 200MB per file
+											</p>
+											<button
+												className="btn btn-soft btn-sm"
 												onClick={(e) => {
 													e.stopPropagation();
 													handleFileSelect();
 												}}
 											>
 												Browse files
-											</Button>
+											</button>
 										</>
 									)}
 								</div>
 								{csvError && (
-									<Callout.Root color="red" className="mt-2">
-										<Callout.Text size="2">{csvError}</Callout.Text>
-									</Callout.Root>
+									<div className="callout callout-error mt-3">
+										{csvError}
+									</div>
 								)}
 							</div>
 						</div>
-					</Card>
+					</motion.div>
 
 					{/* Simulation Section */}
-					<Card size="2" variant="surface">
-						<Heading size="4" as="h2" className="mb-3">
-							Simulation
-						</Heading>
+					<motion.div 
+						className="sidebar-panel"
+						initial="hidden"
+						animate="visible"
+						variants={slideUp}
+						transition={{ delay: 0.2 }}
+					>
+						<h2 className="section-header">Simulation</h2>
 						<StrategyPanel
 							onRunSimulation={handleRequestRun}
 							planConfig={planConfig}
@@ -763,39 +768,65 @@ export default function AlphaSolverApp({
 							csvFormat={csvFormat}
 							isRunning={isRunning || isEngineLoading}
 						/>
-					</Card>
+					</motion.div>
 				</aside>
 
 				{/* Main Content Area */}
-				<div className="flex-1 flex flex-col min-w-0">
+				<div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 					{/* Tabs */}
-					<Tabs.Root value={activeTab} onValueChange={(value) => setActiveTab(value as TabType)}>
-						<Tabs.List>
-							<Tabs.Trigger value="simulation">Simulation</Tabs.Trigger>
-							<Tabs.Trigger value="trading_plan">Trading Plan</Tabs.Trigger>
-						</Tabs.List>
+					<div className="tabs-list mb-4">
+						<button
+							className={`tab-trigger ${activeTab === 'simulation' ? 'active' : ''}`}
+							onClick={() => setActiveTab('simulation')}
+						>
+							Simulation
+						</button>
+						<button
+							className={`tab-trigger ${activeTab === 'trading_plan' ? 'active' : ''}`}
+							onClick={() => setActiveTab('trading_plan')}
+						>
+							Trading Plan
+						</button>
+					</div>
 
-						{/* Tab Content */}
-						<div className="flex-1 overflow-y-auto mt-4">
-							<Tabs.Content value="simulation">
-								<ResultsPanel
-									result={result}
-									isRunning={isRunning || isEngineLoading}
-									error={error}
-									accountConfig={accountConfig}
-								/>
-							</Tabs.Content>
-							<Tabs.Content value="trading_plan">
-								<TradingPlanPanel
-									tradingPlan={result?.tradingPlan}
-									isRunning={isRunning || isEngineLoading}
-									hasTradeLog={!!parsedTrades && parsedTrades.length > 0}
-									hasRunSimulation={!!result}
-									gameType={accountConfig.gameType}
-								/>
-							</Tabs.Content>
-						</div>
-					</Tabs.Root>
+					{/* Tab Content */}
+					<div className="flex-1 overflow-y-auto">
+						<AnimatePresence mode="wait">
+							{activeTab === 'simulation' && (
+								<motion.div
+									key="simulation"
+									initial={{ opacity: 0, y: 10 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0, y: -10 }}
+									transition={{ duration: 0.2 }}
+								>
+									<ResultsPanel
+										result={result}
+										isRunning={isRunning || isEngineLoading}
+										error={error}
+										accountConfig={accountConfig}
+									/>
+								</motion.div>
+							)}
+							{activeTab === 'trading_plan' && (
+								<motion.div
+									key="trading_plan"
+									initial={{ opacity: 0, y: 10 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0, y: -10 }}
+									transition={{ duration: 0.2 }}
+								>
+									<TradingPlanPanel
+										tradingPlan={result?.tradingPlan}
+										isRunning={isRunning || isEngineLoading}
+										hasTradeLog={!!parsedTrades && parsedTrades.length > 0}
+										hasRunSimulation={!!result}
+										gameType={accountConfig.gameType}
+									/>
+								</motion.div>
+							)}
+						</AnimatePresence>
+					</div>
 				</div>
 			</main>
 		</div>

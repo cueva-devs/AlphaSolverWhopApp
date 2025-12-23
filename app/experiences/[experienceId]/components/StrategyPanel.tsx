@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Text, Callout, Select } from "@whop/react/components";
+import { motion, AnimatePresence } from "framer-motion";
 import type {
 	BootstrappedParams,
 	ParsedTrade,
@@ -47,104 +47,123 @@ export default function StrategyPanel({
 		}
 	};
 
+	const canRun = parsedTrades && parsedTrades.length > 0 && !isRunning;
+
 	return (
-		<div className="space-y-4">
+		<div className="space-y-5">
 			{/* Monte Carlo Runs */}
 			<div>
-				<Text size="2" weight="medium" className="mb-2 block">
-					Monte Carlo Runs
-				</Text>
+				<label className="section-label">Monte Carlo Runs</label>
 				<div className="flex items-center gap-2">
-					<Button
+					<button
 						type="button"
-						size="1"
-						variant="soft"
-						onClick={() => setNumPaths(Math.max(1, numPaths - 1000))}
+						className="btn btn-stepper"
+						onClick={() => setNumPaths(Math.max(1000, numPaths - 1000))}
+						disabled={numPaths <= 1000}
 					>
 						-
-					</Button>
+					</button>
 					<input
 						type="number"
-						value={numPaths.toString()}
+						value={numPaths}
 						onChange={(e) => {
 							const val = parseInt(e.target.value) || 0;
-							setNumPaths(Math.min(Math.max(1, val), planConfig.maxPaths));
+							setNumPaths(Math.min(Math.max(1000, val), planConfig.maxPaths));
 						}}
-						className="flex-1 px-3 py-2 bg-gray-a3 border border-gray-a5 rounded-md text-gray-12 text-2 focus:outline-none focus:ring-2 focus:ring-blue-6 focus:border-transparent"
+						className="input input-number flex-1"
 					/>
-					<Button
+					<button
 						type="button"
-						size="1"
-						variant="soft"
+						className="btn btn-stepper"
 						onClick={() => setNumPaths(Math.min(numPaths + 1000, planConfig.maxPaths))}
+						disabled={numPaths >= planConfig.maxPaths}
 					>
 						+
-					</Button>
+					</button>
 				</div>
+				<p className="text-xs text-[var(--text-muted)] mt-2">
+					Max: {planConfig.maxPaths.toLocaleString()} paths
+				</p>
 			</div>
 
 			{/* Advanced (Expandable) */}
 			<div>
-				<Button
+				<button
 					type="button"
-					variant="ghost"
-					size="2"
+					className="expand-trigger"
 					onClick={() => setShowAdvanced(!showAdvanced)}
-					className="flex items-center gap-2 p-0 h-auto"
 				>
-					<Text size="2" weight="medium">
-						{showAdvanced ? "▼" : "▶"} Advanced
-					</Text>
-				</Button>
-				{showAdvanced && (
-					<div className="mt-2 p-3 bg-gray-a2 border border-gray-a5 rounded-md space-y-3">
-						<div>
-							<Text size="2" weight="medium" className="mb-2 block">
-								Confidence Interval
-							</Text>
-							<Select.Root
-								value={String(confidenceLevel)}
-								onValueChange={(val) => setConfidenceLevel(parseFloat(val))}
-							>
-								<Select.Trigger />
-								<Select.Content>
-									<Select.Item value="0.90">90% CI</Select.Item>
-									<Select.Item value="0.95">95% CI (default)</Select.Item>
-									<Select.Item value="0.99">99% CI</Select.Item>
-								</Select.Content>
-							</Select.Root>
-							<Text size="1" color="gray" className="mt-1 block">
-								Higher CI = wider range, more conservative estimate
-							</Text>
-						</div>
-						<Text size="1" color="gray">
-							Bootstrapped simulation uses your uploaded trade log to resample historical trades.
-							This provides more realistic results based on your actual trading performance.
-						</Text>
-					</div>
-				)}
+					<svg 
+						className={`expand-icon ${showAdvanced ? 'expanded' : ''}`}
+						viewBox="0 0 24 24" 
+						fill="none" 
+						stroke="currentColor" 
+						strokeWidth="2"
+					>
+						<path d="M9 18l6-6-6-6" />
+					</svg>
+					<span className="text-sm font-medium text-[var(--text-primary)]">
+						Advanced
+					</span>
+				</button>
+				
+				<AnimatePresence>
+					{showAdvanced && (
+						<motion.div
+							initial={{ height: 0, opacity: 0 }}
+							animate={{ height: "auto", opacity: 1 }}
+							exit={{ height: 0, opacity: 0 }}
+							transition={{ duration: 0.2 }}
+							className="overflow-hidden"
+						>
+							<div className="expand-content mt-3 space-y-4">
+								<div>
+									<label className="section-label">Confidence Interval</label>
+									<select
+										className="select"
+										value={String(confidenceLevel)}
+										onChange={(e) => setConfidenceLevel(parseFloat(e.target.value))}
+									>
+										<option value="0.90">90% CI</option>
+										<option value="0.95">95% CI (default)</option>
+										<option value="0.99">99% CI</option>
+									</select>
+									<p className="text-xs text-[var(--text-muted)] mt-2">
+										Higher CI = wider range, more conservative estimate
+									</p>
+								</div>
+								<p className="text-xs text-[var(--text-muted)] leading-relaxed">
+									Bootstrapped simulation uses your uploaded trade log to resample historical trades.
+									This provides more realistic results based on your actual trading performance.
+								</p>
+							</div>
+						</motion.div>
+					)}
+				</AnimatePresence>
 			</div>
 
 			{/* Run Simulation Button */}
-			<Button
+			<motion.button
 				type="button"
-				size="3"
-				variant="solid"
-				color="blue"
-				className="w-full"
+				className="btn btn-primary btn-lg w-full"
 				onClick={handleRunSimulation}
-				disabled={!parsedTrades || parsedTrades.length === 0 || isRunning}
+				disabled={!canRun}
+				whileHover={canRun ? { scale: 1.02 } : {}}
+				whileTap={canRun ? { scale: 0.98 } : {}}
 			>
-				{isRunning ? "Running..." : "Run Simulation"}
-			</Button>
+				{isRunning ? (
+					<>
+						<span className="spinner" />
+						Running...
+					</>
+				) : "Run Simulation"}
+			</motion.button>
+			
 			{(!parsedTrades || parsedTrades.length === 0) && (
-				<Callout.Root color="amber">
-					<Callout.Text size="2">
-						Please upload a trade log CSV file first
-					</Callout.Text>
-				</Callout.Root>
+				<div className="callout callout-warning">
+					Please upload a trade log CSV file first
+				</div>
 			)}
 		</div>
 	);
 }
-

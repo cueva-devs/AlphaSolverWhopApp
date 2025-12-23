@@ -1,4 +1,3 @@
-import { Button } from "@whop/react/components";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { whopsdk } from "@/lib/whop-sdk";
@@ -22,39 +21,94 @@ export default async function DashboardPage({
 	const displayName = user.name || `@${user.username}`;
 
 	return (
-		<div className="flex flex-col p-8 gap-4">
-			<div className="flex justify-between items-center gap-4">
-				<h1 className="text-9">
-					Hi <strong>{displayName}</strong>!
-				</h1>
-				<Link href="https://docs.whop.com/apps" target="_blank">
-					<Button variant="classic" className="w-full" size="3">
-						Developer Docs
-					</Button>
-				</Link>
+		<div className="min-h-screen bg-[var(--bg-primary)]">
+			{/* Header */}
+			<header className="border-b border-[var(--border)] bg-[var(--bg-secondary)]">
+				<div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+					<div className="flex items-center gap-2">
+						<span className="text-[var(--accent)] text-2xl font-bold">α</span>
+						<span className="text-sm font-semibold tracking-tight text-[var(--text-primary)]">ALPHASOLVER</span>
+						<span className="badge badge-accent ml-3">Dashboard</span>
+					</div>
+					<a href="https://docs.whop.com/apps" target="_blank" rel="noopener noreferrer">
+						<button className="btn btn-soft btn-sm">
+							Developer Docs
+						</button>
+					</a>
+				</div>
+			</header>
+
+			<div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
+				{/* Welcome */}
+				<div className="chart-container p-6">
+					<h1 className="text-2xl font-semibold text-[var(--text-primary)] mb-2">
+						Welcome, <span className="text-[var(--accent)]">{displayName}</span>
+					</h1>
+					<p className="text-sm text-[var(--text-muted)]">
+						This is your app's admin dashboard. Replace this template with your own app configuration.
+					</p>
+				</div>
+
+				{/* Data Sections */}
+				<div className="grid lg:grid-cols-3 gap-6">
+					{/* Company Data */}
+					<div className="sidebar-panel">
+						<h2 className="section-header">Company Data</h2>
+						<JsonViewer data={company} />
+					</div>
+
+					{/* User Data */}
+					<div className="sidebar-panel">
+						<h2 className="section-header">User Data</h2>
+						<JsonViewer data={user} />
+					</div>
+
+					{/* Access Data */}
+					<div className="sidebar-panel">
+						<h2 className="section-header">Access Data</h2>
+						<JsonViewer data={access} />
+					</div>
+				</div>
+
+				{/* Help Section */}
+				<div className="dash-card p-6">
+					<h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">
+						Getting Started
+					</h3>
+					<ul className="space-y-2 text-sm text-[var(--text-secondary)]">
+						<li className="flex items-start gap-2">
+							<span className="text-[var(--accent)]">1.</span>
+							<span>Customize this dashboard to manage your app settings</span>
+						</li>
+						<li className="flex items-start gap-2">
+							<span className="text-[var(--accent)]">2.</span>
+							<span>Use the Whop SDK to fetch and update user/company data</span>
+						</li>
+						<li className="flex items-start gap-2">
+							<span className="text-[var(--accent)]">3.</span>
+							<span>Deploy your changes and test in the Whop marketplace</span>
+						</li>
+					</ul>
+					<div className="mt-4 pt-4 border-t border-[var(--border)]">
+						<a 
+							href="https://docs.whop.com/apps" 
+							target="_blank" 
+							rel="noopener noreferrer"
+							className="text-sm text-[var(--accent)] hover:underline"
+						>
+							Read the full documentation →
+						</a>
+					</div>
+				</div>
 			</div>
-
-			<p className="text-3 text-gray-10">
-				Welcome to you whop app! Replace this template with your own app. To
-				get you started, here's some helpful data you can fetch from whop.
-			</p>
-
-			<h3 className="text-6 font-bold">Company data</h3>
-			<JsonViewer data={company} />
-
-			<h3 className="text-6 font-bold">User data</h3>
-			<JsonViewer data={user} />
-
-			<h3 className="text-6 font-bold">Access data</h3>
-			<JsonViewer data={access} />
 		</div>
 	);
 }
 
-function JsonViewer({ data }: { data: any }) {
+function JsonViewer({ data }: { data: unknown }) {
 	return (
-		<pre className="text-2 border border-gray-a4 rounded-lg p-4 bg-gray-a2 max-h-72 overflow-y-auto">
-			<code className="text-gray-10">{JSON.stringify(data, null, 2)}</code>
+		<pre className="text-xs font-mono text-[var(--text-muted)] bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-lg p-4 max-h-64 overflow-y-auto">
+			<code>{JSON.stringify(data, null, 2)}</code>
 		</pre>
 	);
 }

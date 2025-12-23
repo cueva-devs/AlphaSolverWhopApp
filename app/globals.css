@@ -704,3 +704,653 @@ body {
 		stroke-dashoffset: 0;
 	}
 }
+
+/* ========================================
+   APP LAYOUT COMPONENTS
+   ======================================== */
+
+/* App shell */
+.app-shell {
+	min-height: 100vh;
+	background: var(--bg-primary);
+	display: flex;
+	flex-direction: column;
+}
+
+/* Sidebar panel */
+.sidebar-panel {
+	background: var(--bg-card);
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	padding: 16px;
+	transition: border-color 0.2s ease;
+}
+
+.sidebar-panel:hover {
+	border-color: var(--border-bright);
+}
+
+/* Section header */
+.section-header {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--text-primary);
+	margin-bottom: 12px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+/* Section label */
+.section-label {
+	font-size: 11px;
+	font-weight: 500;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--text-muted);
+	margin-bottom: 8px;
+	display: block;
+}
+
+/* ========================================
+   FORM CONTROLS
+   ======================================== */
+
+/* Text input */
+.input {
+	width: 100%;
+	padding: 10px 12px;
+	font-size: 13px;
+	font-family: var(--font-sans);
+	color: var(--text-primary);
+	background: var(--bg-tertiary);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	outline: none;
+	transition: all 0.2s ease;
+}
+
+.input:hover {
+	border-color: var(--border-bright);
+}
+
+.input:focus {
+	border-color: var(--accent);
+	box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.input::placeholder {
+	color: var(--text-muted);
+}
+
+.input:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Number input with stepper buttons */
+.input-number {
+	text-align: center;
+	font-family: var(--font-mono);
+	font-size: 14px;
+	font-weight: 500;
+}
+
+/* Small input variant */
+.input-sm {
+	padding: 6px 10px;
+	font-size: 12px;
+}
+
+/* Input with override indicator */
+.input-override {
+	border-color: var(--accent);
+	background: var(--accent-dim);
+}
+
+/* Select dropdown */
+.select {
+	width: 100%;
+	padding: 10px 36px 10px 12px;
+	font-size: 13px;
+	font-family: var(--font-sans);
+	color: var(--text-primary);
+	background: var(--bg-tertiary);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	outline: none;
+	cursor: pointer;
+	appearance: none;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2352525b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 10px center;
+	transition: all 0.2s ease;
+}
+
+.select:hover {
+	border-color: var(--border-bright);
+}
+
+.select:focus {
+	border-color: var(--accent);
+	box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.select:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Radio group */
+.radio-group {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.radio-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	cursor: pointer;
+}
+
+.radio-input {
+	width: 16px;
+	height: 16px;
+	border: 2px solid var(--border-bright);
+	border-radius: 50%;
+	background: var(--bg-tertiary);
+	appearance: none;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	position: relative;
+}
+
+.radio-input:hover {
+	border-color: var(--accent);
+}
+
+.radio-input:checked {
+	border-color: var(--accent);
+	background: var(--accent);
+}
+
+.radio-input:checked::after {
+	content: '';
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: white;
+}
+
+.radio-input:focus {
+	box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.radio-label {
+	font-size: 13px;
+	color: var(--text-secondary);
+	transition: color 0.2s ease;
+}
+
+.radio-item:hover .radio-label {
+	color: var(--text-primary);
+}
+
+/* Checkbox */
+.checkbox-input {
+	width: 16px;
+	height: 16px;
+	border: 2px solid var(--border-bright);
+	border-radius: 4px;
+	background: var(--bg-tertiary);
+	appearance: none;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	position: relative;
+}
+
+.checkbox-input:hover {
+	border-color: var(--accent);
+}
+
+.checkbox-input:checked {
+	border-color: var(--accent);
+	background: var(--accent);
+}
+
+.checkbox-input:checked::after {
+	content: '';
+	position: absolute;
+	top: 2px;
+	left: 5px;
+	width: 4px;
+	height: 8px;
+	border: solid white;
+	border-width: 0 2px 2px 0;
+	transform: rotate(45deg);
+}
+
+/* ========================================
+   BUTTONS
+   ======================================== */
+
+/* Button base */
+.btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	font-family: var(--font-sans);
+	font-weight: 500;
+	border-radius: 6px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	outline: none;
+	border: none;
+}
+
+.btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* Button sizes */
+.btn-sm {
+	padding: 6px 12px;
+	font-size: 12px;
+}
+
+.btn-md {
+	padding: 10px 16px;
+	font-size: 13px;
+}
+
+.btn-lg {
+	padding: 14px 24px;
+	font-size: 14px;
+}
+
+/* Ghost button */
+.btn-ghost {
+	background: transparent;
+	color: var(--text-secondary);
+	padding: 6px 10px;
+}
+
+.btn-ghost:hover:not(:disabled) {
+	background: var(--bg-tertiary);
+	color: var(--text-primary);
+}
+
+/* Soft button */
+.btn-soft {
+	background: var(--bg-tertiary);
+	color: var(--text-secondary);
+	border: 1px solid var(--border);
+}
+
+.btn-soft:hover:not(:disabled) {
+	background: var(--bg-card-hover);
+	border-color: var(--border-bright);
+	color: var(--text-primary);
+}
+
+/* Danger button */
+.btn-danger {
+	background: var(--negative-dim);
+	color: var(--negative);
+	border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.btn-danger:hover:not(:disabled) {
+	background: rgba(239, 68, 68, 0.2);
+	border-color: var(--negative);
+}
+
+/* Success button */
+.btn-success {
+	background: var(--positive-dim);
+	color: var(--positive);
+	border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.btn-success:hover:not(:disabled) {
+	background: rgba(34, 197, 94, 0.2);
+	border-color: var(--positive);
+}
+
+/* Stepper button (for +/- controls) */
+.btn-stepper {
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	background: var(--bg-tertiary);
+	border: 1px solid var(--border);
+	color: var(--text-secondary);
+	font-size: 16px;
+	font-weight: 500;
+}
+
+.btn-stepper:hover:not(:disabled) {
+	background: var(--bg-card-hover);
+	border-color: var(--accent);
+	color: var(--text-primary);
+}
+
+/* ========================================
+   TABS
+   ======================================== */
+
+.tabs-list {
+	display: flex;
+	gap: 4px;
+	padding: 4px;
+	background: var(--bg-tertiary);
+	border-radius: 8px;
+	border: 1px solid var(--border);
+}
+
+.tab-trigger {
+	flex: 1;
+	padding: 10px 16px;
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--text-muted);
+	background: transparent;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.tab-trigger:hover {
+	color: var(--text-secondary);
+	background: var(--bg-card);
+}
+
+.tab-trigger[data-state="active"],
+.tab-trigger.active {
+	color: var(--text-primary);
+	background: var(--bg-card);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.tab-content {
+	padding-top: 16px;
+}
+
+/* ========================================
+   EXPANDABLE SECTIONS
+   ======================================== */
+
+.expand-trigger {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 0;
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	text-align: left;
+}
+
+.expand-icon {
+	width: 16px;
+	height: 16px;
+	color: var(--text-muted);
+	transition: transform 0.2s ease;
+}
+
+.expand-icon.expanded {
+	transform: rotate(90deg);
+}
+
+.expand-content {
+	margin-top: 12px;
+	padding: 16px;
+	background: var(--bg-tertiary);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+}
+
+/* ========================================
+   CALLOUTS / ALERTS
+   ======================================== */
+
+.callout {
+	padding: 12px 16px;
+	border-radius: 8px;
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+.callout-info {
+	background: var(--accent-dim);
+	border: 1px solid rgba(59, 130, 246, 0.25);
+	color: var(--accent-bright);
+}
+
+.callout-warning {
+	background: var(--warning-dim);
+	border: 1px solid rgba(245, 158, 11, 0.25);
+	color: var(--warning);
+}
+
+.callout-error {
+	background: var(--negative-dim);
+	border: 1px solid rgba(239, 68, 68, 0.25);
+	color: var(--negative-bright);
+}
+
+.callout-success {
+	background: var(--positive-dim);
+	border: 1px solid rgba(34, 197, 94, 0.25);
+	color: var(--positive-bright);
+}
+
+/* ========================================
+   DIALOGS / MODALS
+   ======================================== */
+
+.dialog-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.7);
+	backdrop-filter: blur(4px);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 50;
+	padding: 16px;
+}
+
+.dialog-content {
+	background: var(--bg-card);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	padding: 24px;
+	max-width: 400px;
+	width: 100%;
+	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.dialog-title {
+	font-size: 18px;
+	font-weight: 600;
+	color: var(--text-primary);
+	margin-bottom: 8px;
+}
+
+.dialog-description {
+	font-size: 14px;
+	color: var(--text-secondary);
+	margin-bottom: 20px;
+	line-height: 1.5;
+}
+
+.dialog-actions {
+	display: flex;
+	gap: 12px;
+}
+
+/* ========================================
+   FILE UPLOAD
+   ======================================== */
+
+.file-drop-zone {
+	border: 2px dashed var(--border-bright);
+	border-radius: 10px;
+	padding: 32px 16px;
+	text-align: center;
+	cursor: pointer;
+	background: var(--bg-tertiary);
+	transition: all 0.2s ease;
+}
+
+.file-drop-zone:hover {
+	border-color: var(--accent);
+	background: var(--accent-dim);
+}
+
+.file-drop-zone.dragging {
+	border-color: var(--accent);
+	background: var(--accent-dim);
+}
+
+.file-drop-zone.has-file {
+	border-style: solid;
+	border-color: var(--positive);
+	background: var(--positive-dim);
+}
+
+/* ========================================
+   LOADING STATES
+   ======================================== */
+
+.spinner {
+	width: 20px;
+	height: 20px;
+	border: 2px solid var(--border);
+	border-top-color: var(--accent);
+	border-radius: 50%;
+	animation: spin 0.8s linear infinite;
+}
+
+.spinner-lg {
+	width: 40px;
+	height: 40px;
+	border-width: 3px;
+}
+
+@keyframes spin {
+	to { transform: rotate(360deg); }
+}
+
+.loading-dots {
+	display: inline-flex;
+	gap: 4px;
+}
+
+.loading-dots span {
+	width: 6px;
+	height: 6px;
+	background: var(--accent);
+	border-radius: 50%;
+	animation: loadingDot 1.4s ease-in-out infinite both;
+}
+
+.loading-dots span:nth-child(2) {
+	animation-delay: 0.2s;
+}
+
+.loading-dots span:nth-child(3) {
+	animation-delay: 0.4s;
+}
+
+@keyframes loadingDot {
+	0%, 80%, 100% { 
+		transform: scale(0.6);
+		opacity: 0.5;
+	}
+	40% { 
+		transform: scale(1);
+		opacity: 1;
+	}
+}
+
+/* ========================================
+   CREDITS DISPLAY
+   ======================================== */
+
+.credits-display {
+	text-align: right;
+}
+
+.credits-label {
+	font-size: 11px;
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.credits-value {
+	font-size: 16px;
+	font-weight: 600;
+	font-family: var(--font-mono);
+}
+
+.credits-value.unlimited {
+	color: var(--positive);
+}
+
+.credits-value.depleted {
+	color: var(--negative);
+}
+
+/* ========================================
+   BADGE VARIANTS
+   ======================================== */
+
+.badge-negative {
+	background: var(--negative-dim);
+	border-color: rgba(239, 68, 68, 0.25);
+	color: var(--negative);
+}
+
+.badge-warning {
+	background: var(--warning-dim);
+	border-color: rgba(245, 158, 11, 0.25);
+	color: var(--warning);
+}
+
+.badge-purple {
+	background: rgba(168, 85, 247, 0.12);
+	border-color: rgba(168, 85, 247, 0.25);
+	color: #a855f7;
+}
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+
+.text-positive { color: var(--positive); }
+.text-negative { color: var(--negative); }
+.text-warning { color: var(--warning); }
+.text-accent { color: var(--accent); }
+.text-muted { color: var(--text-muted); }
+.text-secondary { color: var(--text-secondary); }
+
+.bg-positive { background: var(--positive-dim); }
+.bg-negative { background: var(--negative-dim); }
+.bg-warning { background: var(--warning-dim); }
+.bg-accent { background: var(--accent-dim); }
+
+.font-mono { font-family: var(--font-mono); }
+.font-display { font-family: var(--font-display); }

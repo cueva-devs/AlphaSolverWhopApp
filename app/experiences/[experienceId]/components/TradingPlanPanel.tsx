@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card, Heading, Text, Tabs, Callout, Badge, Button, Select } from "@whop/react/components";
+import { motion, AnimatePresence } from "framer-motion";
 import type { TradingPlan, OptimalStrategy, ClusterInfo, BestPath, GameType, PhaseTargets } from "../types";
 
 interface TradingPlanPanelProps {
@@ -20,19 +20,50 @@ function formatPercent(value: number): string {
 	return `${value.toFixed(1)}%`;
 }
 
-function MetricCard({ label, value, delta, help }: { label: string; value: string; delta?: string; help?: string }) {
+// Animation variants
+const fadeUp = {
+	hidden: { opacity: 0, y: 10 },
+	visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
+};
+
+const staggerContainer = {
+	hidden: { opacity: 0 },
+	visible: {
+		opacity: 1,
+		transition: { staggerChildren: 0.05, delayChildren: 0.1 }
+	}
+};
+
+function MetricCard({ label, value, delta, positive, negative }: { 
+	label: string; 
+	value: string; 
+	delta?: string;
+	positive?: boolean;
+	negative?: boolean;
+}) {
 	return (
-		<div className="bg-gray-a2 rounded-lg p-3">
-			<Text size="1" color="gray" className="block mb-1">{label}</Text>
-			<Text size="4" weight="bold" className="block">{value}</Text>
-			{delta && <Text size="1" color="gray" className="block mt-1">{delta}</Text>}
+		<div className={`metric-card p-4 ${positive ? 'metric-positive' : ''}`}>
+			<div className="relative z-10">
+				<span className="text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)] block mb-1">
+					{label}
+				</span>
+				<span className={`text-xl font-semibold block ${
+					positive ? 'text-[var(--positive)]' : 
+					negative ? 'text-[var(--negative)]' : 
+					'text-[var(--text-primary)]'
+				}`}>
+					{value}
+				</span>
+				{delta && (
+					<span className="text-xs text-[var(--text-muted)] block mt-1">{delta}</span>
+				)}
+			</div>
 		</div>
 	);
 }
 
 function StrategyTab({ strategy, gameType }: { strategy: OptimalStrategy; gameType: GameType }) {
 	const clusterInfo = strategy.cluster_info;
-	const viable = strategy.viable_for_30d;
 	const maxDD = strategy.max_drawdown_safe;
 	const propLimit = strategy.prop_firm_max_loss || 0;
 	const scenario = strategy.scenario_performance;
@@ -42,45 +73,51 @@ function StrategyTab({ strategy, gameType }: { strategy: OptimalStrategy; gameTy
 	const showFundedPhase = gameType === "combine" || gameType === "funded_only";
 
 	return (
-		<div className="space-y-4">
+		<motion.div 
+			className="space-y-5"
+			initial="hidden"
+			animate="visible"
+			variants={staggerContainer}
+		>
 			{/* Strategy description */}
-			<div>
-				<Text size="3" weight="bold" className="block">{strategy.description}</Text>
-				<Text size="2" color="gray">Optimization: {strategy.optimization}</Text>
-			</div>
+			<motion.div variants={fadeUp}>
+				<h4 className="text-base font-semibold text-[var(--text-primary)]">{strategy.description}</h4>
+				<p className="text-sm text-[var(--text-muted)]">Optimization: {strategy.optimization}</p>
+			</motion.div>
 
 			{/* Scenario Performance Summary */}
 			{scenario && (
-				<Callout.Root color="blue">
-					<Callout.Text>
-						<strong>Scenario Performance:</strong> {formatCurrency(scenario.daily_profit)}/day | 
-						<strong> Win Rate:</strong> {formatPercent(scenario.win_rate)} | 
-						<strong> Max DD:</strong> {formatCurrency(scenario.max_drawdown)} |
-						<strong> Cluster:</strong> {clusterInfo?.name || 'N/A'} ({formatPercent(clusterInfo?.probability || 0)})
-					</Callout.Text>
-				</Callout.Root>
+				<motion.div variants={fadeUp} className="callout callout-info">
+					<strong>Scenario Performance:</strong> {formatCurrency(scenario.daily_profit)}/day | 
+					<strong> Win Rate:</strong> {formatPercent(scenario.win_rate)} | 
+					<strong> Max DD:</strong> {formatCurrency(scenario.max_drawdown)} |
+					<strong> Cluster:</strong> {clusterInfo?.name || 'N/A'} ({formatPercent(clusterInfo?.probability || 0)})
+				</motion.div>
 			)}
 
 			{/* Viability */}
 			{totalProj && totalProj.total_days <= 21 ? (
-				<Callout.Root color="green">
-					<Callout.Text>✓ Projected to reach payout in ~{totalProj.total_days} days (within 1 month)</Callout.Text>
-				</Callout.Root>
+				<motion.div variants={fadeUp} className="callout callout-success">
+					Projected to reach payout in ~{totalProj.total_days} days (within 1 month)
+				</motion.div>
 			) : totalProj ? (
-				<Callout.Root color="yellow">
-					<Callout.Text>⚠ Extended timeline: ~{totalProj.total_days} days to payout</Callout.Text>
-				</Callout.Root>
+				<motion.div variants={fadeUp} className="callout callout-warning">
+					Extended timeline: ~{totalProj.total_days} days to payout
+				</motion.div>
 			) : null}
 
 			{/* Scenario Projections for Combine+Funded */}
 			{showFundedPhase && evalProj && fundedProj && (
-				<div className="space-y-3">
+				<div className="space-y-4">
 					{/* Eval Phase Projection */}
 					{gameType !== "funded_only" && (
-						<div className="bg-blue-a2 border border-blue-a5 rounded-lg p-4">
-							<div className="flex items-center gap-2 mb-3">
-								<Badge color="blue">Eval Phase</Badge>
-								<Text size="2" weight="bold">If you achieve this scenario...</Text>
+						<motion.div 
+							variants={fadeUp}
+							className="p-4 rounded-lg bg-[var(--accent-dim)] border border-[rgba(59,130,246,0.25)]"
+						>
+							<div className="flex items-center gap-2 mb-4">
+								<span className="badge badge-accent">Eval Phase</span>
+								<span className="text-sm font-medium text-[var(--text-primary)]">If you achieve this scenario...</span>
 							</div>
 							<div className="grid grid-cols-3 gap-3">
 								<MetricCard 
@@ -99,14 +136,17 @@ function StrategyTab({ strategy, gameType }: { strategy: OptimalStrategy; gameTy
 									delta={`Limit: ${formatCurrency(propLimit)}`}
 								/>
 							</div>
-						</div>
+						</motion.div>
 					)}
 
 					{/* Funded Phase Projection */}
-					<div className="bg-green-a2 border border-green-a5 rounded-lg p-4">
-						<div className="flex items-center gap-2 mb-3">
-							<Badge color="green">{gameType === "funded_only" ? "Funded Phase" : "Then in Funded..."}</Badge>
-							<Text size="2" weight="bold">Payout Eligibility</Text>
+					<motion.div 
+						variants={fadeUp}
+						className="p-4 rounded-lg bg-[var(--positive-dim)] border border-[rgba(34,197,94,0.25)]"
+					>
+						<div className="flex items-center gap-2 mb-4">
+							<span className="badge badge-positive">{gameType === "funded_only" ? "Funded Phase" : "Then in Funded..."}</span>
+							<span className="text-sm font-medium text-[var(--text-primary)]">Payout Eligibility</span>
 						</div>
 						<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
 							<MetricCard 
@@ -128,46 +168,41 @@ function StrategyTab({ strategy, gameType }: { strategy: OptimalStrategy; gameTy
 								label="Projected Payout" 
 								value={formatCurrency(fundedProj.projected_payout)}
 								delta="Your take-home"
+								positive
 							/>
 						</div>
-					</div>
+					</motion.div>
 
 					{/* Total Journey Summary */}
 					{totalProj && (
-						<div className="bg-purple-a2 border border-purple-a5 rounded-lg p-4">
-							<div className="flex items-center gap-2 mb-3">
-								<Badge color="purple">Total Journey</Badge>
-								<Text size="2" weight="bold">Eval → Funded → Payout</Text>
+						<motion.div 
+							variants={fadeUp}
+							className="p-4 rounded-lg bg-[rgba(168,85,247,0.12)] border border-[rgba(168,85,247,0.25)]"
+						>
+							<div className="flex items-center gap-2 mb-4">
+								<span className="badge badge-purple">Total Journey</span>
+								<span className="text-sm font-medium text-[var(--text-primary)]">Eval → Funded → Payout</span>
 							</div>
 							<div className="grid grid-cols-4 gap-3">
-								<MetricCard 
-									label="Eval Days" 
-									value={`${totalProj.eval_days}`}
-								/>
-								<MetricCard 
-									label="Funded Days" 
-									value={`${totalProj.funded_days}`}
-								/>
-								<MetricCard 
-									label="Total Days" 
-									value={`${totalProj.total_days}`}
-								/>
-								<MetricCard 
-									label="Final Payout" 
-									value={formatCurrency(totalProj.final_payout)}
-								/>
+								<MetricCard label="Eval Days" value={`${totalProj.eval_days}`} />
+								<MetricCard label="Funded Days" value={`${totalProj.funded_days}`} />
+								<MetricCard label="Total Days" value={`${totalProj.total_days}`} />
+								<MetricCard label="Final Payout" value={formatCurrency(totalProj.final_payout)} positive />
 							</div>
-						</div>
+						</motion.div>
 					)}
 				</div>
 			)}
 
 			{/* Combine Only: Simple metrics */}
 			{gameType === "combine_only" && evalProj && (
-				<div className="bg-blue-a2 border border-blue-a5 rounded-lg p-4">
-					<div className="flex items-center gap-2 mb-3">
-						<Badge color="blue">Eval Projection</Badge>
-						<Text size="2" weight="bold">If you achieve this scenario...</Text>
+				<motion.div 
+					variants={fadeUp}
+					className="p-4 rounded-lg bg-[var(--accent-dim)] border border-[rgba(59,130,246,0.25)]"
+				>
+					<div className="flex items-center gap-2 mb-4">
+						<span className="badge badge-accent">Eval Projection</span>
+						<span className="text-sm font-medium text-[var(--text-primary)]">If you achieve this scenario...</span>
 					</div>
 					<div className="grid grid-cols-3 gap-3">
 						<MetricCard 
@@ -186,40 +221,84 @@ function StrategyTab({ strategy, gameType }: { strategy: OptimalStrategy; gameTy
 							delta={`Limit: ${formatCurrency(propLimit)}`}
 						/>
 					</div>
-					<Text size="1" color="gray" className="mt-3 block">
+					<p className="text-xs text-[var(--text-muted)] mt-4">
 						Note: Combine Only mode - no payout calculation (just passing the evaluation)
-					</Text>
-				</div>
+					</p>
+				</motion.div>
 			)}
 
 			{/* Key targets summary */}
-			<div className="bg-gray-a3 rounded-lg p-4 mt-4">
-				<Text size="2" weight="bold" className="block mb-2">Key Targets for {strategy.label}:</Text>
-				<div className="grid grid-cols-2 gap-2 text-sm">
+			<motion.div variants={fadeUp} className="dash-card p-4">
+				<h5 className="text-sm font-semibold text-[var(--text-primary)] mb-3">
+					Key Targets for {strategy.label}:
+				</h5>
+				<div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
 					{showFundedPhase && totalProj ? (
 						<>
-							<Text size="2">Daily profit needed: <strong>{formatCurrency(scenario?.daily_profit || 0)}</strong></Text>
-							<Text size="2">Win rate needed: <strong>{formatPercent(scenario?.win_rate || 0)}</strong></Text>
-							<Text size="2">Eval days: <strong>{totalProj.eval_days}</strong></Text>
-							<Text size="2">Funded days: <strong>{totalProj.funded_days}</strong></Text>
-							<Text size="2">Total days: <strong>{totalProj.total_days}</strong></Text>
-							<Text size="2">Max drawdown: <strong>{formatCurrency(maxDD)}</strong></Text>
-							<Text size="2">Projected payout: <strong>{formatCurrency(totalProj.final_payout)}</strong></Text>
-							<Text size="2">Cluster probability: <strong>{formatPercent(strategy.cluster_probability || 0)}</strong></Text>
+							<div className="flex justify-between">
+								<span className="text-[var(--text-muted)]">Daily profit needed:</span>
+								<span className="font-medium">{formatCurrency(scenario?.daily_profit || 0)}</span>
+							</div>
+							<div className="flex justify-between">
+								<span className="text-[var(--text-muted)]">Win rate needed:</span>
+								<span className="font-medium">{formatPercent(scenario?.win_rate || 0)}</span>
+							</div>
+							<div className="flex justify-between">
+								<span className="text-[var(--text-muted)]">Eval days:</span>
+								<span className="font-medium">{totalProj.eval_days}</span>
+							</div>
+							<div className="flex justify-between">
+								<span className="text-[var(--text-muted)]">Funded days:</span>
+								<span className="font-medium">{totalProj.funded_days}</span>
+							</div>
+							<div className="flex justify-between">
+								<span className="text-[var(--text-muted)]">Total days:</span>
+								<span className="font-medium">{totalProj.total_days}</span>
+							</div>
+							<div className="flex justify-between">
+								<span className="text-[var(--text-muted)]">Max drawdown:</span>
+								<span className="font-medium">{formatCurrency(maxDD)}</span>
+							</div>
+							<div className="flex justify-between">
+								<span className="text-[var(--text-muted)]">Projected payout:</span>
+								<span className="font-medium text-[var(--positive)]">{formatCurrency(totalProj.final_payout)}</span>
+							</div>
+							<div className="flex justify-between">
+								<span className="text-[var(--text-muted)]">Cluster probability:</span>
+								<span className="font-medium">{formatPercent(strategy.cluster_probability || 0)}</span>
+							</div>
 						</>
 					) : (
 						<>
-							<Text size="2">Daily profit: <strong>{formatCurrency(scenario?.daily_profit || strategy.daily_pnl_target)}</strong></Text>
-							<Text size="2">Win rate: <strong>{formatPercent(scenario?.win_rate || strategy.daily_win_rate_needed)}</strong></Text>
-							<Text size="2">Days to pass: <strong>{evalProj?.days_to_pass || strategy.target_days}</strong></Text>
-							<Text size="2">Max drawdown: <strong>{formatCurrency(maxDD)}</strong></Text>
-							<Text size="2">Daily loss limit: <strong>{formatCurrency(strategy.daily_loss_stop)}</strong></Text>
-							<Text size="2">Cluster probability: <strong>{formatPercent(strategy.cluster_probability || 0)}</strong></Text>
+							<div className="flex justify-between">
+								<span className="text-[var(--text-muted)]">Daily profit:</span>
+								<span className="font-medium">{formatCurrency(scenario?.daily_profit || strategy.daily_pnl_target)}</span>
+							</div>
+							<div className="flex justify-between">
+								<span className="text-[var(--text-muted)]">Win rate:</span>
+								<span className="font-medium">{formatPercent(scenario?.win_rate || strategy.daily_win_rate_needed)}</span>
+							</div>
+							<div className="flex justify-between">
+								<span className="text-[var(--text-muted)]">Days to pass:</span>
+								<span className="font-medium">{evalProj?.days_to_pass || strategy.target_days}</span>
+							</div>
+							<div className="flex justify-between">
+								<span className="text-[var(--text-muted)]">Max drawdown:</span>
+								<span className="font-medium">{formatCurrency(maxDD)}</span>
+							</div>
+							<div className="flex justify-between">
+								<span className="text-[var(--text-muted)]">Daily loss limit:</span>
+								<span className="font-medium">{formatCurrency(strategy.daily_loss_stop)}</span>
+							</div>
+							<div className="flex justify-between">
+								<span className="text-[var(--text-muted)]">Cluster probability:</span>
+								<span className="font-medium">{formatPercent(strategy.cluster_probability || 0)}</span>
+							</div>
 						</>
 					)}
 				</div>
-			</div>
-		</div>
+			</motion.div>
+		</motion.div>
 	);
 }
 
@@ -231,10 +310,10 @@ function PhaseTargetsDisplay({ phaseTargets, gameType }: { phaseTargets: PhaseTa
 	// Combine Only: Just show eval targets
 	if (gameType === "combine_only") {
 		return (
-			<div className="bg-blue-a2 border border-blue-a5 rounded-lg p-4 space-y-3">
+			<div className="p-4 rounded-lg bg-[var(--accent-dim)] border border-[rgba(59,130,246,0.25)] space-y-3">
 				<div className="flex items-center gap-2">
-					<Badge color="blue">Combine Only</Badge>
-					<Text size="2" weight="bold">Evaluation Phase Targets</Text>
+					<span className="badge badge-accent">Combine Only</span>
+					<span className="text-sm font-medium text-[var(--text-primary)]">Evaluation Phase Targets</span>
 				</div>
 				<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
 					<MetricCard label="Profit Target" value={formatCurrency(evalPhase.profit_target)} delta={`Reach ${formatCurrency(evalPhase.target_balance)}`} />
@@ -242,7 +321,7 @@ function PhaseTargetsDisplay({ phaseTargets, gameType }: { phaseTargets: PhaseTa
 					<MetricCard label="Daily Loss Limit" value={formatCurrency(evalPhase.daily_loss_limit)} />
 					<MetricCard label="Starting Balance" value={formatCurrency(evalPhase.initial_balance)} />
 				</div>
-				<Text size="1" color="gray">Goal: Pass the evaluation. No payout calculation in this mode.</Text>
+				<p className="text-xs text-[var(--text-muted)]">Goal: Pass the evaluation. No payout calculation in this mode.</p>
 			</div>
 		);
 	}
@@ -250,10 +329,10 @@ function PhaseTargetsDisplay({ phaseTargets, gameType }: { phaseTargets: PhaseTa
 	// Funded Only: Just show funded targets
 	if (gameType === "funded_only") {
 		return (
-			<div className="bg-green-a2 border border-green-a5 rounded-lg p-4 space-y-3">
+			<div className="p-4 rounded-lg bg-[var(--positive-dim)] border border-[rgba(34,197,94,0.25)] space-y-3">
 				<div className="flex items-center gap-2">
-					<Badge color="green">Funded Only</Badge>
-					<Text size="2" weight="bold">Funded Phase Targets</Text>
+					<span className="badge badge-positive">Funded Only</span>
+					<span className="text-sm font-medium text-[var(--text-primary)]">Funded Phase Targets</span>
 				</div>
 				<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
 					<MetricCard label="Min Winning Days" value={`${funded.min_winning_days} days`} delta={`≥${formatCurrency(funded.winning_day_minimum)}/day`} />
@@ -261,19 +340,19 @@ function PhaseTargetsDisplay({ phaseTargets, gameType }: { phaseTargets: PhaseTa
 					<MetricCard label="Profit Share" value={`${payout.profit_share_pct}%`} />
 					<MetricCard label="Max Loss Limit" value={formatCurrency(funded.max_loss)} />
 				</div>
-				<Text size="1" color="gray">{summary.payout_formula}</Text>
+				<p className="text-xs text-[var(--text-muted)]">{summary.payout_formula}</p>
 			</div>
 		);
 	}
 
 	// Combine + Funded: Show both phases
 	return (
-		<div className="space-y-3">
+		<div className="space-y-4">
 			{/* Phase 1: Evaluation */}
-			<div className="bg-blue-a2 border border-blue-a5 rounded-lg p-4 space-y-2">
+			<div className="p-4 rounded-lg bg-[var(--accent-dim)] border border-[rgba(59,130,246,0.25)] space-y-3">
 				<div className="flex items-center gap-2">
-					<Badge color="blue">Phase 1</Badge>
-					<Text size="2" weight="bold">Pass Evaluation</Text>
+					<span className="badge badge-accent">Phase 1</span>
+					<span className="text-sm font-medium text-[var(--text-primary)]">Pass Evaluation</span>
 				</div>
 				<div className="grid grid-cols-2 md:grid-cols-3 gap-3">
 					<MetricCard label="Profit Target" value={formatCurrency(evalPhase.profit_target)} delta={`Reach ${formatCurrency(evalPhase.target_balance)}`} />
@@ -283,10 +362,10 @@ function PhaseTargetsDisplay({ phaseTargets, gameType }: { phaseTargets: PhaseTa
 			</div>
 
 			{/* Phase 2: Funded Payout */}
-			<div className="bg-green-a2 border border-green-a5 rounded-lg p-4 space-y-2">
+			<div className="p-4 rounded-lg bg-[var(--positive-dim)] border border-[rgba(34,197,94,0.25)] space-y-3">
 				<div className="flex items-center gap-2">
-					<Badge color="green">Phase 2</Badge>
-					<Text size="2" weight="bold">Reach Payout in Funded</Text>
+					<span className="badge badge-positive">Phase 2</span>
+					<span className="text-sm font-medium text-[var(--text-primary)]">Reach Payout in Funded</span>
 				</div>
 				<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
 					<MetricCard label="Min Winning Days" value={`${funded.min_winning_days} days`} delta={`≥${formatCurrency(funded.winning_day_minimum)}/day`} />
@@ -294,7 +373,7 @@ function PhaseTargetsDisplay({ phaseTargets, gameType }: { phaseTargets: PhaseTa
 					<MetricCard label="Profit Share" value={`${payout.profit_share_pct}%`} />
 					<MetricCard label="Min Payout" value={formatCurrency(payout.min_payout_at_threshold)} delta="At minimum balance" />
 				</div>
-				<Text size="1" color="gray">{summary.payout_formula}</Text>
+				<p className="text-xs text-[var(--text-muted)]">{summary.payout_formula}</p>
 			</div>
 		</div>
 	);
@@ -312,57 +391,60 @@ function WinningClustersTable({ clusters }: { clusters: ClusterInfo[] }) {
 	const showPagination = clusters.length > 10;
 
 	return (
-		<div className="space-y-3">
+		<div className="space-y-4">
 			{/* Page size selector - only show if many results */}
 			{showPagination && (
 				<div className="flex items-center justify-between">
-					<Text size="2" color="gray">
+					<span className="text-sm text-[var(--text-muted)]">
 						Showing {startIndex + 1}-{endIndex} of {clusters.length} clusters
-					</Text>
+					</span>
 					<div className="flex items-center gap-2">
-						<Text size="2" color="gray">Rows:</Text>
-						<Select.Root 
+						<span className="text-sm text-[var(--text-muted)]">Rows:</span>
+						<select 
+							className="select w-20"
 							value={String(pageSize)} 
-							onValueChange={(val) => {
-								setPageSize(Number(val));
+							onChange={(e) => {
+								setPageSize(Number(e.target.value));
 								setCurrentPage(1);
 							}}
 						>
-							<Select.Trigger className="w-20" />
-							<Select.Content>
-								<Select.Item value="10">10</Select.Item>
-								<Select.Item value="25">25</Select.Item>
-								<Select.Item value="50">50</Select.Item>
-								<Select.Item value="100">100</Select.Item>
-							</Select.Content>
-						</Select.Root>
+							<option value="10">10</option>
+							<option value="25">25</option>
+							<option value="50">50</option>
+							<option value="100">100</option>
+						</select>
 					</div>
 				</div>
 			)}
 
 			{/* Table with max height and scroll */}
-			<div className="overflow-x-auto max-h-[400px] overflow-y-auto border border-gray-a4 rounded-lg">
-				<table className="w-full text-sm">
-					<thead className="sticky top-0 bg-gray-a3">
-						<tr className="border-b border-gray-a6">
-							<th className="text-left py-2 px-3 whitespace-nowrap">Cluster</th>
-							<th className="text-left py-2 px-3 whitespace-nowrap">Probability</th>
-							<th className="text-left py-2 px-3 whitespace-nowrap">Median Days</th>
-							<th className="text-left py-2 px-3 whitespace-nowrap">Max Drawdown</th>
-							<th className="text-left py-2 px-3 whitespace-nowrap">Acct Profit</th>
-							<th className="text-left py-2 px-3">Description</th>
+			<div className="overflow-x-auto max-h-[400px] overflow-y-auto border border-[var(--border)] rounded-lg">
+				<table className="data-table">
+					<thead className="sticky top-0">
+						<tr>
+							<th>Cluster</th>
+							<th className="text-right">Probability</th>
+							<th className="text-right">Median Days</th>
+							<th className="text-right">Max Drawdown</th>
+							<th className="text-right">Acct Profit</th>
+							<th>Description</th>
 						</tr>
 					</thead>
 					<tbody>
 						{paginatedClusters.map((cluster, idx) => (
-							<tr key={startIndex + idx} className="border-b border-gray-a4 hover:bg-gray-a2">
-								<td className="py-2 px-3 font-medium whitespace-nowrap">{cluster.name}</td>
-								<td className="py-2 px-3 whitespace-nowrap">{formatPercent(cluster.probability)}</td>
-								<td className="py-2 px-3 whitespace-nowrap">{Math.round(cluster.days_median)}</td>
-								<td className="py-2 px-3 whitespace-nowrap">{formatCurrency(cluster.max_drawdown_median)}</td>
-								<td className="py-2 px-3 whitespace-nowrap">{formatCurrency(cluster.final_pnl_median)}</td>
-								<td className="py-2 px-3 text-gray-11 max-w-xs truncate" title={cluster.description}>{cluster.description}</td>
-							</tr>
+							<motion.tr 
+								key={startIndex + idx}
+								initial={{ opacity: 0, x: -10 }}
+								animate={{ opacity: 1, x: 0 }}
+								transition={{ delay: idx * 0.03 }}
+							>
+								<td className="font-medium whitespace-nowrap">{cluster.name}</td>
+								<td className="text-right whitespace-nowrap">{formatPercent(cluster.probability)}</td>
+								<td className="text-right whitespace-nowrap">{Math.round(cluster.days_median)}</td>
+								<td className="text-right whitespace-nowrap">{formatCurrency(cluster.max_drawdown_median)}</td>
+								<td className="text-right whitespace-nowrap">{formatCurrency(cluster.final_pnl_median)}</td>
+								<td className="text-[var(--text-muted)] max-w-xs truncate" title={cluster.description}>{cluster.description}</td>
+							</motion.tr>
 						))}
 					</tbody>
 				</table>
@@ -371,62 +453,39 @@ function WinningClustersTable({ clusters }: { clusters: ClusterInfo[] }) {
 			{/* Pagination controls */}
 			{showPagination && totalPages > 1 && (
 				<div className="flex items-center justify-center gap-2">
-					<Button 
-						variant="soft" 
-						size="1"
+					<button 
+						className="btn btn-soft btn-sm"
 						disabled={currentPage === 1}
 						onClick={() => setCurrentPage(1)}
 					>
-						««
-					</Button>
-					<Button 
-						variant="soft" 
-						size="1"
+						First
+					</button>
+					<button 
+						className="btn btn-soft btn-sm"
 						disabled={currentPage === 1}
 						onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
 					>
-						«
-					</Button>
-					<Text size="2" className="px-3">
+						Prev
+					</button>
+					<span className="px-4 text-sm text-[var(--text-muted)]">
 						Page {currentPage} of {totalPages}
-					</Text>
-					<Button 
-						variant="soft" 
-						size="1"
+					</span>
+					<button 
+						className="btn btn-soft btn-sm"
 						disabled={currentPage === totalPages}
 						onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
 					>
-						»
-					</Button>
-					<Button 
-						variant="soft" 
-						size="1"
+						Next
+					</button>
+					<button 
+						className="btn btn-soft btn-sm"
 						disabled={currentPage === totalPages}
 						onClick={() => setCurrentPage(totalPages)}
 					>
-						»»
-					</Button>
+						Last
+					</button>
 				</div>
 			)}
-		</div>
-	);
-}
-
-function BestCaseSection({ bestPath }: { bestPath: BestPath }) {
-	return (
-		<div className="space-y-4">
-			<Callout.Root color="green">
-				<Callout.Text>
-					<strong>Fastest simulation passed in {bestPath.days} trading days</strong>
-				</Callout.Text>
-			</Callout.Root>
-
-			<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-				<MetricCard label="Days to Pass" value={`${bestPath.days}`} />
-				<MetricCard label="Final P&L" value={formatCurrency(bestPath.final_pnl)} />
-				<MetricCard label="Avg Daily P&L" value={formatCurrency(bestPath.avg_daily_pnl)} />
-				<MetricCard label="Daily Win Rate" value={formatPercent(bestPath.daily_win_rate)} />
-			</div>
 		</div>
 	);
 }
@@ -438,45 +497,44 @@ export default function TradingPlanPanel({
 	hasRunSimulation,
 	gameType
 }: TradingPlanPanelProps) {
+	const [activeStrategy, setActiveStrategy] = useState<string | null>(null);
+
 	// Show loading state
 	if (isRunning) {
 		return (
-			<Card size="2" variant="surface">
-				<div className="flex items-center justify-center py-12">
-					<Text size="3" color="gray">Running simulation...</Text>
+			<div className="chart-container p-8">
+				<div className="flex flex-col items-center justify-center py-12">
+					<div className="spinner spinner-lg mb-4" />
+					<span className="text-base text-[var(--text-muted)]">Running simulation...</span>
 				</div>
-			</Card>
+			</div>
 		);
 	}
 
 	// No trade log uploaded
 	if (!hasTradeLog) {
 		return (
-			<Card size="2" variant="surface">
-				<Heading size="5" as="h2" className="mb-4">Trading Plan</Heading>
-				<Callout.Root color="blue">
-					<Callout.Text>
-						Upload a trade log in the sidebar to generate your personalized trading plan.
-					</Callout.Text>
-				</Callout.Root>
-			</Card>
+			<div className="chart-container p-6">
+				<h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Trading Plan</h2>
+				<div className="callout callout-info">
+					Upload a trade log in the sidebar to generate your personalized trading plan.
+				</div>
+			</div>
 		);
 	}
 
 	// Trade log uploaded but simulation not run
 	if (!hasRunSimulation || !tradingPlan) {
 		return (
-			<Card size="2" variant="surface">
-				<Heading size="5" as="h2" className="mb-4">Trading Plan</Heading>
-				<Callout.Root color="blue">
-					<Callout.Text>
-						Click <strong>Run Simulation</strong> in the sidebar to generate Monte Carlo-based trading recommendations.
-					</Callout.Text>
-				</Callout.Root>
-				<Text size="2" color="gray" className="mt-2">
+			<div className="chart-container p-6">
+				<h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Trading Plan</h2>
+				<div className="callout callout-info">
+					Click <strong>Run Simulation</strong> in the sidebar to generate Monte Carlo-based trading recommendations.
+				</div>
+				<p className="text-sm text-[var(--text-muted)] mt-3">
 					The trading plan uses actual simulation results to provide accurate risk assessments.
-				</Text>
-			</Card>
+				</p>
+			</div>
 		);
 	}
 
@@ -497,25 +555,36 @@ export default function TradingPlanPanel({
 	const strategyOrder = ["risk_adjusted", "fastest", "safest", "highest_probability", "highest_payout"];
 	const availableStrategies = strategyOrder.filter(key => optimalStrategies && key in optimalStrategies);
 
+	// Set default active strategy if not set
+	if (!activeStrategy && availableStrategies.length > 0) {
+		setActiveStrategy(availableStrategies[0]);
+	}
+
 	// Check if all strategies point to same cluster
 	const uniqueClusters = new Set(
 		availableStrategies.map(k => optimalStrategies[k]?.cluster_info?.name || '')
 	);
 
 	return (
-		<div className="space-y-6">
+		<motion.div 
+			className="space-y-6"
+			initial="hidden"
+			animate="visible"
+			variants={staggerContainer}
+		>
 			{/* Simulation Results Summary */}
-			<Card size="2" variant="surface">
-				<Heading size="5" as="h2" className="mb-4">Simulation Results</Heading>
-				<Text size="1" color="gray" className="mb-4 block">
+			<motion.div variants={fadeUp} className="chart-container p-5">
+				<h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1">Simulation Results</h2>
+				<p className="text-xs text-[var(--text-muted)] mb-4">
 					{numSimulations?.toLocaleString() || 0} simulations
-				</Text>
+				</p>
 
 				<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
 					<MetricCard 
 						label="Pass Rate" 
 						value={formatPercent(passRate)}
 						delta={`CI: [${formatPercent(passRateCi?.[0] || 0)}, ${formatPercent(passRateCi?.[1] || 0)}]`}
+						positive={passRate >= 50}
 					/>
 					<MetricCard 
 						label="Winners" 
@@ -528,79 +597,86 @@ export default function TradingPlanPanel({
 					<MetricCard 
 						label="Simulated EV" 
 						value={formatCurrency(simulatedEv || 0)}
+						positive={(simulatedEv || 0) > 0}
+						negative={(simulatedEv || 0) < 0}
 					/>
 				</div>
-			</Card>
+			</motion.div>
 
 			{/* Optimal Strategies */}
 			{availableStrategies.length > 0 ? (
-				<Card size="2" variant="surface">
-					<Heading size="5" as="h2" className="mb-2">Trading Plan — Optimal Strategies</Heading>
-					<Text size="2" color="gray" className="mb-4 block">
+				<motion.div variants={fadeUp} className="chart-container p-5">
+					<h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1">Trading Plan — Optimal Strategies</h2>
+					<p className="text-sm text-[var(--text-muted)] mb-4">
 						Different optimization criteria produce different recommendations. Choose based on your risk tolerance.
-					</Text>
+					</p>
 
 					{uniqueClusters.size === 1 && availableStrategies.length > 1 && (
-						<Callout.Root color="yellow" className="mb-4">
-							<Callout.Text>
-								<strong>Note:</strong> All optimization criteria selected the same cluster ({Array.from(uniqueClusters)[0]}). 
-								This happens when there's only one dominant winning pattern.
-							</Callout.Text>
-						</Callout.Root>
+						<div className="callout callout-warning mb-4">
+							<strong>Note:</strong> All optimization criteria selected the same cluster ({Array.from(uniqueClusters)[0]}). 
+							This happens when there's only one dominant winning pattern.
+						</div>
 					)}
 
-					<Tabs.Root defaultValue={availableStrategies[0]}>
-						<Tabs.List>
-							{availableStrategies.map(key => (
-								<Tabs.Trigger key={key} value={key}>
-									{optimalStrategies[key]?.label || key}
-								</Tabs.Trigger>
-							))}
-						</Tabs.List>
-
+					{/* Strategy Tabs */}
+					<div className="tabs-list mb-5">
 						{availableStrategies.map(key => (
-							<Tabs.Content key={key} value={key} className="mt-4">
-								<StrategyTab strategy={optimalStrategies[key]} gameType={gameType} />
-							</Tabs.Content>
+							<button
+								key={key}
+								className={`tab-trigger ${activeStrategy === key ? 'active' : ''}`}
+								onClick={() => setActiveStrategy(key)}
+							>
+								{optimalStrategies[key]?.label || key}
+							</button>
 						))}
-					</Tabs.Root>
-				</Card>
+					</div>
+
+					{/* Strategy Content */}
+					<AnimatePresence mode="wait">
+						{activeStrategy && optimalStrategies[activeStrategy] && (
+							<motion.div
+								key={activeStrategy}
+								initial={{ opacity: 0, y: 10 }}
+								animate={{ opacity: 1, y: 0 }}
+								exit={{ opacity: 0, y: -10 }}
+								transition={{ duration: 0.2 }}
+							>
+								<StrategyTab strategy={optimalStrategies[activeStrategy]} gameType={gameType} />
+							</motion.div>
+						)}
+					</AnimatePresence>
+				</motion.div>
 			) : (
-				<Card size="2" variant="surface">
-					<Heading size="5" as="h2" className="mb-4">Trading Plan</Heading>
-					<Callout.Root color="red">
-						<Callout.Text>
-							<strong>No Winning Paths</strong> — This strategy did not pass in any simulation. 
-							Consider adjusting your approach or selecting a different account tier.
-						</Callout.Text>
-					</Callout.Root>
-				</Card>
+				<motion.div variants={fadeUp} className="chart-container p-5">
+					<h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Trading Plan</h2>
+					<div className="callout callout-error">
+						<strong>No Winning Paths</strong> — This strategy did not pass in any simulation. 
+						Consider adjusting your approach or selecting a different account tier.
+					</div>
+				</motion.div>
 			)}
 
 			{/* Winning Scenario Clusters */}
 			{allWinningClusters && allWinningClusters.length > 0 && (
-				<Card size="2" variant="surface">
-					<Heading size="5" as="h2" className="mb-2">Winning Scenario Clusters</Heading>
-					<Text size="2" color="gray" className="mb-4 block">
+				<motion.div variants={fadeUp} className="chart-container p-5">
+					<h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1">Winning Scenario Clusters</h2>
+					<p className="text-sm text-[var(--text-muted)] mb-4">
 						Clustering algorithm identified these distinct winning patterns in the simulation
-					</Text>
+					</p>
 
 					<WinningClustersTable clusters={allWinningClusters} />
 
 					{allWinningClusters.length > 1 && (
-						<Callout.Root color="blue" className="mt-4">
-							<Callout.Text>
-								<strong>{allWinningClusters.length} distinct winning patterns</strong> — Days range: {
-									Math.min(...allWinningClusters.map(c => c.days_median))
-								} to {
-									Math.max(...allWinningClusters.map(c => c.days_median))
-								}
-							</Callout.Text>
-						</Callout.Root>
+						<div className="callout callout-info mt-4">
+							<strong>{allWinningClusters.length} distinct winning patterns</strong> — Days range: {
+								Math.min(...allWinningClusters.map(c => c.days_median))
+							} to {
+								Math.max(...allWinningClusters.map(c => c.days_median))
+							}
+						</div>
 					)}
-				</Card>
+				</motion.div>
 			)}
-
-		</div>
+		</motion.div>
 	);
 }
