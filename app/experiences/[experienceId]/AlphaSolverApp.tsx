@@ -115,6 +115,19 @@ export default function AlphaSolverApp({
 		fetchCredits();
 	}, [userId, experienceId, planConfig]);
 
+	// Auto-navigate to simulation tab when simulation completes
+	useEffect(() => {
+		// Check if simulation just completed
+		if (!isRunning && !isEngineLoading && result !== null && activeTab !== "simulation") {
+			// Add a small delay to allow UI to settle before navigation
+			const timer = setTimeout(() => {
+				handleTabChange("simulation");
+			}, 500);
+			
+			return () => clearTimeout(timer);
+		}
+	}, [isRunning, isEngineLoading, result, activeTab, handleTabChange]);
+
 	// Handle tab change with scroll position preservation
 	const handleTabChange = useCallback((newTab: TabType) => {
 		// Save current scroll position
