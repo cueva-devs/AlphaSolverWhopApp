@@ -135,125 +135,129 @@ export default function RunPanel({
 	const canRun = parsedTrades && parsedTrades.length > 0 && !isRunning && !isEngineLoading;
 	const isSimulationRunning = isRunning || isEngineLoading;
 
-	return (
+		return (
 		<motion.div 
 			className="run-panel-container"
 			initial="hidden"
 			animate="visible"
 			variants={staggerContainer}
 		>
-			{/* Marketing Intro Section */}
-			<motion.section variants={fadeUp} className="run-section run-intro-section">
-				<div className="run-intro-content">
-					<h2 className="text-2xl sm:text-3xl font-['Space_Grotesk',_sans-serif] font-bold mb-4">
-						<span className="text-[var(--text-primary)]">Know your </span>
-						<span className="headline-gradient">true odds</span>
-					</h2>
-					<p className="text-base text-[var(--text-secondary)] leading-relaxed mb-6">
-						AlphaSolver is a <strong className="text-[var(--text-primary)]">Monte Carlo simulation tool</strong> designed to help prop firm traders understand their true probability of passing evaluations and getting funded.
-					</p>
-
-					<div className="grid sm:grid-cols-2 gap-4">
-						{[
-							{
-								icon: (
-									<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-									</svg>
-								),
-								title: "Data-driven decisions",
-								desc: "Know your actual odds before paying for an evaluation"
-							},
-							{
-								icon: (
-									<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-									</svg>
-								),
-								title: "Cost analysis",
-								desc: "Understand the true cost including resets and fees"
-							},
-							{
-								icon: (
-									<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-									</svg>
-								),
-								title: "Risk assessment",
-								desc: "See best and worst case scenarios"
-							},
-							{
-								icon: (
-									<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-									</svg>
-								),
-								title: "Strategy optimization",
-								desc: "Get personalized trading plan recommendations"
-							}
-						].map((item, i) => (
-							<motion.div
-								key={i}
-								initial={{ opacity: 0, y: 10 }}
-								animate={{ opacity: 1, y: 0 }}
-								transition={{ delay: 0.1 + i * 0.1 }}
-								className="dash-card p-4"
-							>
-								<div className="w-10 h-10 rounded-lg bg-[var(--accent-dim)] flex items-center justify-center text-[var(--accent)] mb-3">
-									{item.icon}
-								</div>
-								<div className="font-semibold mb-1 text-sm text-[var(--text-primary)]">{item.title}</div>
-								<div className="text-xs text-[var(--text-secondary)]">{item.desc}</div>
-							</motion.div>
-						))}
-					</div>
-				</div>
-			</motion.section>
-
-			{/* Plan & Credits Section */}
-			<motion.section variants={fadeUp} className="run-section">
-				<div className="flex items-center justify-between mb-4">
-					<h3 className="text-lg font-semibold text-[var(--text-primary)]">
-						{planConfig.label} Plan
-					</h3>
-					<div className="credits-display">
-						<span className="credits-label">Daily Runs</span>
-						{isLoadingCredits ? (
-							<div className="spinner mt-1" />
-						) : (
-							<div className={`credits-value ${planConfig.dailyCredits === -1 ? 'unlimited' : noCreditsRemaining ? 'depleted' : ''}`}>
-								{creditsDisplay}
-							</div>
-						)}
-					</div>
-				</div>
-				{planConfig.dailyCredits !== -1 && (
-					<div className="space-y-3">
-						<p className="text-xs text-[var(--text-muted)]">
-							Credits reset daily at midnight UTC.
+			{/* Marketing Intro Section - Only show for free plan users */}
+			{planConfig.dailyCredits !== -1 && (
+				<motion.section variants={fadeUp} className="run-section run-intro-section">
+					<div className="run-intro-content">
+						<h2 className="text-2xl sm:text-3xl font-['Space_Grotesk',_sans-serif] font-bold mb-4">
+							<span className="text-[var(--text-primary)]">Know your </span>
+							<span className="headline-gradient">true odds</span>
+						</h2>
+						<p className="text-base text-[var(--text-secondary)] leading-relaxed mb-6">
+							AlphaSolver is a <strong className="text-[var(--text-primary)]">Monte Carlo simulation tool</strong> designed to help prop firm traders understand their true probability of passing evaluations and getting funded.
 						</p>
-						{noCreditsRemaining && upgradeUrl && (
-							<div className="space-y-2">
-								<a href={upgradeUrl} target="_blank" rel="noopener noreferrer" className="block">
-									<button className="btn btn-primary btn-md w-full">
-										Upgrade to Unlimited
-									</button>
-								</a>
-								{isWhopIframe && (
-									<p className="text-xs text-[var(--text-muted)] text-center">
-										Or contact your community admin to upgrade
-									</p>
-								)}
-							</div>
-						)}
-						{noCreditsRemaining && !upgradeUrl && isWhopIframe && (
-							<div className="callout callout-warning">
-								Contact your community admin to upgrade your plan, or come back tomorrow.
-							</div>
-						)}
+
+						<div className="grid sm:grid-cols-2 gap-4">
+							{[
+								{
+									icon: (
+										<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+										</svg>
+									),
+									title: "Data-driven decisions",
+									desc: "Know your actual odds before paying for an evaluation"
+								},
+								{
+									icon: (
+										<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+										</svg>
+									),
+									title: "Cost analysis",
+									desc: "Understand the true cost including resets and fees"
+								},
+								{
+									icon: (
+										<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+										</svg>
+									),
+									title: "Risk assessment",
+									desc: "See best and worst case scenarios"
+								},
+								{
+									icon: (
+										<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+										</svg>
+									),
+									title: "Strategy optimization",
+									desc: "Get personalized trading plan recommendations"
+								}
+							].map((item, i) => (
+								<motion.div
+									key={i}
+									initial={{ opacity: 0, y: 10 }}
+									animate={{ opacity: 1, y: 0 }}
+									transition={{ delay: 0.1 + i * 0.1 }}
+									className="dash-card p-4"
+								>
+									<div className="w-10 h-10 rounded-lg bg-[var(--accent-dim)] flex items-center justify-center text-[var(--accent)] mb-3">
+										{item.icon}
+									</div>
+									<div className="font-semibold mb-1 text-sm text-[var(--text-primary)]">{item.title}</div>
+									<div className="text-xs text-[var(--text-secondary)]">{item.desc}</div>
+								</motion.div>
+							))}
+						</div>
 					</div>
-				)}
-			</motion.section>
+				</motion.section>
+			)}
+
+			{/* Plan & Credits Section - Only show for free plan users */}
+			{planConfig.dailyCredits !== -1 && (
+				<motion.section variants={fadeUp} className="run-section">
+					<div className="flex items-center justify-between mb-4">
+						<h3 className="text-lg font-semibold text-[var(--text-primary)]">
+							{planConfig.label} Plan
+						</h3>
+						<div className="credits-display">
+							<span className="credits-label">Daily Runs</span>
+							{isLoadingCredits ? (
+								<div className="spinner mt-1" />
+							) : (
+								<div className={`credits-value ${planConfig.dailyCredits === -1 ? 'unlimited' : noCreditsRemaining ? 'depleted' : ''}`}>
+									{creditsDisplay}
+								</div>
+							)}
+						</div>
+					</div>
+					{planConfig.dailyCredits !== -1 && (
+						<div className="space-y-3">
+							<p className="text-xs text-[var(--text-muted)]">
+								Credits reset daily at midnight UTC.
+							</p>
+							{noCreditsRemaining && upgradeUrl && (
+								<div className="space-y-2">
+									<a href={upgradeUrl} target="_blank" rel="noopener noreferrer" className="block">
+										<button className="btn btn-primary btn-md w-full">
+											Upgrade to Unlimited
+										</button>
+									</a>
+									{isWhopIframe && (
+										<p className="text-xs text-[var(--text-muted)] text-center">
+											Or contact your community admin to upgrade
+										</p>
+									)}
+								</div>
+							)}
+							{noCreditsRemaining && !upgradeUrl && isWhopIframe && (
+								<div className="callout callout-warning">
+									Contact your community admin to upgrade your plan, or come back tomorrow.
+								</div>
+							)}
+						</div>
+					)}
+				</motion.section>
+			)}
 
 			{/* Account Configuration */}
 			<motion.section variants={fadeUp} className="run-section">
