@@ -82,6 +82,9 @@ export default function AlphaSolverApp({
 		trading_plan: 0,
 	});
 	const contentRef = useRef<HTMLDivElement>(null);
+	
+	// Track if we've already navigated to results after simulation completion
+	const hasNavigatedToResults = useRef(false);
 
 	// Computed values from credits state
 	const creditsDisplay = planConfig.dailyCredits === -1 
@@ -130,13 +133,21 @@ export default function AlphaSolverApp({
 		});
 	}, [activeTab]);
 
-	// Auto-navigate to simulation tab when simulation completes
+	// Reset navigation flag when a new simulation starts
 	useEffect(() => {
-		// Check if simulation just completed
-		if (!isRunning && !isEngineLoading && result !== null && activeTab !== "simulation") {
+		if (isRunning || isEngineLoading) {
+			hasNavigatedToResults.current = false;
+		}
+	}, [isRunning, isEngineLoading]);
+
+	// Auto-navigate to simulation tab when simulation completes (only once)
+	useEffect(() => {
+		// Check if simulation just completed and we haven't navigated yet
+		if (!isRunning && !isEngineLoading && result !== null && activeTab !== "simulation" && !hasNavigatedToResults.current) {
 			// Add a small delay to allow UI to settle before navigation
 			const timer = setTimeout(() => {
 				handleTabChange("simulation");
+				hasNavigatedToResults.current = true;
 			}, 500);
 			
 			return () => clearTimeout(timer);
