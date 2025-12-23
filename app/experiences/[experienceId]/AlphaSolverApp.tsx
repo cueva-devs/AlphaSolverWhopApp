@@ -47,7 +47,7 @@ export default function AlphaSolverApp({
 	upgradeUrl,
 	isWhopIframe = true,
 }: AlphaSolverAppProps) {
-	const { run, result, isRunning, error, isEngineLoading } =
+	const { run, result, isRunning, error, isEngineLoading, reset } =
 		useSimulationEngine();
 	const [activeTab, setActiveTab] = useState<TabType>("run");
 	const [accountConfig, setAccountConfig] = useState<AccountConfig>({
@@ -124,6 +124,13 @@ export default function AlphaSolverApp({
 		if (contentRef.current) {
 			scrollPositions.current[activeTab] = contentRef.current.scrollTop;
 		}
+		
+		// Clear result state when navigating back to Run tab after viewing results
+		// This allows the user to run a new simulation
+		if (newTab === "run" && result !== null && !isRunning && !isEngineLoading) {
+			reset();
+		}
+		
 		setActiveTab(newTab);
 		// Restore new tab's scroll position after render
 		requestAnimationFrame(() => {
@@ -131,7 +138,7 @@ export default function AlphaSolverApp({
 				contentRef.current.scrollTop = scrollPositions.current[newTab];
 			}
 		});
-	}, [activeTab]);
+	}, [activeTab, result, isRunning, isEngineLoading, reset]);
 
 	// Reset navigation flag and scroll position when a new simulation starts
 	useEffect(() => {
@@ -150,16 +157,6 @@ export default function AlphaSolverApp({
 			const timer = setTimeout(() => {
 				handleTabChange("simulation");
 				hasNavigatedToResults.current = true;
-				
-				// Clear trade log state so user can upload new file for next simulation
-				setCsvFile(null);
-				setParsedTrades(null);
-				setCsvError(null);
-				setAiMapping(null);
-				setAiMappingConfirmed(false);
-				if (fileInputRef.current) {
-					fileInputRef.current.value = "";
-				}
 				
 				// Scroll to top when auto-navigating to simulation tab
 				requestAnimationFrame(() => {

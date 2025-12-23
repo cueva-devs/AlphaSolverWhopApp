@@ -259,15 +259,6 @@ export default function RunPanel({
 				</motion.section>
 			)}
 
-			{/* Account Configuration */}
-			<motion.section variants={fadeUp} className="run-section">
-				<h3 className="section-header">Account</h3>
-				<AccountConfigPanel
-					config={accountConfig}
-					onChange={onAccountConfigChange}
-				/>
-			</motion.section>
-
 			{/* Import / Export */}
 			<motion.section variants={fadeUp} className="run-section">
 				<h3 className="section-header">Import / Export</h3>
@@ -292,6 +283,15 @@ export default function RunPanel({
 						Est. file size: {estimatedFileSize}
 					</p>
 				)}
+			</motion.section>
+
+			{/* Account Configuration */}
+			<motion.section variants={fadeUp} className="run-section">
+				<h3 className="section-header">Account</h3>
+				<AccountConfigPanel
+					config={accountConfig}
+					onChange={onAccountConfigChange}
+				/>
 			</motion.section>
 
 			{/* Trade Log Upload */}
