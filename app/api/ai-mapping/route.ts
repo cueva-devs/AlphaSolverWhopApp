@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "openai/gpt-4o-mini:free",
+          model: "meta-llama/llama-3.3-70b-instruct:free",
           messages: [
             {
               role: "system",
