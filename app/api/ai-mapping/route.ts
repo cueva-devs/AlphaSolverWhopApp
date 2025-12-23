@@ -51,10 +51,8 @@ export async function POST(request: NextRequest) {
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
         "Authorization": `Bearer ${apiKey}`,
-        "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "https://alphasolver.app",
-        "X-Title": "AlphaSolver",
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: "openai/gpt-4o-mini:free",
