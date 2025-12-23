@@ -1354,3 +1354,360 @@ body {
 
 .font-mono { font-family: var(--font-mono); }
 .font-display { font-family: var(--font-display); }
+
+/* ========================================
+   THREE-TAB LAYOUT SYSTEM
+   ======================================== */
+
+/* App shell with tabs layout */
+.app-shell-tabs {
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+	background: var(--bg-primary);
+}
+
+/* Sticky tabs navigation */
+.sticky-tabs {
+	position: sticky;
+	top: 0;
+	z-index: 40;
+	background: rgba(10, 10, 15, 0.95);
+	backdrop-filter: blur(16px);
+	border-bottom: 1px solid var(--border);
+	padding: 12px 16px;
+}
+
+@media (min-width: 640px) {
+	.sticky-tabs {
+		padding: 16px 24px;
+	}
+}
+
+.sticky-tabs-inner {
+	display: flex;
+	gap: 4px;
+	max-width: 600px;
+	margin: 0 auto;
+	padding: 4px;
+	background: var(--bg-tertiary);
+	border-radius: 10px;
+	border: 1px solid var(--border);
+}
+
+.sticky-tab {
+	flex: 1;
+	padding: 10px 16px;
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--text-muted);
+	background: transparent;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	white-space: nowrap;
+}
+
+.sticky-tab:hover {
+	color: var(--text-secondary);
+	background: var(--bg-card);
+}
+
+.sticky-tab.active {
+	color: var(--text-primary);
+	background: var(--bg-card);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* Tab content scroll container */
+.tab-content-scroll {
+	flex: 1;
+	overflow-y: auto;
+	overflow-x: hidden;
+	scroll-behavior: smooth;
+}
+
+/* ========================================
+   RUN PANEL STYLES
+   ======================================== */
+
+.run-panel-container {
+	max-width: 800px;
+	margin: 0 auto;
+	padding: 24px 16px 48px;
+}
+
+@media (min-width: 640px) {
+	.run-panel-container {
+		padding: 32px 24px 64px;
+	}
+}
+
+@media (min-width: 1024px) {
+	.run-panel-container {
+		padding: 40px 32px 80px;
+	}
+}
+
+.run-section {
+	background: var(--bg-card);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	padding: 24px;
+	margin-bottom: 24px;
+}
+
+@media (min-width: 640px) {
+	.run-section {
+		padding: 32px;
+		margin-bottom: 32px;
+	}
+}
+
+.run-intro-section {
+	background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-elevated) 100%);
+	border-color: var(--border-bright);
+}
+
+.run-intro-content {
+	position: relative;
+}
+
+/* Report Ready Card */
+.report-ready-card {
+	background: linear-gradient(135deg, var(--positive-dim) 0%, rgba(34, 197, 94, 0.05) 100%);
+	border: 1px solid rgba(34, 197, 94, 0.3);
+	border-radius: 12px;
+	padding: 20px;
+	cursor: pointer;
+	transition: all 0.3s ease;
+}
+
+.report-ready-card:hover {
+	border-color: var(--positive);
+	box-shadow: 0 8px 32px var(--positive-glow);
+	transform: translateY(-2px);
+}
+
+/* Simulation Loading */
+.simulation-loading {
+	background: var(--bg-tertiary);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+}
+
+/* ========================================
+   RESULTS PANEL STYLES
+   ======================================== */
+
+.results-panel-container {
+	max-width: 1000px;
+	margin: 0 auto;
+	padding: 24px 16px 48px;
+}
+
+@media (min-width: 640px) {
+	.results-panel-container {
+		padding: 32px 24px 64px;
+	}
+}
+
+@media (min-width: 1024px) {
+	.results-panel-container {
+		padding: 40px 32px 80px;
+	}
+}
+
+.results-content {
+	display: flex;
+	flex-direction: column;
+}
+
+.results-section {
+	margin-bottom: 32px;
+}
+
+@media (min-width: 640px) {
+	.results-section {
+		margin-bottom: 40px;
+	}
+}
+
+@media (min-width: 1024px) {
+	.results-section {
+		margin-bottom: 48px;
+	}
+}
+
+/* ========================================
+   TRADING PLAN PANEL STYLES
+   ======================================== */
+
+.trading-plan-container {
+	max-width: 1000px;
+	margin: 0 auto;
+	padding: 24px 16px 48px;
+}
+
+@media (min-width: 640px) {
+	.trading-plan-container {
+		padding: 32px 24px 64px;
+	}
+}
+
+@media (min-width: 1024px) {
+	.trading-plan-container {
+		padding: 40px 32px 80px;
+	}
+}
+
+.trading-plan-section {
+	margin-bottom: 32px;
+}
+
+@media (min-width: 640px) {
+	.trading-plan-section {
+		margin-bottom: 40px;
+	}
+}
+
+/* ========================================
+   CLUSTER TABLE HOVER/SCROLL STYLES
+   ======================================== */
+
+.cluster-table-container {
+	position: relative;
+}
+
+.cluster-row {
+	transition: background 0.2s ease;
+}
+
+.cluster-row:hover {
+	background: var(--bg-card-hover);
+}
+
+.cluster-row.expanded {
+	background: var(--bg-elevated);
+}
+
+.cluster-description-header {
+	min-width: 200px;
+}
+
+.cluster-description-cell {
+	max-width: 300px;
+	position: relative;
+}
+
+.cluster-description-wrapper {
+	position: relative;
+	overflow: hidden;
+}
+
+.cluster-description-text {
+	color: var(--text-muted);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 250px;
+	transition: all 0.3s ease;
+}
+
+.cluster-description-text.expanded {
+	white-space: normal;
+	max-width: none;
+	overflow: visible;
+	background: var(--bg-elevated);
+	padding: 8px 12px;
+	margin: -8px -12px;
+	border-radius: 8px;
+	position: relative;
+	z-index: 10;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.cluster-description-fade {
+	position: absolute;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	width: 40px;
+	background: linear-gradient(90deg, transparent, var(--bg-card));
+	pointer-events: none;
+}
+
+.cluster-row:hover .cluster-description-fade {
+	background: linear-gradient(90deg, transparent, var(--bg-card-hover));
+}
+
+/* Horizontal scroll hint for mobile */
+@media (max-width: 768px) {
+	.cluster-table-container::after {
+		content: '';
+		position: absolute;
+		right: 0;
+		top: 0;
+		bottom: 0;
+		width: 32px;
+		background: linear-gradient(90deg, transparent, var(--bg-card));
+		pointer-events: none;
+		border-radius: 0 8px 8px 0;
+	}
+}
+
+/* ========================================
+   RESPONSIVE SPACING UTILITIES
+   ======================================== */
+
+/* Padding utilities for panels */
+.panel-padding {
+	padding: 16px;
+}
+
+@media (min-width: 640px) {
+	.panel-padding {
+		padding: 24px;
+	}
+}
+
+@media (min-width: 1024px) {
+	.panel-padding {
+		padding: 32px;
+	}
+}
+
+/* Margin utilities for sections */
+.section-margin {
+	margin-bottom: 24px;
+}
+
+@media (min-width: 640px) {
+	.section-margin {
+		margin-bottom: 32px;
+	}
+}
+
+@media (min-width: 1024px) {
+	.section-margin {
+		margin-bottom: 40px;
+	}
+}
+
+/* Gap utilities for grids */
+.grid-gap-responsive {
+	gap: 12px;
+}
+
+@media (min-width: 640px) {
+	.grid-gap-responsive {
+		gap: 16px;
+	}
+}
+
+@media (min-width: 1024px) {
+	.grid-gap-responsive {
+		gap: 20px;
+	}
+}

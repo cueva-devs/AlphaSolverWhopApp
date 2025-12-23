@@ -186,13 +186,13 @@ function MostProbableOutcomesTable({ outcomes }: { outcomes: OutcomeScenario[] }
 			initial={{ opacity: 0, y: 20 }}
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ duration: 0.5 }}
-			className="chart-container p-5"
+			className="chart-container p-6 sm:p-8"
 		>
-			<div className="mb-4">
-				<h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1">
+			<div className="mb-6">
+				<h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">
 					Most Probable Outcomes
 				</h3>
-				<p className="text-xs text-[var(--text-muted)]">
+				<p className="text-sm text-[var(--text-muted)]">
 					Scenarios identified via clustering algorithm on simulation paths
 				</p>
 			</div>
@@ -202,7 +202,7 @@ function MostProbableOutcomesTable({ outcomes }: { outcomes: OutcomeScenario[] }
 				initial={{ opacity: 0, scale: 0.95 }}
 				animate={{ opacity: 1, scale: 1 }}
 				transition={{ delay: 0.2 }}
-				className={`mb-4 p-4 rounded-lg border-l-4 ${
+				className={`mb-6 p-5 rounded-lg border-l-4 ${
 					isPass 
 						? 'bg-[var(--positive-dim)] border-[var(--positive)]' 
 						: 'bg-[var(--negative-dim)] border-[var(--negative)]'
@@ -335,144 +335,85 @@ export default function ResultsPanel({
 	const [resultsRef, resultsInView] = useInView({ triggerOnce: true, threshold: 0.1 });
 
 	return (
-		<div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
-			<div className="flex flex-col lg:flex-row gap-6 p-6 max-w-7xl mx-auto">
-			{/* Left Column - Results */}
-			<div className="flex-1 space-y-6 overflow-y-auto">
-				{/* Error Banner */}
-				{error && (
-					<motion.div
-						initial={{ opacity: 0, y: -10 }}
-						animate={{ opacity: 1, y: 0 }}
-						className="p-4 rounded-lg bg-[var(--negative-dim)] border border-[var(--negative)]"
-					>
+		<div className="results-panel-container">
+			{/* Error Banner */}
+			{error && (
+				<motion.div
+					initial={{ opacity: 0, y: -10 }}
+					animate={{ opacity: 1, y: 0 }}
+					className="results-section"
+				>
+					<div className="p-5 rounded-lg bg-[var(--negative-dim)] border border-[var(--negative)]">
 						<div className="text-sm font-semibold text-[var(--negative)] mb-1">
 							Simulation Error
 						</div>
 						<div className="text-sm text-[var(--text-secondary)]">{error}</div>
-					</motion.div>
-				)}
+					</div>
+				</motion.div>
+			)}
 
-				{/* Loading State */}
-				{isRunning && (
-					<motion.div 
-						initial={{ opacity: 0 }}
-						animate={{ opacity: 1 }}
-						className="flex flex-col items-center justify-center py-24"
-					>
-						<div className="relative mb-6">
-							<div className="w-16 h-16 border-4 border-[var(--border)] border-t-[var(--accent)] rounded-full animate-spin" />
-							<div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-[var(--positive)] rounded-full animate-spin" style={{ animationDelay: '0.15s', animationDuration: '1.5s' }} />
+			{/* Loading State */}
+			{isRunning && (
+				<motion.div 
+					initial={{ opacity: 0 }}
+					animate={{ opacity: 1 }}
+					className="flex flex-col items-center justify-center py-24"
+				>
+					<div className="relative mb-6">
+						<div className="w-16 h-16 border-4 border-[var(--border)] border-t-[var(--accent)] rounded-full animate-spin" />
+						<div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-[var(--positive)] rounded-full animate-spin" style={{ animationDelay: '0.15s', animationDuration: '1.5s' }} />
+					</div>
+					<div className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+						Running simulation...
+					</div>
+					<div className="text-sm text-[var(--text-muted)]">
+						Analyzing thousands of possible outcomes
+					</div>
+				</motion.div>
+			)}
+
+			{/* Empty State - Minimal, since intro is now in Run tab */}
+			{!result && !isRunning && !error && (
+				<motion.div
+					initial={{ opacity: 0, y: 20 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.6 }}
+					className="results-section"
+				>
+					<div className="chart-container p-8 sm:p-12 text-center">
+						<div className="w-16 h-16 rounded-full bg-[var(--accent-dim)] flex items-center justify-center mx-auto mb-6">
+							<svg className="w-8 h-8 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+							</svg>
 						</div>
-						<div className="text-lg font-semibold text-[var(--text-primary)] mb-2">
-							Running simulation...
-						</div>
-						<div className="text-sm text-[var(--text-muted)]">
-							Analyzing thousands of possible outcomes
-						</div>
-					</motion.div>
-				)}
+						<h2 className="text-xl font-semibold text-[var(--text-primary)] mb-3">
+							No Simulation Results Yet
+						</h2>
+						<p className="text-sm text-[var(--text-muted)] max-w-md mx-auto">
+							Go to the <strong className="text-[var(--accent)]">Run</strong> tab to upload your trade log and run a Monte Carlo simulation.
+						</p>
+					</div>
+				</motion.div>
+			)}
 
-				{/* Empty State - Redesigned */}
-				{!result && !isRunning && !error && (
-					<motion.div
-						initial={{ opacity: 0, y: 20 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.6 }}
-						className="chart-container p-8"
-					>
-						<div className="space-y-6">
-							<div>
-								<h2 className="text-3xl font-['Space_Grotesk',_sans-serif] font-bold mb-3">
-									<span className="text-[var(--text-primary)]">Know your </span>
-									<span className="headline-gradient">true odds</span>
-								</h2>
-								<p className="text-base text-[var(--text-secondary)] leading-relaxed">
-									AlphaSolver is a <strong className="text-[var(--text-primary)]">Monte Carlo simulation tool</strong> designed to help prop firm traders understand their true probability of passing evaluations and getting funded.
-								</p>
-							</div>
-
-							<div className="grid sm:grid-cols-2 gap-4 pt-4 border-t border-[var(--border)]">
-								{[
-									{
-										icon: (
-											<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-											</svg>
-										),
-										title: "Data-driven decisions",
-										desc: "Know your actual odds before paying for an evaluation"
-									},
-									{
-										icon: (
-											<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-											</svg>
-										),
-										title: "Cost analysis",
-										desc: "Understand the true cost including resets and fees"
-									},
-									{
-										icon: (
-											<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-											</svg>
-										),
-										title: "Risk assessment",
-										desc: "See best and worst case scenarios"
-									},
-									{
-										icon: (
-											<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-											</svg>
-										),
-										title: "Strategy optimization",
-										desc: "Get personalized trading plan recommendations"
-									}
-								].map((item, i) => (
-									<motion.div
-										key={i}
-										initial={{ opacity: 0, y: 10 }}
-										animate={{ opacity: 1, y: 0 }}
-										transition={{ delay: 0.1 + i * 0.1 }}
-										className="dash-card p-4"
-									>
-										<div className="w-10 h-10 rounded-lg bg-[var(--accent-dim)] flex items-center justify-center text-[var(--accent)] mb-3">
-											{item.icon}
-										</div>
-										<div className="font-semibold mb-1 text-sm text-[var(--text-primary)]">{item.title}</div>
-										<div className="text-xs text-[var(--text-secondary)]">{item.desc}</div>
-									</motion.div>
-								))}
-							</div>
-
-							<div className="pt-4 border-t border-[var(--border)]">
-								<p className="text-sm text-[var(--text-muted)]">
-									<strong className="text-[var(--text-primary)]">Upload your trade log</strong> in the sidebar and click <strong className="text-[var(--accent)]">Run Simulation</strong> to see your personalized results.
-								</p>
-							</div>
-						</div>
-					</motion.div>
-				)}
-
-				{/* Results Content */}
-				{result && !isRunning && (
-					<motion.div
-						ref={resultsRef}
+			{/* Results Content - Single Column Vertical Stack */}
+			{result && !isRunning && (
+				<motion.div
+					ref={resultsRef}
+					initial="hidden"
+					animate={resultsInView ? "visible" : "hidden"}
+					variants={staggerContainer}
+					className="results-content"
+				>
+					{/* Hero Metrics - Matching Landing Page */}
+					<motion.section
+						ref={metricsRef}
 						initial="hidden"
-						animate={resultsInView ? "visible" : "hidden"}
+						animate={metricsInView ? "visible" : "hidden"}
 						variants={staggerContainer}
-						className="space-y-6"
+						className="results-section"
 					>
-						{/* Hero Metrics - Matching Landing Page */}
-						<motion.div
-							ref={metricsRef}
-							initial="hidden"
-							animate={metricsInView ? "visible" : "hidden"}
-							variants={staggerContainer}
-							className="grid grid-cols-2 lg:grid-cols-4 gap-3"
-						>
+						<div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
 							<motion.div variants={scaleUp}>
 								<MetricCard 
 									label="Pass Rate" 
@@ -487,7 +428,7 @@ export default function ResultsPanel({
 							<motion.div variants={scaleUp}>
 								<MetricCard 
 									label="Expected Value" 
-									value={`+$${Math.abs(result.netPnlPerAttempt || result.expectedPayout).toLocaleString()}`}
+									value={`${(result.netPnlPerAttempt || result.expectedPayout) >= 0 ? '+' : ''}$${Math.abs(result.netPnlPerAttempt || result.expectedPayout).toLocaleString()}`}
 									numericValue={Math.abs(result.netPnlPerAttempt || result.expectedPayout)}
 									change="Net profit per attempt"
 									positive={(result.netPnlPerAttempt || result.expectedPayout) > 0}
@@ -516,15 +457,12 @@ export default function ResultsPanel({
 									delay={3}
 								/>
 							</motion.div>
-						</motion.div>
+						</div>
+					</motion.section>
 
-						{/* Secondary Metrics */}
-						<motion.div
-							variants={staggerContainer}
-							initial="hidden"
-							animate={metricsInView ? "visible" : "hidden"}
-							className="grid grid-cols-3 sm:grid-cols-6 gap-3"
-						>
+					{/* Secondary Metrics */}
+					<motion.section variants={fadeUp} custom={1} className="results-section">
+						<div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
 							{[
 								{ label: "Fail Rate", value: `${(result.failProbability || 100 - result.passProbability).toFixed(1)}%` },
 								{ label: "Avg Days", value: `${Math.round(result.avgDaysToPass || 0)}` },
@@ -548,194 +486,200 @@ export default function ResultsPanel({
 									</div>
 								</motion.div>
 							))}
-						</motion.div>
+						</div>
+					</motion.section>
 
-						{/* Timeline Section */}
-						<motion.div variants={fadeUp} custom={0} className="space-y-3">
-							<h3 className="text-lg font-semibold text-[var(--text-primary)]">Timeline</h3>
-							<div className="grid grid-cols-3 gap-3">
-								{[
-									{ 
-										label: "Avg Days in Eval", 
-										value: Math.round(result.avgDaysToPass || 0),
-										sub: (() => {
-											const evalMonths = (result.avgDaysToPass || 0) / 30;
-											const rebills = evalMonths >= 1 ? Math.max(0, Math.floor(evalMonths) - 1) : 0;
-											return `~${rebills} rebill(s)`;
-										})(),
-										positive: false
-									},
-									{ 
-										label: "Avg Days in Funded", 
-										value: Math.round(result.avgDaysInFunded || 0),
-										sub: undefined,
-										positive: false
-									},
-									{ 
-										label: "Total Days to Payout", 
-										value: Math.round(result.totalDaysToPayout || 0),
-										sub: `~${((result.totalDaysToPayout || 0) / 21).toFixed(1)} months`,
-										positive: true
-									},
-								].map((item, i) => (
-									<motion.div 
-										key={i}
-										whileHover={{ scale: 1.02, y: -4 }}
-										className={`metric-card p-4 ${item.positive ? 'metric-positive' : ''}`}
-									>
-										<div className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)] mb-2">
-											{item.label}
-										</div>
-										<div className={`text-2xl font-semibold mb-1 ${item.positive ? 'text-[var(--positive)]' : 'text-[var(--text-primary)]'}`}>
-											{item.value}
-										</div>
-										{item.sub && (
-											<div className="text-xs text-[var(--text-muted)]">{item.sub}</div>
-										)}
-									</motion.div>
-								))}
+					{/* Equity Paths Visualization - Full Width */}
+					<motion.section variants={fadeUp} custom={2} className="results-section">
+						<div className="chart-container p-6 sm:p-8">
+							<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+								<div>
+									<h3 className="text-xl font-semibold text-[var(--text-primary)] mb-1">
+										Equity Paths Visualization
+									</h3>
+									<p className="text-sm text-[var(--text-muted)]">
+										{accountConfig.propFirm} {accountConfig.challenge} - Simulation paths showing pass/fail outcomes
+									</p>
+								</div>
+								<div className="flex items-center gap-4 text-xs">
+									<span className="flex items-center gap-2">
+										<span className="w-4 h-1 rounded bg-[var(--positive)]" />
+										<span className="text-[var(--text-muted)]">Pass ({result.passProbability.toFixed(1)}%)</span>
+									</span>
+									<span className="flex items-center gap-2">
+										<span className="w-4 h-1 rounded bg-[var(--negative)]" />
+										<span className="text-[var(--text-muted)]">Fail ({(100 - result.passProbability).toFixed(1)}%)</span>
+									</span>
+								</div>
 							</div>
-						</motion.div>
-
-						{/* Cost Analysis */}
-						<motion.div variants={fadeUp} custom={1} className="space-y-3">
-							<h3 className="text-lg font-semibold text-[var(--text-primary)]">Cost Analysis</h3>
-							<div className="grid grid-cols-2 gap-3">
-								<motion.div 
-									whileHover={{ scale: 1.02, y: -2 }}
-									className="dash-card p-4"
-								>
-									<div className="text-sm font-semibold mb-3 text-[var(--positive)]">
-										If You Pass:
-									</div>
-									<div className="space-y-2 text-xs">
-										<div className="flex justify-between">
-											<span className="text-[var(--text-muted)]">Avg Total Costs:</span>
-											<span className="font-semibold text-[var(--text-primary)]">${(result.avgTotalCostsIfPass || 0).toFixed(0)}</span>
-										</div>
-										<div className="flex justify-between">
-											<span className="text-[var(--text-muted)]">Avg Gross Payout:</span>
-											<span className="font-semibold text-[var(--text-primary)]">${(result.avgGrossPayoutIfPass || 0).toFixed(0)}</span>
-										</div>
-										<div className="flex justify-between pt-2 border-t border-[var(--border)]">
-											<span className="text-[var(--text-muted)]">Avg Net Profit:</span>
-											<span className="font-semibold text-[var(--positive)]">${(result.avgNetProfitIfPass || 0).toFixed(0)}</span>
-										</div>
-									</div>
-								</motion.div>
-								<motion.div 
-									whileHover={{ scale: 1.02, y: -2 }}
-									className="dash-card p-4"
-								>
-									<div className="text-sm font-semibold mb-3 text-[var(--negative)]">
-										If You Fail:
-									</div>
-									<div className="space-y-2 text-xs">
-										<div className="flex justify-between">
-											<span className="text-[var(--text-muted)]">Avg Days Before Fail:</span>
-											<span className="font-semibold text-[var(--text-primary)]">{Math.round(result.avgDaysBeforeFail || 0)}</span>
-										</div>
-										<div className="flex justify-between">
-											<span className="text-[var(--text-muted)]">Avg Cost Lost:</span>
-											<span className="font-semibold text-[var(--negative)]">${(result.avgCostLostIfFail || 0).toFixed(0)}</span>
-										</div>
-										<div className="flex justify-between pt-2 border-t border-[var(--border)]">
-											<span className="text-[var(--text-muted)]">Fail in Eval:</span>
-											<span className="font-semibold text-[var(--text-primary)]">{Math.round(result.failInEvalPercent || 0)}%</span>
-										</div>
-										<div className="flex justify-between">
-											<span className="text-[var(--text-muted)]">Fail in Funded:</span>
-											<span className="font-semibold text-[var(--text-primary)]">{Math.round(result.failInFundedPercent || 0)}%</span>
-										</div>
-									</div>
-								</motion.div>
+							<div className="h-[320px] sm:h-[400px]">
+								<EquityChart 
+									equityCurves={result.equityCurves} 
+									finalValues={result.finalValues}
+									winningPathIndices={result.winningPathIndices}
+									losingPathIndices={result.losingPathIndices}
+								/>
 							</div>
-						</motion.div>
+						</div>
+					</motion.section>
 
-						{/* Investment Summary */}
-						<motion.div variants={fadeUp} custom={2} className="space-y-3">
-							<h3 className="text-lg font-semibold text-[var(--text-primary)]">Investment Summary</h3>
-							<div className="grid grid-cols-3 gap-3">
-								{[
-									{ 
-										label: "Expected Cost to Payout", 
-										value: `$${(result.expectedCostToPayout || 0).toFixed(0)}`,
-										positive: false
-									},
-									{ 
-										label: "Expected Gross Payout", 
-										value: `$${(result.expectedGrossPayout || result.expectedPayout).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
-										positive: true
-									},
-									{ 
-										label: "Expected ROI", 
-										value: result.expectedROI ? `${result.expectedROI > 0 ? '+' : ''}${result.expectedROI.toFixed(1)}%` : "N/A",
-										positive: result.expectedROI ? result.expectedROI > 0 : false
-									},
-								].map((item, i) => (
-									<motion.div 
-										key={i}
-										whileHover={{ scale: 1.02, y: -4 }}
-										className={`metric-card p-4 ${item.positive ? 'metric-positive' : ''}`}
-									>
-										<div className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)] mb-2">
-											{item.label}
-										</div>
-										<div className={`text-2xl font-semibold ${item.positive ? 'text-[var(--positive)] green-pulse' : 'text-[var(--text-primary)]'}`}>
-											{item.value}
-										</div>
-									</motion.div>
-								))}
-							</div>
-						</motion.div>
-
-						{/* Most Probable Outcomes */}
-						{result.mostProbableOutcomes && result.mostProbableOutcomes.length > 0 && (
-							<MostProbableOutcomesTable outcomes={result.mostProbableOutcomes} />
-						)}
-					</motion.div>
-				)}
-			</div>
-
-			{/* Right Column - Visualizations */}
-			<div className="w-full lg:w-96 flex-shrink-0 space-y-6">
-				{result && !isRunning && (
-					<motion.div
-						initial={{ opacity: 0, x: 20 }}
-						animate={{ opacity: 1, x: 0 }}
-						transition={{ delay: 0.3 }}
-						className="space-y-6"
-					>
-						{/* Simulation Paths Chart */}
-						<motion.div 
-							whileHover={{ scale: 1.01 }}
-							className="chart-container p-5"
-						>
-							<h3 className="text-base font-semibold mb-3 text-[var(--text-primary)]">
-								{accountConfig.propFirm} {accountConfig.challenge} - Simulation Paths
-							</h3>
-							<EquityChart 
-								equityCurves={result.equityCurves} 
-								finalValues={result.finalValues}
-								winningPathIndices={result.winningPathIndices}
-								losingPathIndices={result.losingPathIndices}
-							/>
-						</motion.div>
-
-						{/* Trade Distributions */}
-						<motion.div 
-							whileHover={{ scale: 1.01 }}
-							className="chart-container p-5"
-						>
-							<h3 className="text-base font-semibold mb-3 text-[var(--text-primary)]">
+					{/* Trade Distributions - Full Width */}
+					<motion.section variants={fadeUp} custom={3} className="results-section">
+						<div className="chart-container p-6 sm:p-8">
+							<h3 className="text-xl font-semibold text-[var(--text-primary)] mb-6">
 								Trade Distributions
 							</h3>
 							<TradeDistributionCharts result={result} />
-						</motion.div>
-					</motion.div>
-				)}
-			</div>
-		</div>
+						</div>
+					</motion.section>
+
+					{/* Timeline Section */}
+					<motion.section variants={fadeUp} custom={4} className="results-section">
+						<h3 className="text-xl font-semibold text-[var(--text-primary)] mb-4">Timeline</h3>
+						<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+							{[
+								{ 
+									label: "Avg Days in Eval", 
+									value: Math.round(result.avgDaysToPass || 0),
+									sub: (() => {
+										const evalMonths = (result.avgDaysToPass || 0) / 30;
+										const rebills = evalMonths >= 1 ? Math.max(0, Math.floor(evalMonths) - 1) : 0;
+										return `~${rebills} rebill(s)`;
+									})(),
+									positive: false
+								},
+								{ 
+									label: "Avg Days in Funded", 
+									value: Math.round(result.avgDaysInFunded || 0),
+									sub: undefined,
+									positive: false
+								},
+								{ 
+									label: "Total Days to Payout", 
+									value: Math.round(result.totalDaysToPayout || 0),
+									sub: `~${((result.totalDaysToPayout || 0) / 21).toFixed(1)} months`,
+									positive: true
+								},
+							].map((item, i) => (
+								<motion.div 
+									key={i}
+									whileHover={{ scale: 1.02, y: -4 }}
+									className={`metric-card p-5 ${item.positive ? 'metric-positive' : ''}`}
+								>
+									<div className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)] mb-2">
+										{item.label}
+									</div>
+									<div className={`text-3xl font-semibold mb-1 ${item.positive ? 'text-[var(--positive)]' : 'text-[var(--text-primary)]'}`}>
+										{item.value}
+									</div>
+									{item.sub && (
+										<div className="text-xs text-[var(--text-muted)]">{item.sub}</div>
+									)}
+								</motion.div>
+							))}
+						</div>
+					</motion.section>
+
+					{/* Cost Analysis */}
+					<motion.section variants={fadeUp} custom={5} className="results-section">
+						<h3 className="text-xl font-semibold text-[var(--text-primary)] mb-4">Cost Analysis</h3>
+						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+							<motion.div 
+								whileHover={{ scale: 1.01, y: -2 }}
+								className="dash-card p-5"
+							>
+								<div className="text-base font-semibold mb-4 text-[var(--positive)]">
+									If You Pass:
+								</div>
+								<div className="space-y-3 text-sm">
+									<div className="flex justify-between">
+										<span className="text-[var(--text-muted)]">Avg Total Costs:</span>
+										<span className="font-semibold text-[var(--text-primary)]">${(result.avgTotalCostsIfPass || 0).toFixed(0)}</span>
+									</div>
+									<div className="flex justify-between">
+										<span className="text-[var(--text-muted)]">Avg Gross Payout:</span>
+										<span className="font-semibold text-[var(--text-primary)]">${(result.avgGrossPayoutIfPass || 0).toFixed(0)}</span>
+									</div>
+									<div className="flex justify-between pt-3 border-t border-[var(--border)]">
+										<span className="text-[var(--text-muted)]">Avg Net Profit:</span>
+										<span className="font-semibold text-[var(--positive)]">${(result.avgNetProfitIfPass || 0).toFixed(0)}</span>
+									</div>
+								</div>
+							</motion.div>
+							<motion.div 
+								whileHover={{ scale: 1.01, y: -2 }}
+								className="dash-card p-5"
+							>
+								<div className="text-base font-semibold mb-4 text-[var(--negative)]">
+									If You Fail:
+								</div>
+								<div className="space-y-3 text-sm">
+									<div className="flex justify-between">
+										<span className="text-[var(--text-muted)]">Avg Days Before Fail:</span>
+										<span className="font-semibold text-[var(--text-primary)]">{Math.round(result.avgDaysBeforeFail || 0)}</span>
+									</div>
+									<div className="flex justify-between">
+										<span className="text-[var(--text-muted)]">Avg Cost Lost:</span>
+										<span className="font-semibold text-[var(--negative)]">${(result.avgCostLostIfFail || 0).toFixed(0)}</span>
+									</div>
+									<div className="flex justify-between pt-3 border-t border-[var(--border)]">
+										<span className="text-[var(--text-muted)]">Fail in Eval:</span>
+										<span className="font-semibold text-[var(--text-primary)]">{Math.round(result.failInEvalPercent || 0)}%</span>
+									</div>
+									<div className="flex justify-between">
+										<span className="text-[var(--text-muted)]">Fail in Funded:</span>
+										<span className="font-semibold text-[var(--text-primary)]">{Math.round(result.failInFundedPercent || 0)}%</span>
+									</div>
+								</div>
+							</motion.div>
+						</div>
+					</motion.section>
+
+					{/* Investment Summary */}
+					<motion.section variants={fadeUp} custom={6} className="results-section">
+						<h3 className="text-xl font-semibold text-[var(--text-primary)] mb-4">Investment Summary</h3>
+						<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+							{[
+								{ 
+									label: "Expected Cost to Payout", 
+									value: `$${(result.expectedCostToPayout || 0).toFixed(0)}`,
+									positive: false
+								},
+								{ 
+									label: "Expected Gross Payout", 
+									value: `$${(result.expectedGrossPayout || result.expectedPayout).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
+									positive: true
+								},
+								{ 
+									label: "Expected ROI", 
+									value: result.expectedROI ? `${result.expectedROI > 0 ? '+' : ''}${result.expectedROI.toFixed(1)}%` : "N/A",
+									positive: result.expectedROI ? result.expectedROI > 0 : false
+								},
+							].map((item, i) => (
+								<motion.div 
+									key={i}
+									whileHover={{ scale: 1.02, y: -4 }}
+									className={`metric-card p-5 ${item.positive ? 'metric-positive' : ''}`}
+								>
+									<div className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)] mb-2">
+										{item.label}
+									</div>
+									<div className={`text-3xl font-semibold ${item.positive ? 'text-[var(--positive)] green-pulse' : 'text-[var(--text-primary)]'}`}>
+										{item.value}
+									</div>
+								</motion.div>
+							))}
+						</div>
+					</motion.section>
+
+					{/* Most Probable Outcomes */}
+					{result.mostProbableOutcomes && result.mostProbableOutcomes.length > 0 && (
+						<motion.section variants={fadeUp} custom={7} className="results-section">
+							<MostProbableOutcomesTable outcomes={result.mostProbableOutcomes} />
+						</motion.section>
+					)}
+				</motion.div>
+			)}
 		</div>
 	);
 }
