@@ -150,6 +150,17 @@ export default function AlphaSolverApp({
 			const timer = setTimeout(() => {
 				handleTabChange("simulation");
 				hasNavigatedToResults.current = true;
+				
+				// Clear trade log state so user can upload new file for next simulation
+				setCsvFile(null);
+				setParsedTrades(null);
+				setCsvError(null);
+				setAiMapping(null);
+				setAiMappingConfirmed(false);
+				if (fileInputRef.current) {
+					fileInputRef.current.value = "";
+				}
+				
 				// Scroll to top when auto-navigating to simulation tab
 				requestAnimationFrame(() => {
 					if (contentRef.current) {
