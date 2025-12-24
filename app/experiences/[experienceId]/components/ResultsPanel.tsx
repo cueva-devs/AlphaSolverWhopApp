@@ -598,11 +598,11 @@ export default function ResultsPanel({
 									</div>
 									<div className="flex justify-between">
 										<span className="text-[var(--text-muted)]">Avg Gross Payout:</span>
-										<span className="font-semibold text-[var(--text-primary)]">${(result.avgGrossPayoutIfPass || 0).toFixed(0)}</span>
+										<span className={`font-semibold ${(result.avgGrossPayoutIfPass || 0) >= 0 ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>${(result.avgGrossPayoutIfPass || 0).toFixed(0)}</span>
 									</div>
 									<div className="flex justify-between pt-3 border-t border-[var(--border)]">
 										<span className="text-[var(--text-muted)]">Avg Net Profit:</span>
-										<span className="font-semibold text-[var(--positive)]">${(result.avgNetProfitIfPass || 0).toFixed(0)}</span>
+										<span className={`font-semibold ${(result.avgNetProfitIfPass || 0) >= 0 ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>${(result.avgNetProfitIfPass || 0).toFixed(0)}</span>
 									</div>
 								</div>
 							</motion.div>
@@ -648,7 +648,7 @@ export default function ResultsPanel({
 								{ 
 									label: "Expected Gross Payout", 
 									value: `$${(result.expectedGrossPayout || result.expectedPayout).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
-									positive: true
+									positive: (result.expectedGrossPayout || result.expectedPayout) >= 0
 								},
 								{ 
 									label: "Expected ROI", 

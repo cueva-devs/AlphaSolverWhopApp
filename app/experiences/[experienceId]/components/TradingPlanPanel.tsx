@@ -168,7 +168,8 @@ function StrategyTab({ strategy, gameType }: { strategy: OptimalStrategy; gameTy
 								label="Projected Payout" 
 								value={formatCurrency(fundedProj.projected_payout)}
 								delta="Your take-home"
-								positive
+								positive={fundedProj.projected_payout >= 0}
+								negative={fundedProj.projected_payout < 0}
 							/>
 						</div>
 					</motion.div>
@@ -187,7 +188,12 @@ function StrategyTab({ strategy, gameType }: { strategy: OptimalStrategy; gameTy
 								<MetricCard label="Eval Days" value={`${totalProj.eval_days}`} />
 								<MetricCard label="Funded Days" value={`${totalProj.funded_days}`} />
 								<MetricCard label="Total Days" value={`${totalProj.total_days}`} />
-								<MetricCard label="Final Payout" value={formatCurrency(totalProj.final_payout)} positive />
+								<MetricCard 
+								label="Final Payout" 
+								value={formatCurrency(totalProj.final_payout)} 
+								positive={totalProj.final_payout >= 0}
+								negative={totalProj.final_payout < 0}
+							/>
 							</div>
 						</motion.div>
 					)}
@@ -261,7 +267,7 @@ function StrategyTab({ strategy, gameType }: { strategy: OptimalStrategy; gameTy
 							</div>
 							<div className="flex justify-between">
 								<span className="text-[var(--text-muted)]">Projected payout:</span>
-								<span className="font-medium text-[var(--positive)]">{formatCurrency(totalProj.final_payout)}</span>
+								<span className={`font-medium ${totalProj.final_payout >= 0 ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>{formatCurrency(totalProj.final_payout)}</span>
 							</div>
 							<div className="flex justify-between">
 								<span className="text-[var(--text-muted)]">Cluster probability:</span>
