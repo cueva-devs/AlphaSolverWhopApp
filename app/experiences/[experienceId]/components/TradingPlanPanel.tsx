@@ -152,7 +152,7 @@ function StrategyTab({ strategy, gameType }: { strategy: OptimalStrategy; gameTy
 							<MetricCard 
 								label="Days to Payout" 
 								value={`${fundedProj.days_to_payout} days`}
-								delta={`Need ${fundedProj.min_winning_days_required} winning days`}
+								delta={`Requires ${fundedProj.min_winning_days_required} winning day${fundedProj.min_winning_days_required !== 1 ? 's' : ''}`}
 							/>
 							<MetricCard 
 								label="Funded Profit" 
