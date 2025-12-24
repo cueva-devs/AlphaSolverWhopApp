@@ -326,36 +326,34 @@ body {
 	transform: translateY(-4px);
 }
 
-/* Positive metric highlight with glow */
+/* Positive metric highlight with glow - only on hover */
 .metric-positive {
-	background: linear-gradient(135deg, var(--positive-dim) 0%, rgba(34, 197, 94, 0.05) 100%);
-	border: 1px solid rgba(34, 197, 94, 0.25);
-	box-shadow: 0 4px 20px var(--positive-dim);
-}
-
-.metric-positive::before {
-	background: radial-gradient(circle at 50% 0%, var(--positive-dim) 0%, transparent 60%);
+	transition: all 0.3s ease;
 }
 
 .metric-positive:hover {
+	background: linear-gradient(135deg, var(--positive-dim) 0%, rgba(34, 197, 94, 0.05) 100%);
 	border-color: var(--positive);
 	box-shadow: 0 8px 40px var(--positive-glow), 0 0 0 1px var(--positive);
 }
 
-/* Negative metric highlight with red glow */
-.metric-negative {
-	background: linear-gradient(135deg, var(--negative-dim) 0%, rgba(239, 68, 68, 0.05) 100%);
-	border: 1px solid rgba(239, 68, 68, 0.25);
-	box-shadow: 0 4px 20px var(--negative-dim);
+.metric-positive:hover::before {
+	background: radial-gradient(circle at 50% 0%, var(--positive-dim) 0%, transparent 60%);
 }
 
-.metric-negative::before {
-	background: radial-gradient(circle at 50% 0%, var(--negative-dim) 0%, transparent 60%);
+/* Negative metric highlight with red glow - only on hover */
+.metric-negative {
+	transition: all 0.3s ease;
 }
 
 .metric-negative:hover {
+	background: linear-gradient(135deg, var(--negative-dim) 0%, rgba(239, 68, 68, 0.05) 100%);
 	border-color: var(--negative);
 	box-shadow: 0 8px 40px rgba(239, 68, 68, 0.3), 0 0 0 1px var(--negative);
+}
+
+.metric-negative:hover::before {
+	background: radial-gradient(circle at 50% 0%, var(--negative-dim) 0%, transparent 60%);
 }
 
 /* Chart container */
