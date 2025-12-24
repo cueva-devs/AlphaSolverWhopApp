@@ -427,10 +427,10 @@ export default function ResultsPanel({
 							</motion.div>
 							<motion.div variants={scaleUp}>
 								<MetricCard 
-									label="Expected Value" 
+									label="Long-term Expected Profit" 
 									value={`${(result.netPnlPerAttempt || result.expectedPayout) >= 0 ? '+' : ''}$${Math.abs(result.netPnlPerAttempt || result.expectedPayout).toLocaleString()}`}
 									numericValue={Math.abs(result.netPnlPerAttempt || result.expectedPayout)}
-									change="Net profit per attempt"
+									change="Per eventual success"
 									positive={(result.netPnlPerAttempt || result.expectedPayout) > 0}
 									large
 									delay={1}
@@ -448,10 +448,10 @@ export default function ResultsPanel({
 							</motion.div>
 							<motion.div variants={scaleUp}>
 								<MetricCard 
-									label="Expected ROI" 
+									label="ROI if Persistent" 
 									value={result.expectedROI ? `${result.expectedROI > 0 ? '+' : ''}${result.expectedROI.toFixed(0)}%` : "N/A"}
 									numericValue={result.expectedROI || 0}
-									change="Return on eval cost"
+									change="Requires multiple attempts"
 									positive={result.expectedROI ? result.expectedROI > 0 : false}
 									large
 									delay={3}
@@ -459,6 +459,19 @@ export default function ResultsPanel({
 							</motion.div>
 						</div>
 					</motion.section>
+
+					{/* Low Pass Rate Warning */}
+					{result.passProbability < 50 && (
+						<motion.section variants={fadeUp} custom={1} className="results-section">
+							<div className="callout callout-warning">
+								<strong>⚠️ Low Pass Rate Strategy:</strong> With a {result.passProbability.toFixed(1)}% pass rate, 
+								you should expect to fail {Math.round((result.expectedAttemptsToPass || 1) - 1)} time(s) before succeeding. 
+								Total expected investment: ~${(result.expectedCostToPayout || 0).toFixed(0)} over 
+								~{Math.round((result.expectedAttemptsToPass || 1) * (result.avgDaysToPass || 0) / 21)} months. 
+								The positive ROI is achievable but requires persistence and sufficient capital.
+							</div>
+						</motion.section>
+					)}
 
 					{/* Secondary Metrics */}
 					<motion.section variants={fadeUp} custom={1} className="results-section">

@@ -300,6 +300,23 @@ class Simulation:
             if s["label"] != -1 and s["outcome_type"] == "pass"
         ]
         
+        # ============ FILTER OUT CLUSTERS WITH NEGATIVE DAILY PROFIT ============
+        # Only keep clusters where the daily profit is positive (realistic to achieve)
+        viable_winning_clusters = []
+        for cluster in winning_clusters:
+            # Get cluster trader numbers and analyze their daily performance
+            cluster_trader_nums = self._get_cluster_trader_numbers(cluster, scenarios)
+            cluster_data = self._analyze_cluster_paths(cluster_trader_nums)
+            daily_pnl_median = cluster_data.get("daily_pnl_median", 0)
+            
+            # Only include if daily profit is positive
+            if daily_pnl_median > 0:
+                cluster["_daily_pnl_median"] = daily_pnl_median  # Cache for later use
+                viable_winning_clusters.append(cluster)
+        
+        # Use viable clusters for strategy selection
+        winning_clusters = viable_winning_clusters if viable_winning_clusters else winning_clusters
+        
         # ============ RANK CLUSTERS BY DIFFERENT CRITERIA ============
         optimal_strategies = {}
         
@@ -955,7 +972,8 @@ class Simulation:
         
         # ============ SCENARIO PERFORMANCE ============
         # Extract the scenario's actual performance metrics
-        scenario_daily_profit = cluster_data.get("daily_pnl_median", daily_target)
+        # Use cached value if available (from filtering), otherwise calculate
+        scenario_daily_profit = cluster.get("_daily_pnl_median") or cluster_data.get("daily_pnl_median", daily_target)
         scenario_win_rate = cluster["daily_win_rate_median"] / 100  # Convert to decimal
         
         # ============ EVAL PHASE PROJECTION ============
