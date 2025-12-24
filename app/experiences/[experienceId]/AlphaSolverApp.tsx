@@ -171,6 +171,9 @@ export default function AlphaSolverApp({
 
 	// Actually execute the simulation (extracted for reuse)
 	const executeSimulation = async (params: BootstrappedParams, trades: ParsedTrade[]) => {
+		// Clear previous results before starting new simulation
+		reset();
+		
 		// Use server-side credit via Vercel KV (only for non-unlimited users)
 		if (planConfig.dailyCredits !== -1) {
 			if (!userId) {
