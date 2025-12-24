@@ -125,12 +125,6 @@ export default function AlphaSolverApp({
 			scrollPositions.current[activeTab] = contentRef.current.scrollTop;
 		}
 		
-		// Clear result state when navigating back to Run tab after viewing results
-		// This allows the user to run a new simulation
-		if (newTab === "run" && result !== null && !isRunning && !isEngineLoading) {
-			reset();
-		}
-		
 		setActiveTab(newTab);
 		// Restore new tab's scroll position after render
 		requestAnimationFrame(() => {
@@ -138,7 +132,7 @@ export default function AlphaSolverApp({
 				contentRef.current.scrollTop = scrollPositions.current[newTab];
 			}
 		});
-	}, [activeTab, result, isRunning, isEngineLoading, reset]);
+	}, [activeTab]);
 
 	// Reset navigation flag and scroll position when a new simulation starts
 	useEffect(() => {
