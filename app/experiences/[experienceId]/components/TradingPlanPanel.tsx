@@ -615,39 +615,6 @@ export default function TradingPlanPanel({
 			animate="visible"
 			variants={staggerContainer}
 		>
-			{/* Simulation Results Summary */}
-			<motion.section variants={fadeUp} className="trading-plan-section">
-				<div className="chart-container p-6 sm:p-8">
-					<h2 className="text-xl font-semibold text-[var(--text-primary)] mb-2">Simulation Results</h2>
-					<p className="text-sm text-[var(--text-muted)] mb-6">
-						{numSimulations?.toLocaleString() || 0} simulations analyzed
-					</p>
-
-					<div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-						<MetricCard 
-							label="Pass Rate" 
-							value={formatPercent(passRate)}
-							delta={`CI: [${formatPercent(passRateCi?.[0] || 0)}, ${formatPercent(passRateCi?.[1] || 0)}]`}
-							positive={passRate >= 50}
-						/>
-						<MetricCard 
-							label="Winners" 
-							value={winners?.count?.toLocaleString() || "0"}
-						/>
-						<MetricCard 
-							label="Losers" 
-							value={losers?.count?.toLocaleString() || "0"}
-						/>
-						<MetricCard 
-							label="Simulated EV" 
-							value={formatCurrency(simulatedEv || 0)}
-							positive={(simulatedEv || 0) > 0}
-							negative={(simulatedEv || 0) < 0}
-						/>
-					</div>
-				</div>
-			</motion.section>
-
 			{/* Optimal Strategies */}
 			{availableStrategies.length > 0 ? (
 				<motion.section variants={fadeUp} className="trading-plan-section">

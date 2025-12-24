@@ -60,8 +60,6 @@ class Simulation:
             while not (self.traders[trader_num].account.won or self.traders[trader_num].account.failed):
                 self.traders[trader_num].trade_for_day()
                 if self.traders[trader_num].account.total_days > 700:
-                    print(f"traded too damn long with no win, acct balance: {self.traders[trader_num].account.balance}")
-                    print(f'winning days: {self.traders[trader_num].account.winning_days}')
                     break
             sum_days += self.traders[trader_num].account.total_days
             sum_pnl += self.traders[trader_num].PnL
@@ -131,8 +129,6 @@ class Simulation:
             while not self.traders[trader_num].passed_eval and not self.traders[trader_num].account.failed:
                 self.traders[trader_num].trade_for_day()
                 if self.traders[trader_num].account.total_days > 700:
-                    print(f"traded too damn long with no win, acct balance: {self.traders[trader_num].account.balance}")
-                    print(f'winning days: {self.traders[trader_num].account.winning_days}')
                     break
             sum_days += self.traders[trader_num].account.total_days
             if not self.traders[trader_num].account.in_eval:
@@ -174,8 +170,6 @@ class Simulation:
             while not (self.traders[trader_num].account.won or self.traders[trader_num].account.failed):
                 self.traders[trader_num].trade_for_day()
                 if self.traders[trader_num].account.total_days > 700:
-                    print(f"traded too damn long with no win, acct balance: {self.traders[trader_num].account.balance}")
-                    print(f'winning days: {self.traders[trader_num].account.winning_days}')
                     break
             sum_days += self.traders[trader_num].account.total_days
             sum_pnl += self.traders[trader_num].PnL
@@ -1405,7 +1399,7 @@ class Simulation:
             winner_stats["median_funded_days"] = np.median(winner_funded_days)
             winner_stats["avg_gross_payout"] = np.mean(winner_gross_payouts)
             winner_stats["avg_total_costs"] = np.mean(winner_total_costs)
-            winner_stats["avg_net_payout"] = np.mean(winner_gross_payouts) - np.mean(winner_total_costs)
+            winner_stats["avg_net_profit"] = np.mean(winner_gross_payouts) - np.mean(winner_total_costs)
         
         # Collect data from losing traders
         loser_days = []
