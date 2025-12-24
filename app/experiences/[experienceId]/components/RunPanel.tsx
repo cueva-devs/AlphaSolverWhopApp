@@ -265,7 +265,7 @@ export default function RunPanel({
 				<div className="flex gap-3">
 					<button
 						className="btn btn-soft btn-md flex-1"
-						disabled={!result || !parsedTrades || !planConfig.allowExport}
+						disabled={!result || !planConfig.allowExport}
 						onClick={onExportRun}
 						title={!planConfig.allowExport ? "Upgrade to Unlimited to export runs" : undefined}
 					>

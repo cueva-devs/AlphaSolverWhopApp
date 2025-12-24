@@ -42,7 +42,7 @@ function MetricCard({ label, value, delta, positive, negative }: {
 	negative?: boolean;
 }) {
 	return (
-		<div className={`metric-card p-4 ${positive ? 'metric-positive' : ''}`}>
+		<div className={`metric-card p-4 ${positive ? 'metric-positive' : negative ? 'metric-negative' : ''}`}>
 			<div className="relative z-10">
 				<span className="text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)] block mb-1">
 					{label}

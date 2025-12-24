@@ -342,6 +342,22 @@ body {
 	box-shadow: 0 8px 40px var(--positive-glow), 0 0 0 1px var(--positive);
 }
 
+/* Negative metric highlight with red glow */
+.metric-negative {
+	background: linear-gradient(135deg, var(--negative-dim) 0%, rgba(239, 68, 68, 0.05) 100%);
+	border: 1px solid rgba(239, 68, 68, 0.25);
+	box-shadow: 0 4px 20px var(--negative-dim);
+}
+
+.metric-negative::before {
+	background: radial-gradient(circle at 50% 0%, var(--negative-dim) 0%, transparent 60%);
+}
+
+.metric-negative:hover {
+	border-color: var(--negative);
+	box-shadow: 0 8px 40px rgba(239, 68, 68, 0.3), 0 0 0 1px var(--negative);
+}
+
 /* Chart container */
 .chart-container {
 	background: var(--bg-card);
