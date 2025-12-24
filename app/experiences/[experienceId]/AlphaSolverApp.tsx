@@ -460,6 +460,7 @@ export default function AlphaSolverApp({
 		setCsvError(null);
 		setAiMapping(null);
 		setAiMappingConfirmed(false);
+		reset(); // Clear simulation results so Report Ready notice goes away
 		if (fileInputRef.current) {
 			fileInputRef.current.value = "";
 		}
