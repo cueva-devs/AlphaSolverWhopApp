@@ -962,10 +962,26 @@ class Simulation:
         # Calculate a sensible daily loss limit based on the strategy
         # The idea: your max daily loss should allow recovery within a reasonable time
         # 
-        # Risk-based calculation: max daily loss = 2x daily profit target
-        # This ensures one bad day can be recovered in ~2 winning days
-        # Example: $135/day profit → $270 max daily loss → recover in 2 days
-        risk_based_daily_loss = daily_target * 2.0 if daily_target > 0 else 0
+        # Key insight: recovery time depends on BOTH daily profit AND win rate
+        # - Higher win rate = more winning days = faster recovery
+        # - Lower win rate = fewer winning days = need smaller losses
+        #
+        # Formula: daily_loss_limit = daily_profit * win_rate * recovery_days
+        # Where recovery_days = 3 (target: recover a max loss in ~3 trading days)
+        #
+        # Examples at $100/day profit:
+        # - 70% win rate: $100 * 0.70 * 3 = $210 max loss (expect 2.1 wins in 3 days)
+        # - 50% win rate: $100 * 0.50 * 3 = $150 max loss (expect 1.5 wins in 3 days)  
+        # - 40% win rate: $100 * 0.40 * 3 = $120 max loss (expect 1.2 wins in 3 days)
+        #
+        win_rate_decimal = cluster["daily_win_rate_median"] / 100.0
+        recovery_days = 3  # Target: recover max daily loss within 3 trading days
+        
+        if daily_target > 0 and win_rate_decimal > 0:
+            # Risk-adjusted daily loss based on both profit and win rate
+            risk_based_daily_loss = daily_target * win_rate_decimal * recovery_days
+        else:
+            risk_based_daily_loss = 0
         
         # Prop firm limit (if they have one - 99999 means no limit)
         has_firm_daily_limit = daily_loss_limit < 50000
