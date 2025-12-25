@@ -960,35 +960,29 @@ class Simulation:
         
         # ============ RECOMMENDED DAILY LOSS LIMIT ============
         # Calculate a sensible daily loss limit based on the strategy
-        # The idea: your max daily loss should allow recovery within reason
+        # The idea: your max daily loss should allow recovery within a reasonable time
         # 
-        # Option 1: Use observed worst day from winning paths (p10)
-        worst_day_p10 = cluster_data.get("worst_day_p10", 0)
-        observed_worst_day = abs(worst_day_p10) if worst_day_p10 else 0
+        # Risk-based calculation: max daily loss = 2x daily profit target
+        # This ensures one bad day can be recovered in ~2 winning days
+        # Example: $135/day profit → $270 max daily loss → recover in 2 days
+        risk_based_daily_loss = daily_target * 2.0 if daily_target > 0 else 0
         
-        # Option 2: Calculate based on risk/reward ratio
-        # A common rule: max daily loss = 2-3x daily profit target
-        # This ensures one bad day doesn't wipe out a week of progress
-        risk_based_daily_loss = daily_target * 2.5 if daily_target > 0 else 0
+        # Prop firm limit (if they have one - 99999 means no limit)
+        has_firm_daily_limit = daily_loss_limit < 50000
         
-        # Option 3: Prop firm limit (if they have one)
-        has_firm_daily_limit = daily_loss_limit < 50000  # 99999 means no limit
-        
-        # Choose the recommended daily loss:
-        # - If prop firm has a limit, use that as the cap
-        # - Otherwise, use the more conservative of observed vs risk-based
-        if has_firm_daily_limit:
-            # Prop firm has a daily limit - use it but also show what winners did
-            safe_daily_loss = min(observed_worst_day, daily_loss_limit) if observed_worst_day > 0 else daily_loss_limit
-        else:
-            # No firm limit - recommend based on risk/reward math
-            # Use the smaller of: observed worst day from winners OR 2.5x daily target
-            if observed_worst_day > 0 and risk_based_daily_loss > 0:
-                safe_daily_loss = min(observed_worst_day, risk_based_daily_loss)
-            elif risk_based_daily_loss > 0:
-                safe_daily_loss = risk_based_daily_loss
+        # Always use the risk-based calculation as our recommendation
+        # Cap it at the prop firm's daily limit if they have one
+        if risk_based_daily_loss > 0:
+            if has_firm_daily_limit:
+                safe_daily_loss = min(risk_based_daily_loss, daily_loss_limit)
             else:
-                safe_daily_loss = observed_worst_day if observed_worst_day > 0 else max_loss_limit * 0.25
+                safe_daily_loss = risk_based_daily_loss
+        elif has_firm_daily_limit:
+            # Fallback to prop firm limit if we can't calculate risk-based
+            safe_daily_loss = daily_loss_limit
+        else:
+            # Last resort: 25% of max drawdown limit
+            safe_daily_loss = max_loss_limit * 0.25
         
         # Max drawdown from this cluster
         safe_max_dd = min(cluster["max_drawdown_p90"], max_loss_limit)

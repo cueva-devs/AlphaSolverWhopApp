@@ -139,7 +139,7 @@ function StrategyTab({ strategy, gameType }: { strategy: OptimalStrategy; gameTy
 								<MetricCard 
 									label="Daily Loss Limit" 
 									value={formatCurrency(strategy.daily_loss_stop)}
-									delta="Recommended max"
+									delta="~2 days to recover"
 									negative
 								/>
 							</div>
