@@ -91,6 +91,7 @@ function StrategyTab({ strategy, gameType }: { strategy: OptimalStrategy; gameTy
 					<strong>Scenario Performance:</strong> {formatCurrency(scenario.daily_profit)}/day | 
 					<strong> Win Rate:</strong> {formatPercent(scenario.win_rate)} | 
 					<strong> Max DD:</strong> {formatCurrency(scenario.max_drawdown)} |
+					<strong> Max Daily Loss:</strong> {formatCurrency(strategy.daily_loss_stop)} |
 					<strong> Cluster:</strong> {clusterInfo?.name || 'N/A'} ({formatPercent(clusterInfo?.probability || 0)})
 				</motion.div>
 			)}
@@ -119,7 +120,7 @@ function StrategyTab({ strategy, gameType }: { strategy: OptimalStrategy; gameTy
 								<span className="badge badge-accent">Eval Phase</span>
 								<span className="text-sm font-medium text-[var(--text-primary)]">If you achieve this scenario...</span>
 							</div>
-							<div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+							<div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
 								<MetricCard 
 									label="Days to Pass" 
 									value={`${evalProj.days_to_pass} days`}
@@ -134,6 +135,12 @@ function StrategyTab({ strategy, gameType }: { strategy: OptimalStrategy; gameTy
 									label="Max Drawdown" 
 									value={formatCurrency(maxDD)}
 									delta={`Limit: ${formatCurrency(propLimit)}`}
+								/>
+								<MetricCard 
+									label="Max Daily Loss" 
+									value={formatCurrency(strategy.daily_loss_stop)}
+									delta="Stay within this"
+									negative
 								/>
 							</div>
 						</motion.div>
@@ -210,7 +217,7 @@ function StrategyTab({ strategy, gameType }: { strategy: OptimalStrategy; gameTy
 						<span className="badge badge-accent">Eval Projection</span>
 						<span className="text-sm font-medium text-[var(--text-primary)]">If you achieve this scenario...</span>
 					</div>
-					<div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+					<div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
 						<MetricCard 
 							label="Days to Pass" 
 							value={`${evalProj.days_to_pass} days`}
@@ -225,6 +232,12 @@ function StrategyTab({ strategy, gameType }: { strategy: OptimalStrategy; gameTy
 							label="Max Drawdown" 
 							value={formatCurrency(maxDD)}
 							delta={`Limit: ${formatCurrency(propLimit)}`}
+						/>
+						<MetricCard 
+							label="Max Daily Loss" 
+							value={formatCurrency(strategy.daily_loss_stop)}
+							delta="Stay within this"
+							negative
 						/>
 					</div>
 					<p className="text-xs text-[var(--text-muted)] mt-4">
@@ -248,6 +261,10 @@ function StrategyTab({ strategy, gameType }: { strategy: OptimalStrategy; gameTy
 							<div className="flex justify-between">
 								<span className="text-[var(--text-muted)]">Win rate needed:</span>
 								<span className="font-medium">{formatPercent(scenario?.win_rate || 0)}</span>
+							</div>
+							<div className="flex justify-between">
+								<span className="text-[var(--text-muted)]">Max daily loss:</span>
+								<span className="font-medium text-[var(--negative)]">{formatCurrency(strategy.daily_loss_stop)}</span>
 							</div>
 							<div className="flex justify-between">
 								<span className="text-[var(--text-muted)]">Eval days:</span>
