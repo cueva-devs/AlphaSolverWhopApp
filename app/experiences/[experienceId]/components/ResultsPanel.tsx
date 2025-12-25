@@ -546,54 +546,7 @@ export default function ResultsPanel({
 						</div>
 					</motion.section>
 
-					{/* Timeline Section */}
-					<motion.section variants={fadeUp} custom={4} className="results-section">
-						<h3 className="text-xl font-semibold text-[var(--text-primary)] mb-4">Timeline</h3>
-						<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-							{[
-								{ 
-									label: "Avg Days in Eval", 
-									value: Math.round(result.avgDaysToPass || 0),
-									sub: (() => {
-										const evalMonths = (result.avgDaysToPass || 0) / 30;
-										const rebills = evalMonths >= 1 ? Math.max(0, Math.floor(evalMonths) - 1) : 0;
-										return `~${rebills} rebill(s)`;
-									})(),
-									positive: false
-								},
-								{ 
-									label: "Avg Days in Funded", 
-									value: Math.round(result.avgDaysInFunded || 0),
-									sub: undefined,
-									positive: false
-								},
-								{ 
-									label: "Total Days to Payout", 
-									value: Math.round(result.totalDaysToPayout || 0),
-									sub: `~${((result.totalDaysToPayout || 0) / 21).toFixed(1)} months`,
-									positive: true
-								},
-							].map((item, i) => (
-								<motion.div 
-									key={i}
-									whileHover={{ scale: 1.02, y: -4 }}
-									className={`metric-card p-5 ${item.positive ? 'metric-positive' : ''}`}
-								>
-									<div className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)] mb-2">
-										{item.label}
-									</div>
-									<div className={`text-3xl font-semibold mb-1 ${item.positive ? 'text-[var(--positive)]' : 'text-[var(--text-primary)]'}`}>
-										{item.value}
-									</div>
-									{item.sub && (
-										<div className="text-xs text-[var(--text-muted)]">{item.sub}</div>
-									)}
-								</motion.div>
-							))}
-						</div>
-					</motion.section>
-
-					{/* Cost Analysis */}
+						{/* Cost Analysis */}
 					<motion.section variants={fadeUp} custom={5} className="results-section">
 						<h3 className="text-xl font-semibold text-[var(--text-primary)] mb-4">Cost Analysis</h3>
 						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
