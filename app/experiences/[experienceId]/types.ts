@@ -200,6 +200,7 @@ export interface OptimalStrategy {
 	target_days_range: [number, number];
 	daily_pnl_target: number;
 	daily_loss_stop: number;
+	daily_loss_recovery_days?: number; // How many days to recover from max daily loss
 	daily_win_rate_needed: number;
 	max_drawdown_safe: number;
 	prop_firm_max_loss?: number;

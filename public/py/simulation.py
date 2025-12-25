@@ -962,20 +962,24 @@ class Simulation:
         # Calculate a sensible daily loss limit based on the strategy
         # The idea: your max daily loss should allow recovery within a reasonable time
         # 
-        # Key insight: recovery time depends on BOTH daily profit AND win rate
-        # - Higher win rate = more winning days = faster recovery
-        # - Lower win rate = fewer winning days = need smaller losses
+        # Key insight: recovery time depends on:
+        # 1. Daily profit - how much you make per day
+        # 2. Win rate - how often you have winning days
+        # 3. Days to pass - how much time you have (can't spend too long recovering)
         #
         # Formula: daily_loss_limit = daily_profit * win_rate * recovery_days
-        # Where recovery_days = 3 (target: recover a max loss in ~3 trading days)
+        # Where recovery_days = ~25% of total days (min 1, max 5)
         #
-        # Examples at $100/day profit:
-        # - 70% win rate: $100 * 0.70 * 3 = $210 max loss (expect 2.1 wins in 3 days)
-        # - 50% win rate: $100 * 0.50 * 3 = $150 max loss (expect 1.5 wins in 3 days)  
-        # - 40% win rate: $100 * 0.40 * 3 = $120 max loss (expect 1.2 wins in 3 days)
+        # Examples:
+        # - 8 day path:  recovery = 2 days (25% of 8)
+        # - 15 day path: recovery = 3.75 days (25% of 15)
+        # - 21 day path: recovery = 5 days (25% of 21, capped at 5)
+        # - 30 day path: recovery = 5 days (capped)
         #
         win_rate_decimal = cluster["daily_win_rate_median"] / 100.0
-        recovery_days = 3  # Target: recover max daily loss within 3 trading days
+        
+        # Recovery days = 25% of total days to pass, bounded between 1 and 5
+        recovery_days = max(1.0, min(5.0, days_median * 0.25))
         
         if daily_target > 0 and win_rate_decimal > 0:
             # Risk-adjusted daily loss based on both profit and win rate
@@ -1063,6 +1067,7 @@ class Simulation:
             "daily_pnl_target": daily_target,
             "daily_pnl_target_30d": daily_target_30d,
             "daily_loss_stop": safe_daily_loss,
+            "daily_loss_recovery_days": round(recovery_days, 1),  # How many days to recover from max loss
             "max_drawdown_safe": safe_max_dd,
             "prop_firm_max_loss": max_loss_limit,
             "target_days": days_median,
