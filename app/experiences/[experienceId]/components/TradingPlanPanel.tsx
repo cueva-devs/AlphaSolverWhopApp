@@ -91,7 +91,7 @@ function StrategyTab({ strategy, gameType }: { strategy: OptimalStrategy; gameTy
 					<strong>Scenario Performance:</strong> {formatCurrency(scenario.daily_profit)}/day | 
 					<strong> Win Rate:</strong> {formatPercent(scenario.win_rate)} | 
 					<strong> Max DD:</strong> {formatCurrency(scenario.max_drawdown)} |
-					<strong> Max Daily Loss:</strong> {formatCurrency(strategy.daily_loss_stop)} |
+					<strong> Daily Loss Limit:</strong> {formatCurrency(strategy.daily_loss_stop)} |
 					<strong> Cluster:</strong> {clusterInfo?.name || 'N/A'} ({formatPercent(clusterInfo?.probability || 0)})
 				</motion.div>
 			)}
@@ -137,9 +137,9 @@ function StrategyTab({ strategy, gameType }: { strategy: OptimalStrategy; gameTy
 									delta={`Limit: ${formatCurrency(propLimit)}`}
 								/>
 								<MetricCard 
-									label="Max Daily Loss" 
+									label="Daily Loss Limit" 
 									value={formatCurrency(strategy.daily_loss_stop)}
-									delta="Stay within this"
+									delta="Recommended max"
 									negative
 								/>
 							</div>
@@ -263,7 +263,7 @@ function StrategyTab({ strategy, gameType }: { strategy: OptimalStrategy; gameTy
 								<span className="font-medium">{formatPercent(scenario?.win_rate || 0)}</span>
 							</div>
 							<div className="flex justify-between">
-								<span className="text-[var(--text-muted)]">Max daily loss:</span>
+								<span className="text-[var(--text-muted)]">Daily loss limit:</span>
 								<span className="font-medium text-[var(--negative)]">{formatCurrency(strategy.daily_loss_stop)}</span>
 							</div>
 							<div className="flex justify-between">
