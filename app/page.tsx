@@ -794,7 +794,7 @@ export default function Page() {
 								<img 
 									src="/logo.png" 
 									alt="AlphaSolver" 
-									className="h-10 sm:h-12 w-auto"
+									className="h-[50px] sm:h-[60px] w-auto"
 									onError={(e) => {
 										// Fallback to text logo if image fails to load
 										const target = e.target as HTMLImageElement;
@@ -888,7 +888,7 @@ export default function Page() {
 							<img 
 								src="/logo.png" 
 								alt="AlphaSolver" 
-								className="h-24 sm:h-32 lg:h-40 w-auto"
+								className="h-[320px] w-[320px]"
 								onError={(e) => {
 									const target = e.target as HTMLImageElement;
 									target.style.display = 'none';
@@ -1679,7 +1679,7 @@ export default function Page() {
 								<img 
 									src="/logo.png" 
 									alt="AlphaSolver" 
-									className="h-8 w-auto"
+									className="h-10 w-auto"
 									onError={(e) => {
 										// Fallback to text logo if image fails to load
 										const target = e.target as HTMLImageElement;
