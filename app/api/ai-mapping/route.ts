@@ -4,6 +4,14 @@ import {
   validateAiMapping,
   type AiColumnMapping 
 } from "@/app/experiences/[experienceId]/lib/aiMappingSchema";
+import { checkRateLimit, rateLimitedResponse, addRateLimitHeaders } from "@/lib/rate-limit";
+
+// Rate limit configuration - stricter since this calls external AI APIs
+const RATE_LIMIT_CONFIG = {
+  limit: 10, // 10 requests
+  windowSeconds: 60, // per minute
+  keyPrefix: "ai-mapping",
+};
 
 /**
  * AI Column Mapping API
@@ -13,6 +21,12 @@ import {
  */
 
 export async function POST(request: NextRequest) {
+  // Rate limiting to prevent API abuse
+  const rateLimitResult = checkRateLimit(request, RATE_LIMIT_CONFIG);
+  if (!rateLimitResult.success) {
+    return rateLimitedResponse(rateLimitResult);
+  }
+
   try {
     const body = await request.json();
     const { headers, sampleRows } = body as {
@@ -45,7 +59,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("API key found, length:", apiKey.length);
+    // Note: Removed API key length logging for security
 
     // Build the prompt
     const prompt = buildAiMappingPrompt(headers, sampleRows);
@@ -146,11 +160,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       success: true, 
       mapping,
       headers, // Echo back for reference
     });
+    return addRateLimitHeaders(response, rateLimitResult);
 
   } catch (error) {
     console.error("AI mapping error:", error);

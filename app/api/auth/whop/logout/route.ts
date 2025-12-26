@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-
-const AUTH_COOKIE_NAME = "whop_session";
+import { AUTH_COOKIE_NAME } from "@/lib/constants";
 
 /**
  * GET /api/auth/whop/logout - Logs out the user

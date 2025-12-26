@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { whopsdk } from "./whop-sdk";
-
-const AUTH_COOKIE_NAME = "whop_session";
+import { AUTH_COOKIE_NAME } from "./constants";
 
 export interface WhopSession {
 	userId: string;
@@ -39,6 +38,13 @@ export async function getWhopSession(): Promise<WhopSession | null> {
 		
 		return session;
 	} catch {
+		// Clear corrupted cookie to prevent repeated parse failures
+		try {
+			const cookieStore = await cookies();
+			cookieStore.delete(AUTH_COOKIE_NAME);
+		} catch {
+			// Ignore cookie deletion errors
+		}
 		return null;
 	}
 }

@@ -1,7 +1,5 @@
 "use client";
 
-import type { PlanConfig } from "../config/planConfig";
-
 export interface CreditsState {
 	creditsRemaining: number;
 	maxCredits: number;
@@ -24,17 +22,17 @@ function getTodayString(): string {
 }
 
 /**
- * Fetch credits from Vercel KV via API
+ * Fetch credits from API
+ * Server authenticates user from session - no need to pass userId
  */
-export async function checkCreditsServer(userId?: string, experienceId?: string): Promise<CreditsState | null> {
-	if (!userId) return null;
-	
+export async function checkCreditsServer(): Promise<CreditsState | null> {
 	try {
-		const params = new URLSearchParams();
-		params.set("userId", userId);
-		if (experienceId) params.set("experienceId", experienceId);
+		const response = await fetch("/api/credits");
 		
-		const response = await fetch(`/api/credits?${params.toString()}`);
+		if (response.status === 401) {
+			// User not authenticated
+			return null;
+		}
 		
 		if (!response.ok) {
 			console.error("Credits API error:", response.status);
@@ -55,19 +53,27 @@ export async function checkCreditsServer(userId?: string, experienceId?: string)
 }
 
 /**
- * Use one credit via Vercel KV API
+ * Use one credit via API
+ * Server authenticates user from session - no need to pass userId
  */
-export async function useCreditServer(userId?: string, experienceId?: string): Promise<UseCreditResult | null> {
-	if (!userId) return null;
-	
+export async function useCreditServer(): Promise<UseCreditResult | null> {
 	try {
 		const response = await fetch("/api/credits", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ userId, experienceId }),
+			body: JSON.stringify({}),
 		});
 		
 		const data = await response.json();
+		
+		if (response.status === 401) {
+			return { 
+				success: false, 
+				credits: 0, 
+				maxCredits: 3,
+				error: "Please log in to continue" 
+			};
+		}
 		
 		if (!response.ok) {
 			return { 
