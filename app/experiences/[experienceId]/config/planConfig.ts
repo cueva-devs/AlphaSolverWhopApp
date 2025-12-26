@@ -36,7 +36,10 @@ export const PLAN_CONFIGS: Record<PlanId, PlanConfig> = {
 
 // Development/testing mode: allows unlimited paths and days for testing
 // Set NEXT_PUBLIC_DEV_MODE=true to enable
-export const DEV_MODE = process.env.NEXT_PUBLIC_DEV_MODE === "true";
+// SECURITY: DEV_MODE is automatically disabled in production to prevent accidental enablement
+export const DEV_MODE = 
+	process.env.NEXT_PUBLIC_DEV_MODE === "true" && 
+	process.env.NODE_ENV !== "production";
 
 export function getEffectivePlanConfig(planId: PlanId | string): PlanConfig {
 	const config = getPlanConfig(planId);

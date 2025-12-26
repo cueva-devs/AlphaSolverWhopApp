@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import RunPanel from "./components/RunPanel";
 import ResultsPanel from "./components/ResultsPanel";
 import TradingPlanPanel from "./components/TradingPlanPanel";
-import { useSimulationEngine } from "./hooks/useSimulationEngine";
+import { useSimulationEngine, type SimulationProgress } from "./hooks/useSimulationEngine";
 import { parseTradeCsv } from "./lib/csvUtils";
 import type {
 	BootstrappedParams,
@@ -47,7 +47,7 @@ export default function AlphaSolverApp({
 	upgradeUrl,
 	isWhopIframe = true,
 }: AlphaSolverAppProps) {
-	const { run, result, isRunning, error, isEngineLoading, reset } =
+	const { run, result, isRunning, error, isEngineLoading, reset, progress } =
 		useSimulationEngine();
 	const [activeTab, setActiveTab] = useState<TabType>("run");
 	const [accountConfig, setAccountConfig] = useState<AccountConfig>({
@@ -100,13 +100,10 @@ export default function AlphaSolverApp({
 				setIsLoadingCredits(false);
 				return;
 			}
-			if (!userId) {
-				setIsLoadingCredits(false);
-				return;
-			}
 			
 			try {
-				const serverCredits = await checkCreditsServer(userId, experienceId !== "direct" ? experienceId : undefined);
+				// Server authenticates user from session
+				const serverCredits = await checkCreditsServer();
 				setCreditsState(serverCredits);
 			} catch (e) {
 				console.error("Failed to fetch credits:", e);
@@ -116,7 +113,7 @@ export default function AlphaSolverApp({
 		};
 		
 		fetchCredits();
-	}, [userId, experienceId, planConfig]);
+	}, [planConfig]);
 
 	// Handle tab change with scroll position preservation
 	const handleTabChange = useCallback((newTab: TabType) => {
@@ -176,13 +173,9 @@ export default function AlphaSolverApp({
 		
 		// Use server-side credit via Vercel KV (only for non-unlimited users)
 		if (planConfig.dailyCredits !== -1) {
-			if (!userId) {
-				setCsvError("Unable to verify user. Please refresh the page.");
-				return;
-			}
-			
 			try {
-				const result = await useCreditServer(userId, experienceId !== "direct" ? experienceId : undefined);
+				// Server authenticates user from session
+				const result = await useCreditServer();
 				if (!result) {
 					setCsvError("Failed to connect to server. Please try again.");
 					return;
@@ -585,6 +578,7 @@ export default function AlphaSolverApp({
 								estimatedFileSize={result ? estimateFileSize(result) : "0 KB"}
 								isRunning={isRunning}
 								isEngineLoading={isEngineLoading}
+								progress={progress}
 								onRunSimulation={handleRequestRun}
 								onNavigateToResults={handleNavigateToResults}
 							/>
@@ -603,6 +597,7 @@ export default function AlphaSolverApp({
 								isRunning={isRunning || isEngineLoading}
 								error={error}
 								accountConfig={accountConfig}
+								progress={progress}
 							/>
 						</motion.div>
 					)}

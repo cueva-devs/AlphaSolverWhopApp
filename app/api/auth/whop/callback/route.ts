@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { AUTH_COOKIE_NAME, ALLOWED_REDIRECT_PATHS } from "@/lib/constants";
 
 // Whop OAuth configuration
 const WHOP_CLIENT_ID = process.env.NEXT_PUBLIC_WHOP_APP_ID || "";
@@ -11,8 +12,32 @@ const REDIRECT_URI = process.env.NEXT_PUBLIC_APP_URL
 const WHOP_TOKEN_URL = "https://api.whop.com/api/v2/oauth/token";
 const WHOP_USER_URL = "https://api.whop.com/api/v2/me";
 
-// Cookie name for storing auth session
-const AUTH_COOKIE_NAME = "whop_session";
+/**
+ * Validate and sanitize the redirect path to prevent open redirect attacks.
+ * Only allows paths that start with known safe prefixes.
+ */
+function getSafeRedirectPath(state: string | null): string {
+	const defaultPath = "/app";
+	
+	if (!state) {
+		return defaultPath;
+	}
+	
+	// Ensure it's a relative path (starts with /)
+	if (!state.startsWith("/")) {
+		return defaultPath;
+	}
+	
+	// Prevent protocol-relative URLs (//example.com)
+	if (state.startsWith("//")) {
+		return defaultPath;
+	}
+	
+	// Check against allowed path prefixes
+	const isAllowed = ALLOWED_REDIRECT_PATHS.some(allowed => state.startsWith(allowed));
+	
+	return isAllowed ? state : defaultPath;
+}
 
 interface WhopTokenResponse {
 	access_token: string;
@@ -35,8 +60,11 @@ interface WhopUser {
 export async function GET(request: NextRequest) {
 	const searchParams = request.nextUrl.searchParams;
 	const code = searchParams.get("code");
-	const state = searchParams.get("state") || "/app";
+	const state = searchParams.get("state");
 	const error = searchParams.get("error");
+	
+	// SECURITY: Validate redirect path to prevent open redirect attacks
+	const safeRedirectPath = getSafeRedirectPath(state);
 
 	// Handle OAuth errors
 	if (error) {
@@ -105,8 +133,8 @@ export async function GET(request: NextRequest) {
 			path: "/",
 		});
 
-		// Redirect to the app
-		return NextResponse.redirect(new URL(state, request.url));
+		// Redirect to the app using validated path
+		return NextResponse.redirect(new URL(safeRedirectPath, request.url));
 	} catch (err) {
 		console.error("OAuth callback error:", err);
 		return NextResponse.redirect(new URL("/?error=callback_failed", request.url));

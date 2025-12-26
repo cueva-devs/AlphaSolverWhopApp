@@ -4,6 +4,9 @@ import type { SavedRun, SimulationResult, AccountConfig, BootstrappedParams, Par
 
 const CURRENT_VERSION = "1.0.0";
 
+// Magic bytes to identify gzip compressed data
+const GZIP_MAGIC = [0x1f, 0x8b]; // gzip magic number
+
 /**
  * Creates a SavedRun object from current simulation state
  */
@@ -28,13 +31,30 @@ export function createSavedRun(
 }
 
 /**
- * Compresses data using the native CompressionStream API
+ * Check if CompressionStream API is available
+ * Not available in Safari < 16.4 and some older browsers
+ */
+function isCompressionSupported(): boolean {
+	return typeof CompressionStream !== "undefined" && typeof DecompressionStream !== "undefined";
+}
+
+/**
+ * Compresses data using the native CompressionStream API if available,
+ * otherwise returns uncompressed data
  */
 async function compressData(data: string): Promise<Uint8Array> {
 	const encoder = new TextEncoder();
+	const encoded = encoder.encode(data);
+	
+	// Fallback for browsers without CompressionStream (e.g., Safari < 16.4)
+	if (!isCompressionSupported()) {
+		console.warn("CompressionStream not available, saving uncompressed data");
+		return encoded;
+	}
+	
 	const stream = new ReadableStream({
 		start(controller) {
-			controller.enqueue(encoder.encode(data));
+			controller.enqueue(encoded);
 			controller.close();
 		}
 	});
@@ -61,9 +81,33 @@ async function compressData(data: string): Promise<Uint8Array> {
 }
 
 /**
- * Decompresses data using the native DecompressionStream API
+ * Check if data is gzip compressed by looking at magic bytes
+ */
+function isGzipCompressed(data: Uint8Array): boolean {
+	return data.length >= 2 && data[0] === GZIP_MAGIC[0] && data[1] === GZIP_MAGIC[1];
+}
+
+/**
+ * Decompresses data using the native DecompressionStream API if compressed,
+ * otherwise returns the data as-is (for backwards compatibility)
  */
 async function decompressData(data: Uint8Array): Promise<string> {
+	const decoder = new TextDecoder();
+	
+	// Check if data is actually compressed
+	if (!isGzipCompressed(data)) {
+		// Data is not gzip compressed, return as-is
+		return decoder.decode(data);
+	}
+	
+	// Fallback for browsers without DecompressionStream
+	if (!isCompressionSupported()) {
+		throw new Error(
+			"This file was saved with compression, but your browser doesn't support decompression. " +
+			"Please try opening it in Chrome, Edge, or Safari 16.4+."
+		);
+	}
+	
 	const stream = new ReadableStream({
 		start(controller) {
 			controller.enqueue(data);
@@ -73,7 +117,6 @@ async function decompressData(data: Uint8Array): Promise<string> {
 	
 	const decompressedStream = stream.pipeThrough(new DecompressionStream("gzip"));
 	const reader = decompressedStream.getReader();
-	const decoder = new TextDecoder();
 	let result = "";
 	
 	while (true) {
