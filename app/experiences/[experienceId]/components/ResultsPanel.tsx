@@ -409,12 +409,15 @@ export default function ResultsPanel({
 						<div className="w-16 h-16 border-4 border-[var(--border)] border-t-[var(--accent)] rounded-full animate-spin" />
 						<div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-[var(--positive)] rounded-full animate-spin" style={{ animationDelay: '0.15s', animationDuration: '1.5s' }} />
 					</div>
-					<div className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+					<motion.div 
+						key={loadingMessageIndex}
+						initial={{ opacity: 0, y: 5 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.3 }}
+						className="text-lg font-semibold text-[var(--text-primary)] mb-2 text-center px-4"
+					>
 						{LOADING_MESSAGES[loadingMessageIndex]}
-					</div>
-					<div className="text-sm text-[var(--text-muted)] mt-2">
-						This may take a moment...
-					</div>
+					</motion.div>
 				</motion.div>
 			)}
 

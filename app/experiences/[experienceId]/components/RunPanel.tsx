@@ -153,14 +153,28 @@ export default function RunPanel({
 
 	const isSimulationRunning = isRunning || isEngineLoading;
 
-	// Cycle through messages every 3 seconds
+	// Cycle through messages every 2.5 seconds
 	useEffect(() => {
 		if (isSimulationRunning) {
-			// Start cycling messages immediately
+			// Start cycling messages immediately - don't wait for engine to load
+			// This ensures messages are visible right away
 			const interval = setInterval(() => {
-				setLoadingMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
-			}, 3000);
-			return () => clearInterval(interval);
+				setLoadingMessageIndex((prev) => {
+					const next = (prev + 1) % LOADING_MESSAGES.length;
+					return next;
+				});
+			}, 2500);
+			
+			// Also start cycling immediately (don't wait for first interval)
+			// This ensures the first message change happens quickly
+			const timeout = setTimeout(() => {
+				setLoadingMessageIndex(1);
+			}, 2500);
+			
+			return () => {
+				clearInterval(interval);
+				clearTimeout(timeout);
+			};
 		} else {
 			// Reset to first message when simulation stops
 			setLoadingMessageIndex(0);
@@ -670,12 +684,18 @@ export default function RunPanel({
 									<div className="w-16 h-16 border-4 border-[var(--border)] border-t-[var(--accent)] rounded-full animate-spin" />
 									<div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-[var(--positive)] rounded-full animate-spin" style={{ animationDelay: '0.15s', animationDuration: '1.5s' }} />
 								</div>
-								<div className="text-base font-semibold text-[var(--text-primary)] mb-1">
-									{isEngineLoading ? "Loading simulation engine..." : LOADING_MESSAGES[loadingMessageIndex]}
-								</div>
-								<div className="text-sm text-[var(--text-muted)] mt-2">
-									This may take a moment...
-								</div>
+								<motion.div 
+									key={loadingMessageIndex}
+									initial={{ opacity: 0, y: 5 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0, y: -5 }}
+									transition={{ duration: 0.3 }}
+									className="text-base font-semibold text-[var(--text-primary)] mb-1 min-h-[24px] flex items-center justify-center text-center px-4"
+								>
+									{isEngineLoading && loadingMessageIndex === 0 
+										? "Loading simulation engine..." 
+										: LOADING_MESSAGES[loadingMessageIndex]}
+								</motion.div>
 							</div>
 						</div>
 					) : (
