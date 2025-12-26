@@ -365,13 +365,23 @@ export default function ResultsPanel({
 }: ResultsPanelProps) {
 	const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
 
-	// Cycle through messages every 3 seconds
+	// Cycle through messages every 2.5 seconds (matching RunPanel)
 	useEffect(() => {
 		if (isRunning) {
 			const interval = setInterval(() => {
-				setLoadingMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
-			}, 3000);
-			return () => clearInterval(interval);
+				try {
+					setLoadingMessageIndex((prev) => {
+						const next = (prev + 1) % LOADING_MESSAGES.length;
+						return next;
+					});
+				} catch (error) {
+					// Silently handle any errors to prevent breaking the interval
+					console.error('Error updating loading message:', error);
+				}
+			}, 2500);
+			return () => {
+				clearInterval(interval);
+			};
 		} else {
 			setLoadingMessageIndex(0);
 		}
@@ -413,7 +423,7 @@ export default function ResultsPanel({
 						Running simulation...
 					</div>
 					<div className="text-sm text-[var(--text-muted)] mt-2 text-center px-4 min-h-[20px] flex items-center justify-center">
-						<AnimatePresence mode="wait">
+						<AnimatePresence mode="wait" initial={false}>
 							<motion.span
 								key={loadingMessageIndex}
 								initial={{ opacity: 0, y: 8 }}
@@ -424,7 +434,7 @@ export default function ResultsPanel({
 									ease: [0.4, 0, 0.2, 1] // Smooth easing curve
 								}}
 							>
-								{LOADING_MESSAGES[loadingMessageIndex]}
+								{LOADING_MESSAGES[loadingMessageIndex] || LOADING_MESSAGES[0]}
 							</motion.span>
 						</AnimatePresence>
 					</div>

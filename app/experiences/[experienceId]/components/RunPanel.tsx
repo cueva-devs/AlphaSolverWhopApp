@@ -150,21 +150,41 @@ export default function RunPanel({
 	const [numPaths, setNumPaths] = useState(Math.min(10000, planConfig.maxPaths));
 	const [confidenceLevel, setConfidenceLevel] = useState<number>(0.95);
 	const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+	const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
 	const isSimulationRunning = isRunning || isEngineLoading;
 
 	// Cycle through messages every 2.5 seconds (with 0.4s fade, so ~2.1s visible)
 	useEffect(() => {
+		// Clear any existing interval first
+		if (intervalRef.current) {
+			clearInterval(intervalRef.current);
+			intervalRef.current = null;
+		}
+
 		if (isSimulationRunning) {
 			// Start cycling messages immediately
-			const interval = setInterval(() => {
-				setLoadingMessageIndex((prev) => {
-					const next = (prev + 1) % LOADING_MESSAGES.length;
-					return next;
-				});
+			intervalRef.current = setInterval(() => {
+				try {
+					setLoadingMessageIndex((prev) => {
+						if (prev >= LOADING_MESSAGES.length || prev < 0) {
+							return 0; // Reset if index is invalid
+						}
+						const next = (prev + 1) % LOADING_MESSAGES.length;
+						return next;
+					});
+				} catch (error) {
+					// Silently handle any errors to prevent breaking the interval
+					console.error('Error updating loading message:', error);
+				}
 			}, 2500);
 			
-			return () => clearInterval(interval);
+			return () => {
+				if (intervalRef.current) {
+					clearInterval(intervalRef.current);
+					intervalRef.current = null;
+				}
+			};
 		} else {
 			// Reset to first message when simulation stops
 			setLoadingMessageIndex(0);
@@ -678,7 +698,7 @@ export default function RunPanel({
 									{isEngineLoading ? "Loading simulation engine..." : "Running simulation..."}
 								</div>
 								<div className="text-sm text-[var(--text-muted)] mt-2 text-center px-4 min-h-[20px] flex items-center justify-center">
-									<AnimatePresence mode="wait">
+									<AnimatePresence mode="wait" initial={false}>
 										<motion.span
 											key={loadingMessageIndex}
 											initial={{ opacity: 0, y: 8 }}
@@ -689,7 +709,7 @@ export default function RunPanel({
 												ease: [0.4, 0, 0.2, 1] // Smooth easing curve
 											}}
 										>
-											{LOADING_MESSAGES[loadingMessageIndex]}
+											{LOADING_MESSAGES[loadingMessageIndex] || LOADING_MESSAGES[0]}
 										</motion.span>
 									</AnimatePresence>
 								</div>
