@@ -66,9 +66,9 @@ export async function POST(request: NextRequest) {
     console.log("Prompt built, calling OpenRouter API...");
 
     // Call OpenRouter API
-    let response;
+    let fetchResponse: Response;
     try {
-      response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      fetchResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${apiKey}`,
@@ -97,18 +97,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("OpenRouter response status:", response.status);
+    console.log("OpenRouter response status:", fetchResponse.status);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("OpenRouter API error:", response.status, errorText);
+    if (!fetchResponse.ok) {
+      const errorText = await fetchResponse.text();
+      console.error("OpenRouter API error:", fetchResponse.status, errorText);
       return NextResponse.json(
-        { error: `AI service error (${response.status}): ${errorText.substring(0, 200)}` },
+        { error: `AI service error (${fetchResponse.status}): ${errorText.substring(0, 200)}` },
         { status: 502 }
       );
     }
 
-    const aiResponse = await response.json();
+    const aiResponse = await fetchResponse.json();
     const content = aiResponse.choices?.[0]?.message?.content;
 
     if (!content) {
