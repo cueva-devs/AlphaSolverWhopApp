@@ -782,15 +782,33 @@ export default function Page() {
 			<nav className={`fixed top-0 left-0 right-0 z-50 nav-fixed ${scrolled ? 'scrolled' : ''}`}>
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
 					<div className="flex items-center justify-between">
-						<motion.div 
-							className="flex items-center gap-2"
-							initial={{ opacity: 0, x: -20 }}
-							animate={{ opacity: 1, x: 0 }}
-							transition={{ duration: 0.5 }}
-						>
-							<span className="text-[var(--accent)] text-2xl font-bold">α</span>
-							<span className="text-sm font-semibold tracking-tight hidden sm:inline">ALPHASOLVER</span>
-						</motion.div>
+						<Link href="/">
+							<motion.div 
+								className="flex items-center gap-2 cursor-pointer"
+								initial={{ opacity: 0, x: -20 }}
+								animate={{ opacity: 1, x: 0 }}
+								transition={{ duration: 0.5 }}
+								whileHover={{ scale: 1.05 }}
+							>
+								{/* Logo - fallback to text if image not found */}
+								<img 
+									src="/logo.svg" 
+									alt="AlphaSolver" 
+									className="h-8 w-auto"
+									onError={(e) => {
+										// Fallback to text logo if image fails to load
+										const target = e.target as HTMLImageElement;
+										target.style.display = 'none';
+										const fallback = target.nextElementSibling as HTMLElement;
+										if (fallback) fallback.style.display = 'flex';
+									}}
+								/>
+								<div className="hidden items-center gap-2" style={{ display: 'none' }}>
+									<span className="text-[var(--accent)] text-2xl font-bold">α</span>
+									<span className="text-sm font-semibold tracking-tight hidden sm:inline">ALPHASOLVER</span>
+								</div>
+							</motion.div>
+						</Link>
 						
 						<div className="hidden md:flex items-center gap-6 text-sm text-[var(--text-secondary)]">
 							<a href="#results" className="hover:text-[var(--text-primary)] transition-colors">Results</a>
@@ -859,6 +877,23 @@ export default function Page() {
 								</svg>
 								3 free runs/day
 							</span>
+						</motion.div>
+
+						{/* Logo in Hero */}
+						<motion.div 
+							variants={fadeUp} 
+							custom={0.5}
+							className="flex justify-center mb-6"
+						>
+							<img 
+								src="/logo.svg" 
+								alt="AlphaSolver" 
+								className="h-16 sm:h-20 w-auto"
+								onError={(e) => {
+									const target = e.target as HTMLImageElement;
+									target.style.display = 'none';
+								}}
+							/>
 						</motion.div>
 
 						{/* Eye-catching headline */}
@@ -1633,10 +1668,26 @@ export default function Page() {
 			<footer className="relative z-10 py-8 px-4 sm:px-6 border-t border-[var(--border)] footer-gradient">
 				<div className="max-w-7xl mx-auto">
 					<div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-						<div className="flex items-center gap-2">
-							<span className="text-[var(--accent)] text-xl font-bold">α</span>
-							<span className="text-sm font-semibold tracking-tight">ALPHASOLVER</span>
-						</div>
+						<Link href="/">
+							<div className="flex items-center gap-2">
+								<img 
+									src="/logo.svg" 
+									alt="AlphaSolver" 
+									className="h-6 w-auto"
+									onError={(e) => {
+										// Fallback to text logo if image fails to load
+										const target = e.target as HTMLImageElement;
+										target.style.display = 'none';
+										const fallback = target.nextElementSibling as HTMLElement;
+										if (fallback) fallback.style.display = 'flex';
+									}}
+								/>
+								<div className="hidden items-center gap-2" style={{ display: 'none' }}>
+									<span className="text-[var(--accent)] text-xl font-bold">α</span>
+									<span className="text-sm font-semibold tracking-tight">ALPHASOLVER</span>
+								</div>
+							</div>
+						</Link>
 						
 						<div className="flex items-center gap-6 text-sm text-[var(--text-muted)]">
 							<Link href="/terms" className="hover:text-[var(--text-primary)] transition-colors">Terms</Link>
