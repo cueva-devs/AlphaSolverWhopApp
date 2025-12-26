@@ -15,6 +15,35 @@ import type { AiColumnMapping } from "../lib/aiMappingSchema";
 import type { PlanConfig } from "../config/planConfig";
 import type { SimulationProgress } from "../hooks/useSimulationEngine";
 
+// Witty loading messages that cycle - poking fun at trader mistakes
+const LOADING_MESSAGES = [
+	"Calculating so you don't blow your account",
+	"Running simulations to save you money",
+	"Preventing revenge trades and tilt",
+	"Protecting your spouse's credit card",
+	"Analyzing thousands of possible outcomes",
+	"Finding your true pass probability",
+	"Modeling risk like a quant fund",
+	"Preventing expensive mistakes",
+	"Calculating your edge",
+	"Running Monte Carlo magic",
+	"Simulating so you don't go on tilt",
+	"Protecting you from yourself",
+	"Crunching numbers to save your account",
+	"Preventing the classic 'one more trade' mistake",
+	"Analyzing why you keep blowing accounts",
+	"Finding out if you're actually profitable",
+	"Simulating your trading future (spoiler: it's expensive)",
+	"Protecting your relationship with your broker",
+	"Calculating how many resets you'll need",
+	"Preventing the 'I'll make it back' trap",
+	"Analyzing your true win rate (not the one you tell yourself)",
+	"Simulating reality vs your trading journal",
+	"Protecting you from the 'this time is different' mindset",
+	"Calculating your actual edge (hint: it might be negative)",
+	"Preventing the 'just one more eval' cycle",
+];
+
 interface RunPanelProps {
 	// Account config
 	accountConfig: AccountConfig;
@@ -122,49 +151,21 @@ export default function RunPanel({
 	const [confidenceLevel, setConfidenceLevel] = useState<number>(0.95);
 	const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
 
-	// Witty loading messages that cycle - poking fun at trader mistakes
-	const loadingMessages = [
-		"Calculating so you don't blow your account",
-		"Running simulations to save you money",
-		"Preventing revenge trades and tilt",
-		"Protecting your spouse's credit card",
-		"Analyzing thousands of possible outcomes",
-		"Finding your true pass probability",
-		"Modeling risk like a quant fund",
-		"Preventing expensive mistakes",
-		"Calculating your edge",
-		"Running Monte Carlo magic",
-		"Simulating so you don't go on tilt",
-		"Protecting you from yourself",
-		"Crunching numbers to save your account",
-		"Preventing the classic 'one more trade' mistake",
-		"Analyzing why you keep blowing accounts",
-		"Finding out if you're actually profitable",
-		"Simulating your trading future (spoiler: it's expensive)",
-		"Protecting your relationship with your broker",
-		"Calculating how many resets you'll need",
-		"Preventing the 'I'll make it back' trap",
-		"Analyzing your true win rate (not the one you tell yourself)",
-		"Simulating reality vs your trading journal",
-		"Protecting you from the 'this time is different' mindset",
-		"Calculating your actual edge (hint: it might be negative)",
-		"Preventing the 'just one more eval' cycle",
-	];
-
 	const isSimulationRunning = isRunning || isEngineLoading;
 
 	// Cycle through messages every 3 seconds
 	useEffect(() => {
 		if (isSimulationRunning) {
+			// Start cycling messages immediately
 			const interval = setInterval(() => {
-				setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
+				setLoadingMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
 			}, 3000);
 			return () => clearInterval(interval);
 		} else {
 			// Reset to first message when simulation stops
 			setLoadingMessageIndex(0);
 		}
-	}, [isSimulationRunning, loadingMessages.length]);
+	}, [isSimulationRunning]);
 
 	const handleRunSimulation = () => {
 		if (parsedTrades && parsedTrades.length > 0) {
@@ -670,7 +671,7 @@ export default function RunPanel({
 									<div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-[var(--positive)] rounded-full animate-spin" style={{ animationDelay: '0.15s', animationDuration: '1.5s' }} />
 								</div>
 								<div className="text-base font-semibold text-[var(--text-primary)] mb-1">
-									{isEngineLoading ? "Loading simulation engine..." : loadingMessages[loadingMessageIndex]}
+									{isEngineLoading ? "Loading simulation engine..." : LOADING_MESSAGES[loadingMessageIndex]}
 								</div>
 								<div className="text-sm text-[var(--text-muted)] mt-2">
 									This may take a moment...
