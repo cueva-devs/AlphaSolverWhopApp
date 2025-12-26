@@ -14,7 +14,7 @@ export interface PlanConfig {
 export const PLAN_CONFIGS: Record<PlanId, PlanConfig> = {
 	free: {
 		label: "Free",
-		maxPaths: 100000, // No real limit - runs on user's CPU
+		maxPaths: 250000, // Up to 250k paths
 		maxDays: 365,
 		allowCsv: true,
 		dailyCredits: 3, // 3 runs per day
@@ -24,7 +24,7 @@ export const PLAN_CONFIGS: Record<PlanId, PlanConfig> = {
 	},
 	unlimited: {
 		label: "Unlimited",
-		maxPaths: 100000, // No real limit - runs on user's CPU
+		maxPaths: 250000, // Up to 250k paths
 		maxDays: 365,
 		allowCsv: true,
 		dailyCredits: -1, // Unlimited

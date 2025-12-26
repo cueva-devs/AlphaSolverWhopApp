@@ -58,31 +58,33 @@ export default function StrategyPanel({
 					<button
 						type="button"
 						className="btn btn-stepper"
-						onClick={() => setNumPaths(Math.max(1000, numPaths - 1000))}
-						disabled={numPaths <= 1000}
+						onClick={() => setNumPaths(Math.max(1, numPaths - 1000))}
+						disabled={numPaths <= 1}
 					>
 						-
 					</button>
 					<input
 						type="number"
 						value={numPaths}
+						min={1}
+						max={250000}
 						onChange={(e) => {
 							const val = parseInt(e.target.value) || 0;
-							setNumPaths(Math.min(Math.max(1000, val), planConfig.maxPaths));
+							setNumPaths(Math.min(Math.max(1, val), 250000));
 						}}
 						className="input input-number flex-1"
 					/>
 					<button
 						type="button"
 						className="btn btn-stepper"
-						onClick={() => setNumPaths(Math.min(numPaths + 1000, planConfig.maxPaths))}
-						disabled={numPaths >= planConfig.maxPaths}
+						onClick={() => setNumPaths(Math.min(numPaths + 1000, 250000))}
+						disabled={numPaths >= 250000}
 					>
 						+
 					</button>
 				</div>
 				<p className="text-xs text-[var(--text-muted)] mt-2">
-					Max: {planConfig.maxPaths.toLocaleString()} paths
+					Max: 250,000 paths
 				</p>
 			</div>
 
