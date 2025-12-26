@@ -17,31 +17,31 @@ import type { SimulationProgress } from "../hooks/useSimulationEngine";
 
 // Witty loading messages that cycle - poking fun at trader mistakes
 const LOADING_MESSAGES = [
-	"Calculating so you don't blow your account",
-	"Running simulations to save you money",
-	"Preventing revenge trades and tilt",
-	"Protecting your spouse's credit card",
-	"Analyzing thousands of possible outcomes",
-	"Finding your true pass probability",
-	"Modeling risk like a quant fund",
-	"Preventing expensive mistakes",
-	"Calculating your edge",
-	"Running Monte Carlo magic",
-	"Simulating so you don't go on tilt",
-	"Protecting you from yourself",
-	"Crunching numbers to save your account",
-	"Preventing the classic 'one more trade' mistake",
-	"Analyzing why you keep blowing accounts",
-	"Finding out if you're actually profitable",
-	"Simulating your trading future (spoiler: it's expensive)",
-	"Protecting your relationship with your broker",
-	"Calculating how many resets you'll need",
-	"Preventing the 'I'll make it back' trap",
-	"Analyzing your true win rate (not the one you tell yourself)",
-	"Simulating reality vs your trading journal",
-	"Protecting you from the 'this time is different' mindset",
-	"Calculating your actual edge (hint: it might be negative)",
-	"Preventing the 'just one more eval' cycle",
+	"Calculating so you don't blow your account...",
+	"Running simulations to save you money...",
+	"Preventing revenge trades and tilt...",
+	"Protecting your spouse's credit card...",
+	"Analyzing thousands of possible outcomes...",
+	"Finding your true pass probability...",
+	"Modeling risk like a quant fund...",
+	"Preventing expensive mistakes...",
+	"Calculating your edge...",
+	"Running Monte Carlo magic...",
+	"Simulating so you don't go on tilt...",
+	"Protecting you from yourself...",
+	"Crunching numbers to save your account...",
+	"Preventing the classic 'one more trade' mistake...",
+	"Analyzing why you keep blowing accounts...",
+	"Finding out if you're actually profitable...",
+	"Simulating your trading future (spoiler: it's expensive)...",
+	"Protecting your relationship with your broker...",
+	"Calculating how many resets you'll need...",
+	"Preventing the 'I'll make it back' trap...",
+	"Analyzing your true win rate (not the one you tell yourself)...",
+	"Simulating reality vs your trading journal...",
+	"Protecting you from the 'this time is different' mindset...",
+	"Calculating your actual edge (hint: it might be negative)...",
+	"Preventing the 'just one more eval' cycle...",
 ];
 
 interface RunPanelProps {
@@ -153,11 +153,10 @@ export default function RunPanel({
 
 	const isSimulationRunning = isRunning || isEngineLoading;
 
-	// Cycle through messages every 2.5 seconds
+	// Cycle through messages every 2.5 seconds (with 0.4s fade, so ~2.1s visible)
 	useEffect(() => {
 		if (isSimulationRunning) {
-			// Start cycling messages immediately - don't wait for engine to load
-			// This ensures messages are visible right away
+			// Start cycling messages immediately
 			const interval = setInterval(() => {
 				setLoadingMessageIndex((prev) => {
 					const next = (prev + 1) % LOADING_MESSAGES.length;
@@ -165,16 +164,7 @@ export default function RunPanel({
 				});
 			}, 2500);
 			
-			// Also start cycling immediately (don't wait for first interval)
-			// This ensures the first message change happens quickly
-			const timeout = setTimeout(() => {
-				setLoadingMessageIndex(1);
-			}, 2500);
-			
-			return () => {
-				clearInterval(interval);
-				clearTimeout(timeout);
-			};
+			return () => clearInterval(interval);
 		} else {
 			// Reset to first message when simulation stops
 			setLoadingMessageIndex(0);
@@ -684,18 +674,25 @@ export default function RunPanel({
 									<div className="w-16 h-16 border-4 border-[var(--border)] border-t-[var(--accent)] rounded-full animate-spin" />
 									<div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-[var(--positive)] rounded-full animate-spin" style={{ animationDelay: '0.15s', animationDuration: '1.5s' }} />
 								</div>
-								<motion.div 
-									key={loadingMessageIndex}
-									initial={{ opacity: 0, y: 5 }}
-									animate={{ opacity: 1, y: 0 }}
-									exit={{ opacity: 0, y: -5 }}
-									transition={{ duration: 0.3 }}
-									className="text-base font-semibold text-[var(--text-primary)] mb-1 min-h-[24px] flex items-center justify-center text-center px-4"
-								>
-									{isEngineLoading && loadingMessageIndex === 0 
-										? "Loading simulation engine..." 
-										: LOADING_MESSAGES[loadingMessageIndex]}
-								</motion.div>
+								<div className="text-base font-semibold text-[var(--text-primary)] mb-1">
+									{isEngineLoading ? "Loading simulation engine..." : "Running simulation..."}
+								</div>
+								<div className="text-sm text-[var(--text-muted)] mt-2 text-center px-4 min-h-[20px] flex items-center justify-center">
+									<AnimatePresence mode="wait">
+										<motion.span
+											key={loadingMessageIndex}
+											initial={{ opacity: 0, y: 8 }}
+											animate={{ opacity: 1, y: 0 }}
+											exit={{ opacity: 0, y: -8 }}
+											transition={{ 
+												duration: 0.4,
+												ease: [0.4, 0, 0.2, 1] // Smooth easing curve
+											}}
+										>
+											{LOADING_MESSAGES[loadingMessageIndex]}
+										</motion.span>
+									</AnimatePresence>
+								</div>
 							</div>
 						</div>
 					) : (
