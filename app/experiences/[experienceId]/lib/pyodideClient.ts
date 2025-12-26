@@ -269,15 +269,26 @@ def execute_simulation():
 execute_simulation()
 `;
 				
-				// Run chunk
-				const chunkResultJson = await pyodide.runPythonAsync(pythonCode);
-				const chunkResult = typeof chunkResultJson === "string" 
-					? JSON.parse(chunkResultJson) 
-					: pyodide.toJs(chunkResultJson);
-				allResults.push(chunkResult);
-				
-				// Yield to browser between chunks to prevent hanging
-				await new Promise(resolve => setTimeout(resolve, 50));
+				try {
+					// Run chunk
+					const chunkResultJson = await pyodide.runPythonAsync(pythonCode);
+					const chunkResult = typeof chunkResultJson === "string" 
+						? JSON.parse(chunkResultJson) 
+						: pyodide.toJs(chunkResultJson);
+					allResults.push(chunkResult);
+					
+					// Yield to browser between chunks to prevent hanging
+					await new Promise<void>(resolve => setTimeout(resolve, 50));
+				} catch (chunkError) {
+					const errorMsg =
+						chunkError instanceof Error
+							? chunkError.message
+							: String(chunkError);
+					throw new SimulationError(
+						`Chunk ${chunkIdx + 1}/${numChunks} failed: ${errorMsg}`,
+						chunkError,
+					);
+				}
 			}
 			
 			// Merge results from all chunks
@@ -375,15 +386,16 @@ execute_simulation()
 			try {
 				resultJson = await pyodide.runPythonAsync(pythonCode);
 			} catch (pyError) {
-			// If Python code raises an exception, it will be caught here
-			const errorMsg =
-				pyError instanceof Error
-					? pyError.message
-					: String(pyError);
-			throw new SimulationError(
-				`Python execution error: ${errorMsg}`,
-				pyError,
-			);
+				// If Python code raises an exception, it will be caught here
+				const errorMsg =
+					pyError instanceof Error
+						? pyError.message
+						: String(pyError);
+				throw new SimulationError(
+					`Python execution error: ${errorMsg}`,
+					pyError,
+				);
+			}
 		}
 
 		// Check if result is undefined or null
