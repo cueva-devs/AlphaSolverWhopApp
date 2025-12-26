@@ -1671,7 +1671,7 @@ export default function Page() {
 						<Link href="/">
 							<div className="flex items-center gap-2">
 								<img 
-									src="/logo.svg" 
+									src="/logo.png" 
 									alt="AlphaSolver" 
 									className="h-6 w-auto"
 									onError={(e) => {
