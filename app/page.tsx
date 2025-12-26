@@ -792,7 +792,7 @@ export default function Page() {
 							>
 								{/* Logo - fallback to text if image not found */}
 								<img 
-									src="/logo.svg" 
+									src="/logo.png" 
 									alt="AlphaSolver" 
 									className="h-8 w-auto"
 									onError={(e) => {
@@ -886,14 +886,20 @@ export default function Page() {
 							className="flex justify-center mb-6"
 						>
 							<img 
-								src="/logo.svg" 
+								src="/logo.png" 
 								alt="AlphaSolver" 
 								className="h-16 sm:h-20 w-auto"
 								onError={(e) => {
 									const target = e.target as HTMLImageElement;
 									target.style.display = 'none';
+									const fallback = target.nextElementSibling as HTMLElement;
+									if (fallback) fallback.style.display = 'flex';
 								}}
 							/>
+							<div className="hidden items-center gap-2" style={{ display: 'none' }}>
+								<span className="text-[var(--accent)] text-4xl font-bold">α</span>
+								<span className="text-2xl font-semibold tracking-tight">ALPHASOLVER</span>
+							</div>
 						</motion.div>
 
 						{/* Eye-catching headline */}
