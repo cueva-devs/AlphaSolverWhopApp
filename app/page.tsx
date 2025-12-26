@@ -30,7 +30,7 @@ import {
 	Cell,
 } from "recharts";
 
-const WHOP_CHECKOUT_URL = process.env.NEXT_PUBLIC_WHOP_CHECKOUT_URL || "https://whop.com/alphasolver";
+const WHOP_CHECKOUT_URL = process.env.NEXT_PUBLIC_WHOP_CHECKOUT_URL || "https://whop.com/alpha-solver";
 const BYPASS_ACCESS = process.env.NEXT_PUBLIC_BYPASS_ACCESS === "true";
 
 // ============================================
@@ -587,20 +587,20 @@ function MiniEquityChart() {
 // ============================================
 const faqs = [
 	{
-		question: "How accurate are the Monte Carlo simulations?",
-		answer: "Our simulations use your actual trade statistics (win rate, average win/loss, trade frequency) to generate 10,000+ randomized paths. The accuracy depends on your input data quality—the more trades in your log, the more reliable your statistics, and the more accurate your projected pass rate."
+		question: "What is AlphaSolver?",
+		answer: "AlphaSolver is a browser-based Monte Carlo simulation tool for prop trading strategies. It helps you test your edge against prop firm challenge rules like daily loss limits, profit targets, and payout structures before risking real money."
 	},
 	{
-		question: "Which prop firms do you support?",
-		answer: "We support all major prop firms including Topstep, Take Profit Trader, Funded Futures Network, Tradeify, Apex Trader Funding, and more. You can also create custom rules for any evaluation with specific profit targets, drawdown limits, and fee structures."
+		question: "What inputs are supported?",
+		answer: "You can use parametric inputs (win rate, average win/loss, stop loss, take profit, trades per day) or bootstrap directly from your trade logs. We support CSVs from MT4/5, NinjaTrader, TradingView, Tradovate, Rithmic, and most other platforms."
 	},
 	{
-		question: "What's included in the free plan?",
-		answer: "Free users get 3 simulation runs per day, access to all prop firm presets, full results visualization, and personalized trading plan generation. Unlimited removes the daily cap for power users who want to test multiple scenarios."
+		question: "What outputs do I get?",
+		answer: "Pass probabilities with 95% confidence intervals, expected payouts, max drawdown distributions, Kelly criterion sizing, cost/ROI analysis, equity curves, and clustered outcome scenarios (fast pass, slow pass, bust patterns)."
 	},
 	{
 		question: "Is my trading data secure?",
-		answer: "Absolutely. All simulations run entirely in your browser—your trade data never leaves your device. We don't store, transmit, or have access to your trading history."
+		answer: "Absolutely. All simulations run entirely client-side in your browser—your trade data never leaves your device. We don't store, transmit, or have access to your trading history."
 	}
 ];
 
@@ -705,7 +705,7 @@ function AnimatedEquityChart({ inView }: { inView: boolean }) {
 						axisLine={false}
 						tickLine={false}
 						tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
-						label={{ value: 'Trading Days', position: 'bottom', offset: 10, fill: 'var(--text-muted)', fontSize: 11 }}
+						label={{ value: 'Days in Challenge', position: 'bottom', offset: 10, fill: 'var(--text-muted)', fontSize: 11 }}
 					/>
 					<YAxis 
 						axisLine={false}
@@ -713,7 +713,8 @@ function AnimatedEquityChart({ inView }: { inView: boolean }) {
 						tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
 						tickFormatter={(value: number) => `$${value.toLocaleString()}`}
 						domain={[-2500, 3500]}
-						width={60}
+						width={70}
+						label={{ value: 'Net PnL ($)', angle: -90, position: 'insideLeft', fill: 'var(--text-muted)', fontSize: 11, dy: 30 }}
 					/>
 					<Tooltip content={<ChartTooltip />} />
 					<ReferenceLine y={3000} stroke="var(--positive)" strokeDasharray="4 4" strokeOpacity={0.6} label={{ value: '+$3K Target', fill: 'var(--positive)', fontSize: 10, position: 'right' }} />
@@ -866,17 +867,13 @@ export default function Page() {
 							custom={1} 
 							className="text-4xl sm:text-5xl lg:text-6xl mb-4"
 						>
-							<span className="font-['Space_Grotesk',_sans-serif] font-bold text-[var(--text-primary)]">Know your </span>
-							<span className="font-['Space_Grotesk',_sans-serif] font-bold headline-gradient glow-text">true odds</span>
+							<span className="font-['Space_Grotesk',_sans-serif] font-bold text-[var(--text-primary)]">Simulate Prop Firm Challenges: </span>
+							<span className="font-['Space_Grotesk',_sans-serif] font-bold headline-gradient glow-text">Test Your Trading Strategies with Monte Carlo Precision</span>
 						</motion.h1>
 						
 						{/* Updated messaging for all trader levels */}
-						<motion.p variants={fadeUp} custom={2} className="text-[var(--text-secondary)] text-base sm:text-lg max-w-2xl mx-auto mb-4">
-							Whether you're taking your first prop challenge or optimizing your hundredth strategy—get the same Monte Carlo edge that professional quant funds use.
-						</motion.p>
-						
-						<motion.p variants={fadeUp} custom={2.5} className="text-[var(--text-muted)] text-sm max-w-xl mx-auto mb-6">
-							Upload your trade log • Run 10,000 simulations • See your real probability of passing—<span className="text-[var(--text-primary)]">before you pay.</span>
+						<motion.p variants={fadeUp} custom={2} className="text-[var(--text-secondary)] text-base sm:text-lg max-w-2xl mx-auto mb-6">
+							Run risk-free simulations to find your edge in passing funded account evals. Predict pass rates, payouts, and risks using your real trade data or simple stats. Tailored for firms like Topstep.
 						</motion.p>
 
 						<motion.div variants={fadeUp} custom={3} className="flex flex-wrap justify-center gap-3">
@@ -1308,18 +1305,18 @@ export default function Page() {
 					>
 						<motion.div variants={fadeUp} custom={0} className="text-center mb-8">
 							<h2 className="text-2xl sm:text-3xl font-['Space_Grotesk',_sans-serif] font-bold mb-2">
-								Why Quant-Level Simulation?
+								Prop Trading Simulator Features
 							</h2>
 							<p className="text-sm text-[var(--text-muted)] max-w-xl mx-auto">
-								Stop gambling on prop firm attempts. Use the same Monte Carlo methods hedge funds use to model risk.
+								Monte Carlo trading analysis for funded account challenges. Test your edge before you pay.
 							</p>
 						</motion.div>
 
 						<div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
 							{[
 								{
-									title: "Calculate True +EV",
-									desc: "Know your exact expected value before spending $450 on another evaluation. If you're -EV, fix your strategy first.",
+									title: "Bootstrapped Monte Carlo",
+									desc: "Resample real trades for accurate edge testing. Upload your actual trade log and let the simulation reflect your true performance distribution.",
 									icon: (
 										<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -1327,8 +1324,8 @@ export default function Page() {
 									)
 								},
 								{
-									title: "Optimize for Firm Rules",
-									desc: "Every prop firm has different targets, drawdowns, and fee structures. Simulate against actual rules to find your edge.",
+									title: "Prop Firm Rulesets",
+									desc: "Enforce eval/funded phases, trailing drawdowns, daily limits, and payout structures. Presets for Topstep, Apex, Take Profit Trader, and more.",
 									icon: (
 										<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -1337,8 +1334,8 @@ export default function Page() {
 									)
 								},
 								{
-									title: "Plan for Multiple Attempts",
-									desc: "Even with 70% pass rate, you might need 2 tries. Factor in reset costs and funded phase blowups for true ROI.",
+									title: "Kelly Criterion Sizing",
+									desc: "Optimal position sizing based on your strategy's edge. Maximize growth while managing risk according to proven mathematical principles.",
 									icon: (
 										<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -1346,8 +1343,8 @@ export default function Page() {
 									)
 								},
 								{
-									title: "Account for Variance",
-									desc: "Your 60% win rate doesn't mean 60 wins in 100 trades. Monte Carlo shows the real distribution of possible outcomes.",
+									title: "Outcome Scenarios",
+									desc: "Clustered paths showing fast pass, slow pass, and extended failure patterns. Understand the shape of your possible futures.",
 									icon: (
 										<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
@@ -1355,8 +1352,8 @@ export default function Page() {
 									)
 								},
 								{
-									title: "Get a Trading Plan",
-									desc: "Stop winging it. Get daily targets, stop losses, and position sizes calibrated to your actual statistics.",
+									title: "Pass Probabilities with 95% CI",
+									desc: "Confidence intervals on your pass rate, plus equity curves and comprehensive risk metrics for informed decision-making.",
 									icon: (
 										<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
@@ -1365,7 +1362,7 @@ export default function Page() {
 								},
 								{
 									title: "100% Local & Private",
-									desc: "Your trade data never leaves your browser. No servers, no uploads, no risk of your edge being exposed.",
+									desc: "Your trade data never leaves your browser. No servers, no uploads, no risk of your edge being exposed. Full cost/ROI analysis included.",
 									icon: (
 										<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -1420,12 +1417,13 @@ export default function Page() {
 			{/* How It Works - Compact */}
 			<section className="relative z-10 py-12 px-4 sm:px-6 border-t border-[var(--border)] bg-[var(--bg-secondary)]">
 				<div className="max-w-7xl mx-auto">
-					<h2 className="text-xl font-semibold text-center mb-8">Three Steps to Your Edge</h2>
-					<div className="grid sm:grid-cols-3 gap-4">
+					<h2 className="text-xl font-semibold text-center mb-8">How It Works</h2>
+					<div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
 						{[
-							{ num: "01", title: "Upload Trade Log", desc: "CSV from NinjaTrader, TradingView, Tradovate, Rithmic, or any platform. We extract your win rate, avg win/loss automatically." },
-							{ num: "02", title: "Select Prop Firm", desc: "Topstep, Take Profit Trader, Apex, Tradeify, FFN, or custom rules. We know every target, drawdown, and fee." },
-							{ num: "03", title: "Get Your Odds", desc: "Pass probability, expected value, cost analysis, and a personalized trading plan in seconds." },
+							{ num: "01", title: "Upload Trade Log or Enter Params", desc: "Bootstrap from CSVs (MT4/5, NinjaTrader) or use win rate, stops/TP, trades per day." },
+							{ num: "02", title: "Configure Prop Rules", desc: "Set daily loss/win limits, profit targets, fees, and slippage (defaults to Topstep)." },
+							{ num: "03", title: "Run Monte Carlo Sims", desc: "Generate 1,000+ paths for probabilistic outcomes across thousands of scenarios." },
+							{ num: "04", title: "Analyze Results", desc: "Get pass probs with 95% CI, expected payouts, drawdowns, Kelly sizing, and scenario clusters." },
 						].map((step, i) => (
 							<motion.div 
 								key={i} 
@@ -1455,7 +1453,7 @@ export default function Page() {
 					>
 						<motion.div variants={fadeUp} custom={0} className="text-center mb-8">
 							<h2 className="text-2xl sm:text-3xl font-['Space_Grotesk',_sans-serif] font-bold mb-2">Simple Pricing</h2>
-							<p className="text-sm text-[var(--text-muted)]">Start free. Upgrade when you need unlimited simulations.</p>
+							<p className="text-sm text-[var(--text-muted)]">Start free with 3 sims/day. Upgrade for unlimited Monte Carlo trading analysis.</p>
 						</motion.div>
 
 						<div className="grid sm:grid-cols-2 gap-4">
@@ -1467,20 +1465,22 @@ export default function Page() {
 								whileHover={{ scale: 1.02, y: -4 }}
 							>
 								<div className="mb-6">
-									<p className="text-sm text-[var(--text-muted)] mb-1">FREE</p>
+									<p className="text-sm text-[var(--text-muted)] mb-1">FREE TIER</p>
 									<div className="flex items-baseline gap-1">
 										<span className="text-4xl font-semibold">$0</span>
 										<span className="text-[var(--text-muted)]">/month</span>
 									</div>
+									<p className="text-xs text-[var(--text-muted)] mt-2">3 Sims/Day – Basic Monte Carlo access for strategy testing</p>
 								</div>
 								
 								<div className="space-y-3 mb-6 text-sm">
 									{[
 										{ text: "3 simulations per day", included: true },
-										{ text: "All prop firms supported", included: true },
-										{ text: "Full results & analysis", included: true },
-										{ text: "Trading plan generation", included: true },
+										{ text: "All prop firm presets", included: true },
+										{ text: "Pass probability & EV analysis", included: true },
+										{ text: "Basic trading plan", included: true },
 										{ text: "Unlimited simulations", included: false },
+										{ text: "CSV/JSON exports", included: false },
 									].map((item, i) => (
 										<div key={i} className="flex items-center gap-2">
 											<span className={item.included ? "text-[var(--positive)]" : "text-[var(--text-muted)]"}>
@@ -1515,15 +1515,18 @@ export default function Page() {
 										<span className="text-4xl font-semibold text-[var(--accent)]">$9</span>
 										<span className="text-[var(--text-muted)]">/month</span>
 									</div>
+									<p className="text-xs text-[var(--text-muted)] mt-2">Unlimited sims, full exports (CSV/JSON), advanced analysis</p>
 								</div>
 								
 								<div className="space-y-3 mb-6 text-sm">
 									{[
 										"Unlimited simulations",
-										"All prop firms supported",
+										"All prop firm presets",
 										"Full results & analysis",
 										"Trading plan generation",
-										"Export & import runs",
+										"Scenario clustering",
+										"Kelly & edge stats",
+										"Export CSV/JSON",
 									].map((item, i) => (
 										<div key={i} className="flex items-center gap-2">
 											<span className="text-[var(--positive)]">✓</span>
@@ -1579,11 +1582,11 @@ export default function Page() {
 						transition={{ duration: 0.6 }}
 					>
 						<h2 className="text-3xl sm:text-4xl font-['Space_Grotesk',_sans-serif] font-bold mb-4">
-							Stop guessing.<br />
-							<span className="headline-gradient">Start knowing.</span>
+							Stop Guessing.<br />
+							<span className="headline-gradient">Start Simulating.</span>
 						</h2>
 						<p className="text-[var(--text-secondary)] mb-6 max-w-md mx-auto">
-							Your next prop firm attempt doesn't have to be a gamble. Run the numbers first.
+							Know your prop challenge odds with Monte Carlo precision. Test strategies risk-free before risking real capital.
 						</p>
 						<div className="flex flex-wrap gap-3 justify-center mb-6">
 							{BYPASS_ACCESS ? (
@@ -1640,7 +1643,7 @@ export default function Page() {
 						</div>
 
 						<p className="text-xs text-[var(--text-muted)]">
-							© 2024 AlphaSolver. Made for traders.
+							© 2025 AlphaSolver. Made for traders.
 						</p>
 					</div>
 				</div>
