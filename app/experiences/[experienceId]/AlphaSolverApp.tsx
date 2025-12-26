@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import RunPanel from "./components/RunPanel";
 import ResultsPanel from "./components/ResultsPanel";
 import TradingPlanPanel from "./components/TradingPlanPanel";
-import { useSimulationEngine } from "./hooks/useSimulationEngine";
+import { useSimulationEngine, type SimulationProgress } from "./hooks/useSimulationEngine";
 import { parseTradeCsv } from "./lib/csvUtils";
 import type {
 	BootstrappedParams,
@@ -47,7 +47,7 @@ export default function AlphaSolverApp({
 	upgradeUrl,
 	isWhopIframe = true,
 }: AlphaSolverAppProps) {
-	const { run, result, isRunning, error, isEngineLoading, reset } =
+	const { run, result, isRunning, error, isEngineLoading, reset, progress } =
 		useSimulationEngine();
 	const [activeTab, setActiveTab] = useState<TabType>("run");
 	const [accountConfig, setAccountConfig] = useState<AccountConfig>({
@@ -578,6 +578,7 @@ export default function AlphaSolverApp({
 								estimatedFileSize={result ? estimateFileSize(result) : "0 KB"}
 								isRunning={isRunning}
 								isEngineLoading={isEngineLoading}
+								progress={progress}
 								onRunSimulation={handleRequestRun}
 								onNavigateToResults={handleNavigateToResults}
 							/>
@@ -596,6 +597,7 @@ export default function AlphaSolverApp({
 								isRunning={isRunning || isEngineLoading}
 								error={error}
 								accountConfig={accountConfig}
+								progress={progress}
 							/>
 						</motion.div>
 					)}

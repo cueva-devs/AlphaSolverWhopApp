@@ -13,6 +13,7 @@ import type {
 import { getCsvTemplateList } from "../config/propFirmConfig";
 import type { AiColumnMapping } from "../lib/aiMappingSchema";
 import type { PlanConfig } from "../config/planConfig";
+import type { SimulationProgress } from "../hooks/useSimulationEngine";
 
 interface RunPanelProps {
 	// Account config
@@ -59,6 +60,7 @@ interface RunPanelProps {
 	// Simulation
 	isRunning: boolean;
 	isEngineLoading: boolean;
+	progress: SimulationProgress | null;
 	onRunSimulation: (params: BootstrappedParams, trades: ParsedTrade[]) => void;
 	onNavigateToResults: () => void;
 }
@@ -111,9 +113,23 @@ export default function RunPanel({
 	estimatedFileSize,
 	isRunning,
 	isEngineLoading,
+	progress,
 	onRunSimulation,
 	onNavigateToResults,
 }: RunPanelProps) {
+	
+	// Helper function to format time remaining
+	function formatTimeRemaining(seconds: number): string {
+		if (seconds < 60) {
+			return `${seconds} second${seconds !== 1 ? 's' : ''}`;
+		}
+		const minutes = Math.floor(seconds / 60);
+		const remainingSeconds = seconds % 60;
+		if (remainingSeconds === 0) {
+			return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+		}
+		return `${minutes}m ${remainingSeconds}s`;
+	}
 	const [showAdvanced, setShowAdvanced] = useState(false);
 	const [numPaths, setNumPaths] = useState(Math.min(10000, planConfig.maxPaths));
 	const [confidenceLevel, setConfidenceLevel] = useState<number>(0.95);
@@ -621,11 +637,33 @@ export default function RunPanel({
 									<div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-[var(--positive)] rounded-full animate-spin" style={{ animationDelay: '0.15s', animationDuration: '1.5s' }} />
 								</div>
 								<div className="text-base font-semibold text-[var(--text-primary)] mb-1">
-									Running simulation...
+									{progress?.phase === "loading" ? "Loading simulation engine..." : "Running simulation..."}
 								</div>
-								<div className="text-sm text-[var(--text-muted)]">
-									Analyzing thousands of possible outcomes
-								</div>
+								{progress && (
+									<>
+										<div className="w-full max-w-md mb-3">
+											<div className="h-2 bg-[var(--border)] rounded-full overflow-hidden">
+												<div 
+													className="h-full bg-gradient-to-r from-[var(--accent)] to-[var(--positive)] transition-all duration-100 ease-out"
+													style={{ width: `${progress.progress}%` }}
+												/>
+											</div>
+										</div>
+										<div className="text-sm text-[var(--text-muted)] space-y-1">
+											<div>{Math.round(progress.progress)}% complete</div>
+											{progress.estimatedSecondsRemaining > 0 && (
+												<div>
+													Estimated time remaining: {formatTimeRemaining(progress.estimatedSecondsRemaining)}
+												</div>
+											)}
+										</div>
+									</>
+								)}
+								{!progress && (
+									<div className="text-sm text-[var(--text-muted)]">
+										Analyzing thousands of possible outcomes
+									</div>
+								)}
 							</div>
 						</div>
 					) : (
