@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, type RedisClientType } from "redis";
-import { getWhopSession } from "@/lib/auth";
+import { headers } from "next/headers";
+import { whopsdk } from "@/lib/whop-sdk";
 import { DAILY_CREDITS, CREDITS_KEY_PREFIX, CREDITS_EXPIRY_SECONDS } from "@/lib/constants";
 import { checkRateLimit, rateLimitedResponse, addRateLimitHeaders } from "@/lib/rate-limit";
 
@@ -39,6 +40,20 @@ async function getRedisClient(): Promise<RedisClientType> {
 		return redis;
 	} finally {
 		isConnecting = false;
+	}
+}
+
+/**
+ * Get authenticated userId from Whop SDK (works for both iframe and OAuth)
+ * This uses the same authentication method as page.tsx
+ */
+async function getAuthenticatedUserId(): Promise<string | null> {
+	try {
+		const reqHeaders = await headers();
+		const result = await whopsdk.verifyUserToken(reqHeaders, { dontThrow: true });
+		return result?.userId || null;
+	} catch {
+		return null;
 	}
 }
 
@@ -153,12 +168,11 @@ export async function GET(request: NextRequest) {
 	}
 
 	try {
-		// SECURITY: Get userId from authenticated session, not from client
-		const session = await getWhopSession();
-		if (!session?.userId) {
+		// SECURITY: Get userId from Whop SDK (works for both iframe and OAuth)
+		const userId = await getAuthenticatedUserId();
+		if (!userId) {
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
-		const userId = session.userId;
 
 		const creditsData = await getUserCredits(userId);
 
@@ -192,12 +206,11 @@ export async function POST(request: NextRequest) {
 	}
 
 	try {
-		// SECURITY: Get userId from authenticated session, not from client
-		const session = await getWhopSession();
-		if (!session?.userId) {
+		// SECURITY: Get userId from Whop SDK (works for both iframe and OAuth)
+		const userId = await getAuthenticatedUserId();
+		if (!userId) {
 			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 		}
-		const userId = session.userId;
 
 		// Use atomic credit deduction to prevent race conditions
 		const result = await useCredit(userId);
