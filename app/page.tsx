@@ -794,7 +794,7 @@ export default function Page() {
 								<img 
 									src="/logo.png" 
 									alt="AlphaSolver" 
-									className="h-8 w-auto"
+									className="h-10 sm:h-12 w-auto"
 									onError={(e) => {
 										// Fallback to text logo if image fails to load
 										const target = e.target as HTMLImageElement;
@@ -883,12 +883,12 @@ export default function Page() {
 						<motion.div 
 							variants={fadeUp} 
 							custom={0.5}
-							className="flex justify-center mb-6"
+							className="flex justify-center mb-8"
 						>
 							<img 
 								src="/logo.png" 
 								alt="AlphaSolver" 
-								className="h-16 sm:h-20 w-auto"
+								className="h-24 sm:h-32 lg:h-40 w-auto"
 								onError={(e) => {
 									const target = e.target as HTMLImageElement;
 									target.style.display = 'none';
@@ -1679,7 +1679,7 @@ export default function Page() {
 								<img 
 									src="/logo.png" 
 									alt="AlphaSolver" 
-									className="h-6 w-auto"
+									className="h-8 w-auto"
 									onError={(e) => {
 										// Fallback to text logo if image fails to load
 										const target = e.target as HTMLImageElement;
