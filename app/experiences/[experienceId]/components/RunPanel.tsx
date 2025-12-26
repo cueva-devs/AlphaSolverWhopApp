@@ -163,19 +163,34 @@ export default function RunPanel({
 		}
 
 		if (isSimulationRunning) {
-			// Start cycling messages immediately
+			// Start cycling messages immediately - use a more resilient approach
+			const updateMessage = () => {
+				// Use functional update to avoid stale closures
+				setLoadingMessageIndex((prev) => {
+					try {
+						// Ensure we have valid messages array
+						if (!LOADING_MESSAGES || LOADING_MESSAGES.length === 0) {
+							return 0;
+						}
+						// Validate current index
+						const currentIndex = (prev >= 0 && prev < LOADING_MESSAGES.length) ? prev : 0;
+						// Calculate next index
+						const next = (currentIndex + 1) % LOADING_MESSAGES.length;
+						return next;
+					} catch (error) {
+						// If anything fails, just return 0 to reset
+						return 0;
+					}
+				});
+			};
+
+			// Set up interval with error handling
 			intervalRef.current = setInterval(() => {
 				try {
-					setLoadingMessageIndex((prev) => {
-						if (prev >= LOADING_MESSAGES.length || prev < 0) {
-							return 0; // Reset if index is invalid
-						}
-						const next = (prev + 1) % LOADING_MESSAGES.length;
-						return next;
-					});
+					updateMessage();
 				} catch (error) {
-					// Silently handle any errors to prevent breaking the interval
-					console.error('Error updating loading message:', error);
+					// Silently handle any errors - don't let them break the interval
+					// The interval will continue running even if one update fails
 				}
 			}, 2500);
 			
@@ -699,18 +714,20 @@ export default function RunPanel({
 								</div>
 								<div className="text-sm text-[var(--text-muted)] mt-2 text-center px-4 min-h-[20px] flex items-center justify-center">
 									<AnimatePresence mode="wait" initial={false}>
-										<motion.span
-											key={loadingMessageIndex}
-											initial={{ opacity: 0, y: 8 }}
-											animate={{ opacity: 1, y: 0 }}
-											exit={{ opacity: 0, y: -8 }}
-											transition={{ 
-												duration: 0.4,
-												ease: [0.4, 0, 0.2, 1] // Smooth easing curve
-											}}
-										>
-											{LOADING_MESSAGES[loadingMessageIndex] || LOADING_MESSAGES[0]}
-										</motion.span>
+										{LOADING_MESSAGES && LOADING_MESSAGES.length > 0 && (
+											<motion.span
+												key={`msg-${loadingMessageIndex}`}
+												initial={{ opacity: 0, y: 8 }}
+												animate={{ opacity: 1, y: 0 }}
+												exit={{ opacity: 0, y: -8 }}
+												transition={{ 
+													duration: 0.4,
+													ease: [0.4, 0, 0.2, 1] // Smooth easing curve
+												}}
+											>
+												{LOADING_MESSAGES[loadingMessageIndex] || LOADING_MESSAGES[0] || "Running simulation..."}
+											</motion.span>
+										)}
 									</AnimatePresence>
 								</div>
 							</div>

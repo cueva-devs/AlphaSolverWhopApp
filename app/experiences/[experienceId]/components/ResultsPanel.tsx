@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import type { SimulationResult, AccountConfig, OutcomeScenario } from "../types";
@@ -365,22 +365,45 @@ export default function ResultsPanel({
 }: ResultsPanelProps) {
 	const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
 
+	const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
 	// Cycle through messages every 2.5 seconds (matching RunPanel)
 	useEffect(() => {
+		// Clear any existing interval first
+		if (intervalRef.current) {
+			clearInterval(intervalRef.current);
+			intervalRef.current = null;
+		}
+
 		if (isRunning) {
-			const interval = setInterval(() => {
-				try {
-					setLoadingMessageIndex((prev) => {
-						const next = (prev + 1) % LOADING_MESSAGES.length;
+			const updateMessage = () => {
+				setLoadingMessageIndex((prev) => {
+					try {
+						if (!LOADING_MESSAGES || LOADING_MESSAGES.length === 0) {
+							return 0;
+						}
+						const currentIndex = (prev >= 0 && prev < LOADING_MESSAGES.length) ? prev : 0;
+						const next = (currentIndex + 1) % LOADING_MESSAGES.length;
 						return next;
-					});
+					} catch (error) {
+						return 0;
+					}
+				});
+			};
+
+			intervalRef.current = setInterval(() => {
+				try {
+					updateMessage();
 				} catch (error) {
-					// Silently handle any errors to prevent breaking the interval
-					console.error('Error updating loading message:', error);
+					// Silently handle errors
 				}
 			}, 2500);
+			
 			return () => {
-				clearInterval(interval);
+				if (intervalRef.current) {
+					clearInterval(intervalRef.current);
+					intervalRef.current = null;
+				}
 			};
 		} else {
 			setLoadingMessageIndex(0);
@@ -424,18 +447,20 @@ export default function ResultsPanel({
 					</div>
 					<div className="text-sm text-[var(--text-muted)] mt-2 text-center px-4 min-h-[20px] flex items-center justify-center">
 						<AnimatePresence mode="wait" initial={false}>
-							<motion.span
-								key={loadingMessageIndex}
-								initial={{ opacity: 0, y: 8 }}
-								animate={{ opacity: 1, y: 0 }}
-								exit={{ opacity: 0, y: -8 }}
-								transition={{ 
-									duration: 0.4,
-									ease: [0.4, 0, 0.2, 1] // Smooth easing curve
-								}}
-							>
-								{LOADING_MESSAGES[loadingMessageIndex] || LOADING_MESSAGES[0]}
-							</motion.span>
+							{LOADING_MESSAGES && LOADING_MESSAGES.length > 0 && (
+								<motion.span
+									key={`msg-${loadingMessageIndex}`}
+									initial={{ opacity: 0, y: 8 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0, y: -8 }}
+									transition={{ 
+										duration: 0.4,
+										ease: [0.4, 0, 0.2, 1] // Smooth easing curve
+									}}
+								>
+									{LOADING_MESSAGES[loadingMessageIndex] || LOADING_MESSAGES[0] || "Running simulation..."}
+								</motion.span>
+							)}
 						</AnimatePresence>
 					</div>
 				</motion.div>
