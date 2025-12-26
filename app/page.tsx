@@ -1478,9 +1478,11 @@ export default function Page() {
 										{ text: "3 simulations per day", included: true },
 										{ text: "All prop firm presets", included: true },
 										{ text: "Pass probability & EV analysis", included: true },
-										{ text: "Basic trading plan", included: true },
+										{ text: "Trading plan generation", included: true },
+										{ text: "CSV upload support", included: true },
 										{ text: "Unlimited simulations", included: false },
 										{ text: "CSV/JSON exports", included: false },
+										{ text: "AI Upload (column detection)", included: false },
 									].map((item, i) => (
 										<div key={i} className="flex items-center gap-2">
 											<span className={item.included ? "text-[var(--positive)]" : "text-[var(--text-muted)]"}>
@@ -1524,8 +1526,8 @@ export default function Page() {
 										"All prop firm presets",
 										"Full results & analysis",
 										"Trading plan generation",
-										"Scenario clustering",
-										"Kelly & edge stats",
+										"CSV upload support",
+										"AI Upload (automatic column detection)",
 										"Export CSV/JSON",
 									].map((item, i) => (
 										<div key={i} className="flex items-center gap-2">
