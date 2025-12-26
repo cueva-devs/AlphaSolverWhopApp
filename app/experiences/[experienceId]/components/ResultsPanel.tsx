@@ -334,19 +334,49 @@ export default function ResultsPanel({
 	accountConfig,
 	progress,
 }: ResultsPanelProps) {
-	
-	// Helper function to format time remaining
-	function formatTimeRemaining(seconds: number): string {
-		if (seconds < 60) {
-			return `${seconds} second${seconds !== 1 ? 's' : ''}`;
+	const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+
+	// Witty loading messages that cycle - poking fun at trader mistakes
+	const loadingMessages = [
+		"Calculating so you don't blow your account",
+		"Running simulations to save you money",
+		"Preventing revenge trades and tilt",
+		"Protecting your spouse's credit card",
+		"Analyzing thousands of possible outcomes",
+		"Finding your true pass probability",
+		"Modeling risk like a quant fund",
+		"Preventing expensive mistakes",
+		"Calculating your edge",
+		"Running Monte Carlo magic",
+		"Simulating so you don't go on tilt",
+		"Protecting you from yourself",
+		"Crunching numbers to save your account",
+		"Preventing the classic 'one more trade' mistake",
+		"Analyzing why you keep blowing accounts",
+		"Finding out if you're actually profitable",
+		"Simulating your trading future (spoiler: it's expensive)",
+		"Protecting your relationship with your broker",
+		"Calculating how many resets you'll need",
+		"Preventing the 'I'll make it back' trap",
+		"Analyzing your true win rate (not the one you tell yourself)",
+		"Simulating reality vs your trading journal",
+		"Protecting you from the 'this time is different' mindset",
+		"Calculating your actual edge (hint: it might be negative)",
+		"Preventing the 'just one more eval' cycle",
+	];
+
+	// Cycle through messages every 3 seconds
+	useEffect(() => {
+		if (isRunning) {
+			const interval = setInterval(() => {
+				setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
+			}, 3000);
+			return () => clearInterval(interval);
+		} else {
+			setLoadingMessageIndex(0);
 		}
-		const minutes = Math.floor(seconds / 60);
-		const remainingSeconds = seconds % 60;
-		if (remainingSeconds === 0) {
-			return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
-		}
-		return `${minutes}m ${remainingSeconds}s`;
-	}
+	}, [isRunning, loadingMessages.length]);
+
 	const [metricsRef, metricsInView] = useInView({ triggerOnce: true, threshold: 0.1 });
 	const [resultsRef, resultsInView] = useInView({ triggerOnce: true, threshold: 0.1 });
 
@@ -380,33 +410,11 @@ export default function ResultsPanel({
 						<div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-[var(--positive)] rounded-full animate-spin" style={{ animationDelay: '0.15s', animationDuration: '1.5s' }} />
 					</div>
 					<div className="text-lg font-semibold text-[var(--text-primary)] mb-2">
-						{progress?.phase === "loading" ? "Loading simulation engine..." : "Running simulation..."}
+						{loadingMessages[loadingMessageIndex]}
 					</div>
-					{progress && (
-						<>
-							<div className="w-full max-w-md mb-4">
-								<div className="h-2 bg-[var(--border)] rounded-full overflow-hidden">
-									<div 
-										className="h-full bg-gradient-to-r from-[var(--accent)] to-[var(--positive)] transition-all duration-100 ease-out"
-										style={{ width: `${progress.progress}%` }}
-									/>
-								</div>
-							</div>
-							<div className="text-sm text-[var(--text-muted)] space-y-1 text-center">
-								<div>{Math.round(progress.progress)}% complete</div>
-								{progress.estimatedSecondsRemaining > 0 && (
-									<div>
-										Estimated time remaining: {formatTimeRemaining(progress.estimatedSecondsRemaining)}
-									</div>
-								)}
-							</div>
-						</>
-					)}
-					{!progress && (
-						<div className="text-sm text-[var(--text-muted)]">
-							Analyzing thousands of possible outcomes
-						</div>
-					)}
+					<div className="text-sm text-[var(--text-muted)] mt-2">
+						This may take a moment...
+					</div>
 				</motion.div>
 			)}
 
