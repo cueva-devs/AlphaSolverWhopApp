@@ -223,9 +223,134 @@ export async function runSimulation(
 		// Convert trades to JSON string if provided
 		const tradesJson = trades ? JSON.stringify(trades) : "null";
 
-		// Call the Python entry function
-		// Use a Python function that explicitly returns the result
-		const pythonCode = `
+		// For large simulations (50k+), process in chunks to prevent browser hangs
+		const numPaths = params.numPaths || 1000;
+		const CHUNK_SIZE = 5000; // Process 5k paths per chunk for better responsiveness
+		const USE_CHUNKING = numPaths >= 50000; // Use chunking for 50k+ paths
+		
+		let resultJson: any;
+		
+		if (USE_CHUNKING) {
+			// Process simulation in chunks with yields between chunks
+			const numChunks = Math.ceil(numPaths / CHUNK_SIZE);
+			
+			// Process chunks sequentially with yields
+			const allResults: any[] = [];
+			
+			for (let chunkIdx = 0; chunkIdx < numChunks; chunkIdx++) {
+				const startPath = chunkIdx * CHUNK_SIZE;
+				const endPath = Math.min(startPath + CHUNK_SIZE, numPaths);
+				const chunkPaths = endPath - startPath;
+				
+				if (chunkPaths <= 0) break;
+				
+				// Create params for this chunk
+				const chunkParams = { ...params, numPaths: chunkPaths };
+				const chunkParamsJson = JSON.stringify(chunkParams);
+				
+				const pythonCode = `
+import json
+from alphasolver_entry import run_simulation
+
+params_json = ${JSON.stringify(chunkParamsJson)}
+trades_json = ${JSON.stringify(tradesJson)}
+mode = ${JSON.stringify(mode)}
+
+def execute_simulation():
+    try:
+        result = run_simulation(mode, params_json, trades_json)
+        result_json = json.dumps(result, allow_nan=False)
+        return result_json
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        raise Exception(f"Python simulation error: {str(e)}\\nTraceback:\\n{error_trace}")
+
+execute_simulation()
+`;
+				
+				// Run chunk
+				const chunkResultJson = await pyodide.runPythonAsync(pythonCode);
+				const chunkResult = typeof chunkResultJson === "string" 
+					? JSON.parse(chunkResultJson) 
+					: pyodide.toJs(chunkResultJson);
+				allResults.push(chunkResult);
+				
+				// Yield to browser between chunks to prevent hanging
+				await new Promise(resolve => setTimeout(resolve, 50));
+			}
+			
+			// Merge results from all chunks
+			if (allResults.length === 0) {
+				throw new SimulationError("No chunks processed");
+			}
+			
+			// Merge equity curves, final values, and path indices
+			const mergedEquityCurves: number[][] = [];
+			const mergedFinalValues: number[] = [];
+			const mergedWinningPaths: number[] = [];
+			const mergedLosingPaths: number[] = [];
+			
+			let pathOffset = 0;
+			let totalWinning = 0;
+			let totalLosing = 0;
+			let sumExpectedPayout = 0;
+			let sumMaxDd = 0;
+			
+			for (const chunkResult of allResults) {
+				if (Array.isArray(chunkResult.equityCurves)) {
+					mergedEquityCurves.push(...chunkResult.equityCurves);
+				}
+				if (Array.isArray(chunkResult.finalValues)) {
+					mergedFinalValues.push(...chunkResult.finalValues);
+				}
+				if (Array.isArray(chunkResult.winningPathIndices)) {
+					mergedWinningPaths.push(...chunkResult.winningPathIndices.map((p: number) => p + pathOffset));
+					totalWinning += chunkResult.winningPathIndices.length;
+				}
+				if (Array.isArray(chunkResult.losingPathIndices)) {
+					mergedLosingPaths.push(...chunkResult.losingPathIndices.map((p: number) => p + pathOffset));
+					totalLosing += chunkResult.losingPathIndices.length;
+				}
+				
+				const chunkSize = chunkResult.finalValues?.length || 0;
+				if (chunkSize > 0) {
+					sumExpectedPayout += (chunkResult.expectedPayout || 0) * chunkSize;
+					sumMaxDd += (chunkResult.maxDrawdown || 0);
+					pathOffset += chunkSize;
+				}
+			}
+			
+			// Create merged result
+			const totalPaths = mergedFinalValues.length;
+			const firstResult = allResults[0];
+			
+			resultJson = JSON.stringify({
+				...firstResult,
+				equityCurves: mergedEquityCurves,
+				finalValues: mergedFinalValues,
+				winningPathIndices: mergedWinningPaths,
+				losingPathIndices: mergedLosingPaths,
+				expectedPayout: totalPaths > 0 ? sumExpectedPayout / totalPaths : 0,
+				passProbability: totalPaths > 0 ? (totalWinning / totalPaths) * 100 : 0,
+				failProbability: totalPaths > 0 ? (totalLosing / totalPaths) * 100 : 0,
+				maxDrawdown: allResults.length > 0 ? sumMaxDd / allResults.length : 0,
+				averageFinalValue: mergedFinalValues.length > 0 
+					? mergedFinalValues.reduce((a, b) => a + b, 0) / mergedFinalValues.length 
+					: 0,
+				medianFinalValue: mergedFinalValues.length > 0
+					? (() => {
+							const sorted = [...mergedFinalValues].sort((a, b) => a - b);
+							const mid = Math.floor(sorted.length / 2);
+							return sorted.length % 2 === 0 
+								? (sorted[mid - 1] + sorted[mid]) / 2 
+								: sorted[mid];
+						})()
+					: 0,
+			});
+		} else {
+			// Standard processing for smaller simulations
+			const pythonCode = `
 import json
 from alphasolver_entry import run_simulation
 
@@ -247,10 +372,9 @@ def execute_simulation():
 execute_simulation()
 `;
 
-		let resultJson: any;
-		try {
-			resultJson = await pyodide.runPythonAsync(pythonCode);
-		} catch (pyError) {
+			try {
+				resultJson = await pyodide.runPythonAsync(pythonCode);
+			} catch (pyError) {
 			// If Python code raises an exception, it will be caught here
 			const errorMsg =
 				pyError instanceof Error

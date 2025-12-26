@@ -43,7 +43,15 @@ class Simulation:
         self.pass_rate_ci_upper = 0
         self.confidence_level = 0.95  # Default 95% CI
 
-    def run(self):
+    def run(self, start_idx=0, end_idx=None, chunk_size=None):
+        """
+        Run simulation for all traders or a chunk of traders.
+        
+        Args:
+            start_idx: Starting trader index (for chunked processing)
+            end_idx: Ending trader index (None = all remaining)
+            chunk_size: Process this many traders per chunk (None = all at once)
+        """
         # simulate trading for all traders
         sum_pnl = 0
         sum_days = 0
@@ -55,12 +63,21 @@ class Simulation:
         sum_losing_pnl = 0
         sum_passed_eval = 0
 
-        # TODO: parallelize to run this part on multiple cores
-        for trader_num in range(len(self.traders)):
+        # Determine range to process
+        total_traders = len(self.traders)
+        if end_idx is None:
+            end_idx = total_traders
+        if chunk_size is not None:
+            end_idx = min(start_idx + chunk_size, total_traders)
+        
+        # Process traders in the specified range
+        traders_processed = 0
+        for trader_num in range(start_idx, end_idx):
             while not (self.traders[trader_num].account.won or self.traders[trader_num].account.failed):
                 self.traders[trader_num].trade_for_day()
                 if self.traders[trader_num].account.total_days > 700:
                     break
+            traders_processed += 1
             sum_days += self.traders[trader_num].account.total_days
             sum_pnl += self.traders[trader_num].PnL
             if not self.traders[trader_num].account.in_eval:
@@ -94,27 +111,30 @@ class Simulation:
                 # Timeout (exceeded 700 days)
                 self.timeout_trader_numbers.append(trader_num)
 
-        self.avg_pnl = sum_pnl / len(self.traders)
-        self.avg_days = sum_days / len(self.traders)
-        if sum_winning_traders > 0:
-            self.avg_days_to_win = sum_win_days / sum_winning_traders
-            self.avg_win_pnl = sum_winning_pnl / sum_winning_traders
-        else:
-            self.avg_days_to_win = 0
-            self.avg_win_pnl = 0
-        if sum_losing_traders > 0:
-            self.avg_days_to_lose = sum_loss_days / sum_losing_traders
-            self.avg_lose_pnl = sum_losing_pnl / sum_losing_traders
-        else:
-            self.avg_days_to_lose = 0
-            self.avg_lose_pnl = 0
-        self.pct_wins = (sum_winning_traders / len(self.traders)) * 100
-        self.pct_fails = (sum_losing_traders / len(self.traders)) * 100
-        self.pct_timeout = (len(self.timeout_trader_numbers) / len(self.traders)) * 100
-        self.pct_pass_eval = (sum_passed_eval / len(self.traders)) * 100
-        
-        # Calculate confidence interval for pass rate using Wilson score interval
-        self._calculate_confidence_interval(sum_winning_traders, len(self.traders))
+        # Only update averages if we processed all traders (not chunked)
+        # For chunked processing, averages will be calculated after all chunks complete
+        if start_idx == 0 and end_idx == total_traders:
+            self.avg_pnl = sum_pnl / len(self.traders)
+            self.avg_days = sum_days / len(self.traders)
+            if sum_winning_traders > 0:
+                self.avg_days_to_win = sum_win_days / sum_winning_traders
+                self.avg_win_pnl = sum_winning_pnl / sum_winning_traders
+            else:
+                self.avg_days_to_win = 0
+                self.avg_win_pnl = 0
+            if sum_losing_traders > 0:
+                self.avg_days_to_lose = sum_loss_days / sum_losing_traders
+                self.avg_lose_pnl = sum_losing_pnl / sum_losing_traders
+            else:
+                self.avg_days_to_lose = 0
+                self.avg_lose_pnl = 0
+            self.pct_wins = (sum_winning_traders / len(self.traders)) * 100
+            self.pct_fails = (sum_losing_traders / len(self.traders)) * 100
+            self.pct_timeout = (len(self.timeout_trader_numbers) / len(self.traders)) * 100
+            self.pct_pass_eval = (sum_passed_eval / len(self.traders)) * 100
+            
+            # Calculate confidence interval for pass rate using Wilson score interval
+            self._calculate_confidence_interval(sum_winning_traders, len(self.traders))
 
     def run_eval_only(self):
         # simulate trading for all traders
