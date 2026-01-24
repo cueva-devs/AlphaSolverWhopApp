@@ -60,6 +60,9 @@ export default function AlphaSolverApp({
 	const [parsedTrades, setParsedTrades] = useState<ParsedTrade[] | null>(null);
 	const [isParsingCsv, setIsParsingCsv] = useState(false);
 	const [csvError, setCsvError] = useState<string | null>(null);
+	const [customPnlColumn, setCustomPnlColumn] = useState<string>("pnl");
+	const [customDateColumn, setCustomDateColumn] = useState<string>("date");
+	const [customMfeColumn, setCustomMfeColumn] = useState<string>("mfe");
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const importInputRef = useRef<HTMLInputElement>(null);
 	
@@ -345,9 +348,20 @@ export default function AlphaSolverApp({
 				return;
 			} else {
 				// Use standard template parsing
-				trades = await parseTradeCsv(file, {
+				const parseOptions: Parameters<typeof parseTradeCsv>[1] = {
 					template: format,
-				});
+				};
+				
+				// Add custom column names if Custom template is selected
+				if (format === "Custom") {
+					parseOptions.pnlColumn = customPnlColumn;
+					parseOptions.dateColumn = customDateColumn;
+					if (customMfeColumn && customMfeColumn.trim()) {
+						parseOptions.mfeColumn = customMfeColumn;
+					}
+				}
+				
+				trades = await parseTradeCsv(file, parseOptions);
 			}
 			setParsedTrades(trades);
 		} catch (error) {
@@ -427,9 +441,25 @@ export default function AlphaSolverApp({
 
 	const handleCsvFormatChange = async (newFormat: CsvFormat) => {
 		setCsvFormat(newFormat);
+		// Reset custom columns when switching away from Custom
+		if (newFormat !== "Custom") {
+			setCustomPnlColumn("pnl");
+			setCustomDateColumn("date");
+			setCustomMfeColumn("mfe");
+		}
 		// Re-parse if file is already loaded
 		if (csvFile) {
 			await parseCsvFile(csvFile, newFormat);
+		}
+	};
+
+	const handleCustomColumnsChange = (columns: { pnlColumn?: string; dateColumn?: string; mfeColumn?: string }) => {
+		if (columns.pnlColumn !== undefined) setCustomPnlColumn(columns.pnlColumn);
+		if (columns.dateColumn !== undefined) setCustomDateColumn(columns.dateColumn);
+		if (columns.mfeColumn !== undefined) setCustomMfeColumn(columns.mfeColumn);
+		// Re-parse if file is already loaded and format is Custom
+		if (csvFile && csvFormat === "Custom") {
+			parseCsvFile(csvFile, csvFormat);
 		}
 	};
 
@@ -552,7 +582,11 @@ export default function AlphaSolverApp({
 								parsedTrades={parsedTrades}
 								isParsingCsv={isParsingCsv}
 								csvError={csvError}
+								customPnlColumn={customPnlColumn}
+								customDateColumn={customDateColumn}
+								customMfeColumn={customMfeColumn}
 								onCsvFormatChange={handleCsvFormatChange}
+								onCustomColumnsChange={handleCustomColumnsChange}
 								onFileSelect={handleFileSelect}
 								onFileChange={handleFileChange}
 								onDragOver={handleDragOver}
