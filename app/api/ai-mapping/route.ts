@@ -118,23 +118,59 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse the JSON response
+    // Parse the JSON response - handle markdown code blocks
     let mapping: AiColumnMapping;
     try {
-      mapping = JSON.parse(content);
-    } catch {
+      // Try to extract JSON from markdown code blocks if present
+      let jsonContent = content.trim();
+      const jsonMatch = jsonContent.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+      if (jsonMatch) {
+        jsonContent = jsonMatch[1];
+      }
+      mapping = JSON.parse(jsonContent);
+    } catch (parseError) {
       console.error("Failed to parse AI response:", content);
+      console.error("Parse error:", parseError);
       return NextResponse.json(
-        { error: "Invalid JSON response from AI service" },
+        { error: `Invalid JSON response from AI service: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`, rawResponse: content.substring(0, 500) },
         { status: 502 }
       );
     }
 
     // Validate the mapping structure
     if (!validateAiMapping(mapping)) {
-      console.error("Invalid mapping structure:", mapping);
+      console.error("Invalid mapping structure:", JSON.stringify(mapping, null, 2));
+      // Provide more detailed error information
+      const validationErrors: string[] = [];
+      if (!mapping || typeof mapping !== "object") {
+        validationErrors.push("Mapping is not an object");
+      } else {
+        const m = mapping as Record<string, unknown>;
+        if (!m.pnl || typeof m.pnl !== "object") {
+          validationErrors.push("Missing or invalid 'pnl' field");
+        } else {
+          const pnl = m.pnl as Record<string, unknown>;
+          if (typeof pnl.column !== "string" || !pnl.column) {
+            validationErrors.push("Missing or invalid 'pnl.column'");
+          }
+          if (!["number", "currency", "currency_parentheses"].includes(pnl.format as string)) {
+            validationErrors.push(`Invalid 'pnl.format': ${pnl.format} (expected: number, currency, or currency_parentheses)`);
+          }
+        }
+        if (!m.date || typeof m.date !== "object") {
+          validationErrors.push("Missing or invalid 'date' field");
+        } else {
+          const date = m.date as Record<string, unknown>;
+          if (typeof date.column !== "string" || !date.column) {
+            validationErrors.push("Missing or invalid 'date.column'");
+          }
+          if (!["iso", "us", "eu", "unix_seconds", "unix_ms", "custom"].includes(date.format as string)) {
+            validationErrors.push(`Invalid 'date.format': ${date.format} (expected: iso, us, eu, unix_seconds, unix_ms, or custom)`);
+          }
+        }
+      }
       return NextResponse.json(
-        { error: "AI returned invalid mapping structure", mapping },
+        { error: "AI returned invalid mapping structure", details: validationErrors, mapping },
         { status: 422 }
       );
     }

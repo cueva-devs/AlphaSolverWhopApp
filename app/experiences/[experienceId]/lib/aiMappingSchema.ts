@@ -155,13 +155,24 @@ REQUIRED MAPPINGS:
 4. row_filter - Only if CSV has mixed row types (optional)
    - Example: TradingView has "Entry" and "Exit" rows, only "Exit" rows contain final P&L
 
-Respond with a JSON object matching this exact structure:
+Respond with ONLY a valid JSON object matching this exact structure (no markdown, no explanation, just JSON):
 {
-  "pnl": { "column": "<exact header>", "format": "<number|currency|currency_parentheses>", "currency_symbol": "<if applicable>" },
-  "date": { "column": "<exact header>", "format": "<iso|us|eu|unix_seconds|unix_ms|custom>", "custom_pattern": "<if custom>" },
-  "mfe": { "column": "<exact header or null>", "format": "<format or null>" },
-  "row_filter": { "column": "<header or null>", "condition": "<equals|contains|starts_with>", "value": "<filter value>" } or null
-}`;
+  "pnl": { "column": "<exact header name>", "format": "number" },
+  "date": { "column": "<exact header name>", "format": "iso" },
+  "mfe": { "column": "<exact header name>", "format": "number" } or null,
+  "row_filter": null
+}
+
+IMPORTANT:
+- Use "number" format for pnl/mfe if values are plain numbers (e.g., 150.00, -75.00)
+- Use "currency" format if values have currency symbols (e.g., $150.00, -$75.00)
+- Use "currency_parentheses" if negative values use parentheses (e.g., $150.00 or ($75.00))
+- Use "iso" format for dates like 2024-01-02
+- Use "us" format for dates like 01/15/2024
+- Use "eu" format for dates like 15/01/2024
+- Column names must match EXACTLY (case-sensitive) from the headers list above
+- If mfe column doesn't exist, set mfe to null (not an empty object)
+- If no row filtering needed, set row_filter to null`;
 }
 
 /**
@@ -175,20 +186,36 @@ export function validateAiMapping(mapping: unknown): mapping is AiColumnMapping 
   // Check required pnl
   if (!m.pnl || typeof m.pnl !== "object") return false;
   const pnl = m.pnl as Record<string, unknown>;
-  if (typeof pnl.column !== "string" || !pnl.column) return false;
-  if (!["number", "currency", "currency_parentheses"].includes(pnl.format as string)) return false;
+  if (typeof pnl.column !== "string" || !pnl.column.trim()) return false;
+  if (!["number", "currency", "currency_parentheses"].includes(String(pnl.format))) return false;
   
   // Check required date
   if (!m.date || typeof m.date !== "object") return false;
   const date = m.date as Record<string, unknown>;
-  if (typeof date.column !== "string" || !date.column) return false;
-  if (!["iso", "us", "eu", "unix_seconds", "unix_ms", "custom"].includes(date.format as string)) return false;
+  if (typeof date.column !== "string" || !date.column.trim()) return false;
+  if (!["iso", "us", "eu", "unix_seconds", "unix_ms", "custom"].includes(String(date.format))) return false;
   
-  // mfe is optional but must be valid if present
+  // mfe is optional - can be null, undefined, or a valid object
   if (m.mfe !== null && m.mfe !== undefined) {
     if (typeof m.mfe !== "object") return false;
     const mfe = m.mfe as Record<string, unknown>;
-    if (typeof mfe.column !== "string") return false;
+    // If mfe is provided, it must have a column (can be empty string, we'll handle that)
+    if (mfe.column !== undefined && typeof mfe.column !== "string") return false;
+    // If mfe has a column, it should have a format too
+    if (mfe.column && typeof mfe.column === "string" && mfe.column.trim()) {
+      if (!mfe.format || !["number", "currency", "currency_parentheses"].includes(String(mfe.format))) {
+        return false;
+      }
+    }
+  }
+  
+  // row_filter is optional - can be null, undefined, or a valid object
+  if (m.row_filter !== null && m.row_filter !== undefined) {
+    if (typeof m.row_filter !== "object") return false;
+    const filter = m.row_filter as Record<string, unknown>;
+    if (typeof filter.column !== "string" || !filter.column.trim()) return false;
+    if (!["equals", "contains", "starts_with"].includes(String(filter.condition))) return false;
+    if (typeof filter.value !== "string") return false;
   }
   
   return true;
