@@ -119,13 +119,17 @@ export async function parseTradeCsv(
 
 	// Validate required columns exist
 	if (pnlIdx === -1) {
+		const expectedColumn = options.pnlColumn || (options.template === "NinjaTrader" ? "Profit" : options.template === "Custom" ? "pnl" : "pnl/profit");
+		const availableColumns = headers.length > 0 ? ` Available columns: ${headers.slice(0, 5).join(", ")}${headers.length > 5 ? "..." : ""}` : "";
 		throw new Error(
-			`PNL column not found. Expected: ${options.pnlColumn || (options.template === "NinjaTrader" ? "Profit" : "pnl/profit")}`,
+			`PNL column "${expectedColumn}" not found in CSV.${availableColumns} Please check the column name matches your CSV file.`,
 		);
 	}
 	if (dateIdx === -1) {
+		const expectedColumn = options.dateColumn || (options.template === "NinjaTrader" ? "Entry time" : options.template === "Custom" ? "date" : "date/time");
+		const availableColumns = headers.length > 0 ? ` Available columns: ${headers.slice(0, 5).join(", ")}${headers.length > 5 ? "..." : ""}` : "";
 		throw new Error(
-			`Date column not found. Expected: ${options.dateColumn || (options.template === "NinjaTrader" ? "Entry time" : "date/time")}`,
+			`Date column "${expectedColumn}" not found in CSV.${availableColumns} Please check the column name matches your CSV file.`,
 		);
 	}
 	// MFE is optional - don't throw error if not found

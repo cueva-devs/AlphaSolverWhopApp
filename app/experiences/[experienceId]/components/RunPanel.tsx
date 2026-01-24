@@ -26,7 +26,11 @@ interface RunPanelProps {
 	parsedTrades: ParsedTrade[] | null;
 	isParsingCsv: boolean;
 	csvError: string | null;
+	customPnlColumn?: string;
+	customDateColumn?: string;
+	customMfeColumn?: string;
 	onCsvFormatChange: (format: CsvFormat) => void;
+	onCustomColumnsChange?: (columns: { pnlColumn?: string; dateColumn?: string; mfeColumn?: string }) => void;
 	onFileSelect: () => void;
 	onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 	onDragOver: (e: React.DragEvent) => void;
@@ -87,7 +91,11 @@ export default function RunPanel({
 	parsedTrades,
 	isParsingCsv,
 	csvError,
+	customPnlColumn,
+	customDateColumn,
+	customMfeColumn,
 	onCsvFormatChange,
+	onCustomColumnsChange,
 	onFileSelect,
 	onFileChange,
 	onDragOver,
@@ -133,6 +141,9 @@ export default function RunPanel({
 	const [showAdvanced, setShowAdvanced] = useState(false);
 	const [numPaths, setNumPaths] = useState(Math.min(10000, planConfig.maxPaths));
 	const [confidenceLevel, setConfidenceLevel] = useState<number>(0.95);
+	const [localPnlColumn, setLocalPnlColumn] = useState(customPnlColumn || "pnl");
+	const [localDateColumn, setLocalDateColumn] = useState(customDateColumn || "date");
+	const [localMfeColumn, setLocalMfeColumn] = useState(customMfeColumn || "mfe");
 
 	const handleRunSimulation = () => {
 		if (parsedTrades && parsedTrades.length > 0) {
@@ -327,17 +338,84 @@ export default function RunPanel({
 						</select>
 						
 						{csvFormat === "Custom" && (
-							<div className="mt-3 p-3 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border)]">
-								<p className="text-xs text-[var(--text-muted)] mb-2">
-									Download the CSV template to ensure your data is formatted correctly.
-								</p>
-								<a 
-									href="/sample_template.csv" 
-									download="alphasolver_template.csv"
-									className="btn btn-primary btn-sm w-full"
-								>
-									Download CSV Template
-								</a>
+							<div className="mt-3 space-y-3">
+								<div className="p-3 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border)]">
+									<p className="text-xs text-[var(--text-muted)] mb-2">
+										Download the CSV template to ensure your data is formatted correctly.
+									</p>
+									<a 
+										href="/sample_template.csv" 
+										download="alphasolver_template.csv"
+										className="btn btn-primary btn-sm w-full"
+									>
+										Download CSV Template
+									</a>
+								</div>
+								<div className="p-3 bg-[var(--bg-tertiary)] rounded-lg border border-[var(--border)] space-y-3">
+									<p className="text-xs text-[var(--text-muted)] mb-2">
+										Specify the column names in your CSV file:
+									</p>
+									<div>
+										<label className="section-label">PNL Column Name</label>
+										<input
+											type="text"
+											value={localPnlColumn}
+											onChange={(e) => {
+												setLocalPnlColumn(e.target.value);
+												onCustomColumnsChange?.({ 
+													pnlColumn: e.target.value,
+													dateColumn: localDateColumn,
+													mfeColumn: localMfeColumn
+												});
+											}}
+											placeholder="e.g., pnl, Profit, P&L"
+											className="input"
+										/>
+										<p className="text-xs text-[var(--text-muted)] mt-1">
+											Name of the column containing profit/loss values
+										</p>
+									</div>
+									<div>
+										<label className="section-label">Date Column Name</label>
+										<input
+											type="text"
+											value={localDateColumn}
+											onChange={(e) => {
+												setLocalDateColumn(e.target.value);
+												onCustomColumnsChange?.({ 
+													pnlColumn: localPnlColumn,
+													dateColumn: e.target.value,
+													mfeColumn: localMfeColumn
+												});
+											}}
+											placeholder="e.g., date, Date, DateTime"
+											className="input"
+										/>
+										<p className="text-xs text-[var(--text-muted)] mt-1">
+											Name of the column containing trade dates/times
+										</p>
+									</div>
+									<div>
+										<label className="section-label">MFE Column Name (Optional)</label>
+										<input
+											type="text"
+											value={localMfeColumn}
+											onChange={(e) => {
+												setLocalMfeColumn(e.target.value);
+												onCustomColumnsChange?.({ 
+													pnlColumn: localPnlColumn,
+													dateColumn: localDateColumn,
+													mfeColumn: e.target.value
+												});
+											}}
+											placeholder="e.g., mfe, MFE, MaxFavorableExcursion"
+											className="input"
+										/>
+										<p className="text-xs text-[var(--text-muted)] mt-1">
+											Name of the column containing Maximum Favorable Excursion values (optional)
+										</p>
+									</div>
+								</div>
 							</div>
 						)}
 						
