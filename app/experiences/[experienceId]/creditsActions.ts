@@ -29,7 +29,8 @@ export async function consumeCreditAction(iframeUserToken?: string | null): Prom
 		}
 		return { ok: true, credits: result.credits, maxCredits: DAILY_CREDITS };
 	} catch (e) {
-		console.error("consumeCreditAction:", e);
+		const detail = e instanceof Error ? `${e.message}\n${e.stack}` : String(e);
+		console.error("consumeCreditAction failed:", detail);
 		return { ok: false, error: "Unable to use credit. Please try again." };
 	}
 }
