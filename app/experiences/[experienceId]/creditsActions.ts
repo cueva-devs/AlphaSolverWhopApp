@@ -3,6 +3,7 @@
 import { DAILY_CREDITS } from "@/lib/constants";
 import { useCredit } from "@/lib/credits-store";
 import { resolveCreditsUserIdForAction } from "@/lib/credits-user";
+import { redisFailureUserMessage } from "@/lib/redis-errors";
 
 export type ConsumeCreditResult =
 	| { ok: true; credits: number; maxCredits: number }
@@ -31,6 +32,10 @@ export async function consumeCreditAction(iframeUserToken?: string | null): Prom
 	} catch (e) {
 		const detail = e instanceof Error ? `${e.message}\n${e.stack}` : String(e);
 		console.error("consumeCreditAction failed:", detail);
-		return { ok: false, error: "Unable to use credit. Please try again." };
+		const friendly = redisFailureUserMessage(e);
+		return {
+			ok: false,
+			error: friendly ?? "Unable to use credit. Please try again.",
+		};
 	}
 }
