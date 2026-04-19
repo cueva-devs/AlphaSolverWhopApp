@@ -12,6 +12,11 @@ const RATE_LIMIT_CONFIG = {
 	keyPrefix: "credits",
 };
 
+function getRedisConnectionUrl(): string | undefined {
+	// Vercel Marketplace Redis typically injects REDIS_URL; this project historically used KV_REDIS_URL.
+	return process.env.KV_REDIS_URL || process.env.REDIS_URL;
+}
+
 // Redis client singleton
 let redis: RedisClientType | null = null;
 let isConnecting = false;
@@ -32,8 +37,14 @@ async function getRedisClient(): Promise<RedisClientType> {
 
 	isConnecting = true;
 	try {
+		const url = getRedisConnectionUrl();
+		if (!url) {
+			throw new Error(
+				"Redis URL missing: set KV_REDIS_URL or REDIS_URL (Vercel Redis integration usually sets REDIS_URL).",
+			);
+		}
 		redis = createClient({
-			url: process.env.KV_REDIS_URL,
+			url,
 		});
 		redis.on("error", (err) => console.error("Redis Client Error:", err));
 		await redis.connect();
