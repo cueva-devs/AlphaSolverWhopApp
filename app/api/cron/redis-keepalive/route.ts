@@ -5,15 +5,32 @@ import { CREDITS_EXPIRY_SECONDS } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
+function isAuthorizedCron(request: NextRequest): boolean {
+	const secret = process.env.CRON_SECRET?.trim();
+	if (!secret) {
+		return false;
+	}
+	const raw = request.headers.get("authorization")?.trim();
+	if (!raw) {
+		return false;
+	}
+	const m = /^Bearer\s+(\S+)/i.exec(raw);
+	const token = m?.[1]?.trim();
+	return token === secret;
+}
+
 /**
  * Vercel Cron: touches Redis so idle free-tier databases stay reachable.
- * Set CRON_SECRET in Vercel; the platform sends Authorization: Bearer <CRON_SECRET>.
+ * Set CRON_SECRET in Vercel (Production); the platform sends Authorization: Bearer <CRON_SECRET>.
  * @see https://vercel.com/docs/cron-jobs#securing-cron-jobs
  */
 export async function GET(request: NextRequest) {
-	const secret = process.env.CRON_SECRET;
-	const auth = request.headers.get("authorization");
-	if (!secret || auth !== `Bearer ${secret}`) {
+	if (!isAuthorizedCron(request)) {
+		if (!process.env.CRON_SECRET?.trim()) {
+			console.error(
+				"redis-keepalive: CRON_SECRET is empty — add it under Vercel → Env Vars for Production, then redeploy.",
+			);
+		}
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
