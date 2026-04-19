@@ -3,6 +3,7 @@ import { DAILY_CREDITS } from "@/lib/constants";
 import { getUserCredits, useCredit } from "@/lib/credits-store";
 import { resolveCreditsUserIdFromRequest } from "@/lib/credits-user";
 import { checkRateLimit, rateLimitedResponse, addRateLimitHeaders } from "@/lib/rate-limit";
+import { redisFailureUserMessage } from "@/lib/redis-errors";
 
 // Rate limit configuration for credits API
 const RATE_LIMIT_CONFIG = {
@@ -39,7 +40,11 @@ export async function GET(request: NextRequest) {
 		return addRateLimitHeaders(response, rateLimitResult);
 	} catch (error) {
 		console.error("Credits GET error:", error);
-		return NextResponse.json({ error: "Unable to verify credits. Please try again." }, { status: 500 });
+		const hint = redisFailureUserMessage(error);
+		return NextResponse.json(
+			{ error: hint ?? "Unable to verify credits. Please try again." },
+			{ status: 500 },
+		);
 	}
 }
 
@@ -88,6 +93,10 @@ export async function POST(request: NextRequest) {
 		return addRateLimitHeaders(response, rateLimitResult);
 	} catch (error) {
 		console.error("Credits POST error:", error);
-		return NextResponse.json({ error: "Unable to use credit. Please try again." }, { status: 500 });
+		const hint = redisFailureUserMessage(error);
+		return NextResponse.json(
+			{ error: hint ?? "Unable to use credit. Please try again." },
+			{ status: 500 },
+		);
 	}
 }
