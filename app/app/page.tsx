@@ -3,7 +3,10 @@ import Link from "next/link";
 import AlphaSolverApp from "../experiences/[experienceId]/AlphaSolverApp";
 import { getPlanConfig } from "../experiences/[experienceId]/config/planConfig";
 import type { PlanId } from "../experiences/[experienceId]/config/planConfig";
+import type { CreditsState } from "../experiences/[experienceId]/lib/creditsService";
 import { getWhopSession, checkUserAccess } from "@/lib/auth";
+import { BYPASS_CREDITS_USER_SUB, DAILY_CREDITS } from "@/lib/constants";
+import { getUserCredits } from "@/lib/credits-store";
 
 // Environment variable to control bypass mode
 const BYPASS_ACCESS = process.env.NEXT_PUBLIC_BYPASS_ACCESS === "true";
@@ -13,7 +16,20 @@ export default async function DirectAppPage() {
 	if (BYPASS_ACCESS) {
 		const planId: PlanId = "free";
 		const planConfig = getPlanConfig(planId);
-		
+
+		let initialCredits: CreditsState | null = null;
+		try {
+			const data = await getUserCredits(BYPASS_CREDITS_USER_SUB);
+			initialCredits = {
+				creditsRemaining: data.credits,
+				maxCredits: DAILY_CREDITS,
+				lastResetDate: data.lastReset,
+				isUnlimited: false,
+			};
+		} catch {
+			initialCredits = null;
+		}
+
 		return (
 			<AlphaSolverApp
 				experienceId="direct"
@@ -21,6 +37,7 @@ export default async function DirectAppPage() {
 				planConfig={planConfig}
 				upgradeUrl={process.env.NEXT_PUBLIC_WHOP_CHECKOUT_URL || "https://whop.com/alphasolver"}
 				isWhopIframe={false}
+				initialCredits={initialCredits}
 			/>
 		);
 	}
@@ -85,7 +102,22 @@ export default async function DirectAppPage() {
 
 	// User has access - render the app
 	const planConfig = getPlanConfig(access.planId);
-	
+
+	let initialCredits: CreditsState | null | undefined = undefined;
+	if (planConfig.dailyCredits !== -1) {
+		try {
+			const data = await getUserCredits(access.userId);
+			initialCredits = {
+				creditsRemaining: data.credits,
+				maxCredits: DAILY_CREDITS,
+				lastResetDate: data.lastReset,
+				isUnlimited: false,
+			};
+		} catch {
+			initialCredits = null;
+		}
+	}
+
 	return (
 		<AlphaSolverApp
 			experienceId="direct"
@@ -93,6 +125,7 @@ export default async function DirectAppPage() {
 			planConfig={planConfig}
 			upgradeUrl={process.env.NEXT_PUBLIC_WHOP_CHECKOUT_URL || "https://whop.com/alphasolver"}
 			isWhopIframe={false}
+			initialCredits={initialCredits}
 		/>
 	);
 }

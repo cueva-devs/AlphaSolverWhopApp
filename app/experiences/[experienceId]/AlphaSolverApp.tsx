@@ -18,12 +18,12 @@ import type { AiColumnMapping } from "./lib/aiMappingSchema";
 import { extractCsvPreview, getAiColumnMapping, parseCsvWithAiMapping } from "./lib/aiMappingService";
 import type { PlanId, PlanConfig } from "./config/planConfig";
 import { createSavedRun, exportRun, importRun, estimateFileSize } from "./lib/saveRunUtils";
-import { 
-	useCreditServer, 
+import {
 	checkCreditsServer,
 	getCreditsDisplayFromState,
-	type CreditsState 
+	type CreditsState,
 } from "./lib/creditsService";
+import { consumeCreditAction } from "./creditsActions";
 import type { SavedRun } from "./types";
 
 interface AlphaSolverAppProps {
@@ -34,6 +34,10 @@ interface AlphaSolverAppProps {
 	planConfig: PlanConfig;
 	upgradeUrl?: string;
 	isWhopIframe?: boolean;
+	/** Server-loaded credits (Whop iframe); avoids client fetch without x-whop-user-token. */
+	initialCredits?: CreditsState | null;
+	/** Forwarded from RSC headers — used for client refetch and consumeCreditAction when iframe POST omits the header. */
+	whopIframeUserToken?: string | null;
 }
 
 type TabType = "run" | "simulation" | "trading_plan";
@@ -46,6 +50,8 @@ export default function AlphaSolverApp({
 	planConfig,
 	upgradeUrl,
 	isWhopIframe = true,
+	initialCredits,
+	whopIframeUserToken = null,
 }: AlphaSolverAppProps) {
 	const { run, result, isRunning, error, isEngineLoading, reset, progress } =
 		useSimulationEngine();
@@ -71,8 +77,13 @@ export default function AlphaSolverApp({
 	const [aiMapping, setAiMapping] = useState<AiColumnMapping | null>(null);
 	const [aiMappingConfirmed, setAiMappingConfirmed] = useState(false);
 	const [lastParams, setLastParams] = useState<BootstrappedParams | null>(null);
-	const [creditsState, setCreditsState] = useState<CreditsState | null>(null);
-	const [isLoadingCredits, setIsLoadingCredits] = useState(true);
+	const [creditsState, setCreditsState] = useState<CreditsState | null>(
+		initialCredits !== undefined && initialCredits !== null ? initialCredits : null,
+	);
+	const [isLoadingCredits, setIsLoadingCredits] = useState(
+		planConfig.dailyCredits !== -1 &&
+			(initialCredits === undefined || initialCredits === null),
+	);
 	
 	// Confirmation dialog state
 	const [showRunConfirm, setShowRunConfirm] = useState(false);
@@ -96,17 +107,23 @@ export default function AlphaSolverApp({
 	const creditsRemaining = creditsState?.creditsRemaining ?? planConfig.dailyCredits;
 	const noCreditsRemaining = planConfig.dailyCredits !== -1 && creditsRemaining <= 0;
 
-	// Fetch credits from Vercel KV on mount
+	// Credits: prefer server-loaded balance; otherwise cookie (OAuth) or iframe token on fetch.
 	useEffect(() => {
 		const fetchCredits = async () => {
 			if (planConfig.dailyCredits === -1) {
 				setIsLoadingCredits(false);
 				return;
 			}
-			
+
+			if (initialCredits !== undefined && initialCredits !== null) {
+				setCreditsState(initialCredits);
+				setIsLoadingCredits(false);
+				return;
+			}
+
+			setIsLoadingCredits(true);
 			try {
-				// Server authenticates user from session
-				const serverCredits = await checkCreditsServer();
+				const serverCredits = await checkCreditsServer(whopIframeUserToken ?? undefined);
 				setCreditsState(serverCredits);
 			} catch (e) {
 				console.error("Failed to fetch credits:", e);
@@ -114,9 +131,9 @@ export default function AlphaSolverApp({
 				setIsLoadingCredits(false);
 			}
 		};
-		
-		fetchCredits();
-	}, [planConfig]);
+
+		void fetchCredits();
+	}, [planConfig.dailyCredits, initialCredits, whopIframeUserToken]);
 
 	// Handle tab change with scroll position preservation
 	const handleTabChange = useCallback((newTab: TabType) => {
@@ -177,17 +194,13 @@ export default function AlphaSolverApp({
 		// Use server-side credit via Vercel KV (only for non-unlimited users)
 		if (planConfig.dailyCredits !== -1) {
 			try {
-				// Server authenticates user from session
-				const result = await useCreditServer();
-				if (!result) {
-					setCsvError("Failed to connect to server. Please try again.");
+				const result = await consumeCreditAction(whopIframeUserToken ?? null);
+				if (!result.ok) {
+					setCsvError(
+						result.error || "No credits remaining. Credits reset daily at midnight UTC.",
+					);
 					return;
 				}
-				if (!result.success) {
-					setCsvError(result.error || "No credits remaining. Credits reset daily at midnight UTC.");
-					return;
-				}
-				// Update credits state with new values from server
 				setCreditsState({
 					creditsRemaining: result.credits,
 					maxCredits: result.maxCredits,

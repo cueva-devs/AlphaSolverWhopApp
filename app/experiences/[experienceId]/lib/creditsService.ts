@@ -21,13 +21,22 @@ function getTodayString(): string {
 	return new Date().toISOString().split("T")[0];
 }
 
+function whopAuthHeaders(whopUserToken?: string | null): HeadersInit {
+	if (!whopUserToken) {
+		return {};
+	}
+	return { "x-whop-user-token": whopUserToken };
+}
+
 /**
- * Fetch credits from API
- * Server authenticates user from session - no need to pass userId
+ * Fetch credits from API (cookies for OAuth /app; pass iframe token when the Whop header is not forwarded on fetch).
  */
-export async function checkCreditsServer(): Promise<CreditsState | null> {
+export async function checkCreditsServer(whopUserToken?: string | null): Promise<CreditsState | null> {
 	try {
-		const response = await fetch("/api/credits");
+		const response = await fetch("/api/credits", {
+			headers: whopAuthHeaders(whopUserToken),
+			credentials: "same-origin",
+		});
 		
 		if (response.status === 401) {
 			// User not authenticated
@@ -56,11 +65,15 @@ export async function checkCreditsServer(): Promise<CreditsState | null> {
  * Use one credit via API
  * Server authenticates user from session - no need to pass userId
  */
-export async function useCreditServer(): Promise<UseCreditResult | null> {
+export async function useCreditServer(whopUserToken?: string | null): Promise<UseCreditResult | null> {
 	try {
 		const response = await fetch("/api/credits", {
 			method: "POST",
-			headers: { "Content-Type": "application/json" },
+			headers: {
+				"Content-Type": "application/json",
+				...whopAuthHeaders(whopUserToken),
+			},
+			credentials: "same-origin",
 			body: JSON.stringify({}),
 		});
 		

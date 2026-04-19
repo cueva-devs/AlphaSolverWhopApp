@@ -2,8 +2,11 @@ import { Button, Card, Heading, Text } from "@whop/react/components";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { whopsdk } from "@/lib/whop-sdk";
+import { DAILY_CREDITS } from "@/lib/constants";
+import { getUserCredits } from "@/lib/credits-store";
 import AlphaSolverApp from "./AlphaSolverApp";
 import { determinePlanId, getEffectivePlanConfig, type PlanId } from "./config/planConfig";
+import type { CreditsState } from "./lib/creditsService";
 
 export default async function ExperiencePage({
 	params,
@@ -173,6 +176,24 @@ export default async function ExperiencePage({
 			upgradeUrl = `https://whop.com/experiences/${experienceId}`;
 		}
 
+		const whopIframeUserToken = reqHeaders.get("x-whop-user-token");
+
+		let initialCredits: CreditsState | null | undefined = undefined;
+		if (planConfig.dailyCredits !== -1) {
+			try {
+				const data = await getUserCredits(userId);
+				initialCredits = {
+					creditsRemaining: data.credits,
+					maxCredits: DAILY_CREDITS,
+					lastResetDate: data.lastReset,
+					isUnlimited: false,
+				};
+			} catch (creditsErr) {
+				console.error("Failed to load initial credits:", creditsErr);
+				initialCredits = null;
+			}
+		}
+
 		// User has access - render AlphaSolverApp
 		return (
 			<AlphaSolverApp
@@ -183,6 +204,8 @@ export default async function ExperiencePage({
 				planConfig={planConfig}
 				upgradeUrl={upgradeUrl}
 				isWhopIframe={true}
+				initialCredits={initialCredits}
+				whopIframeUserToken={whopIframeUserToken}
 			/>
 		);
 	} catch (error) {
