@@ -3,7 +3,7 @@ import { DAILY_CREDITS, CREDITS_KEY_PREFIX, CREDITS_EXPIRY_SECONDS } from "@/lib
 
 type RedisClient = Awaited<ReturnType<typeof createClient>>;
 
-function getRedisConnectionUrl(): string | undefined {
+export function getRedisConnectionUrl(): string | undefined {
 	return process.env.KV_REDIS_URL || process.env.REDIS_URL;
 }
 
